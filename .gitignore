@@ -1,0 +1,7 @@
+datasets/
+.idea/
+.ipynb_checkpoints/
+disent-vaes/logs
+*.pyx
+*.pyc
+

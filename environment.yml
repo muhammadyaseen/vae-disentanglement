@@ -1,0 +1,22 @@
+name: D:\Saarbrucken\EDA_Research\seq-proj\python-env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - matplotlib
+  - numpy
+  - jupyter
+  - pytorch
+  - torchvision
+  - cudatoolkit=10.2
+  - torchaudio
+  - pyyaml
+  - tensorboardx
+  - pytorch-lightning
+  - tensorboard
+  - pytest-html
+  - pytest
+  - pytest-xdist
+  - seaborn
+prefix: D:\Saarbrucken\EDA_Research\seq-proj\python-env
