@@ -29,9 +29,11 @@ class DSpritesDataset(Dataset):
 
         if split == "train":
             self.images = self.images[: len(self.images) - 100]
+            self.latents_values = self.latents_values[: len(self.latents_values) - 100]
 
         if split == "test":
             self.images = self.images[len(self.images) - 100:]
+            self.latents_values = self.latents_values[len(self.latents_values) - 100:]
 
     def __len__(self):
         return len(self.latents_values)
@@ -41,7 +43,9 @@ class DSpritesDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        image = transforms.ToTensor()(self.images[idx])
+        three_channel_image = np.stack((self.images[idx], self.images[idx], self.images[idx]), axis=-1)
+
+        image = transforms.ToTensor()(three_channel_image)
         latent = self.latents_values[idx]
 
         return image, latent

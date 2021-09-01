@@ -185,12 +185,13 @@ class VAEExperiment(pl.LightningModule):
             val_dataset = OneDimLatentDataset(root=self.params['data_path'], split = "test")
 
         elif self.params['dataset'] == 'dsprites':
-            val_dataset = DSpritesDataset(root=self.params['data_path'], split="train")
+            val_dataset = DSpritesDataset(root=self.params['data_path'], split="test")
 
         else:
             raise ValueError('Undefined dataset type')
 
-        self.sample_dataloader = DataLoader(val_dataset, batch_size= 144, shuffle = False, drop_last=True)
+        self.sample_dataloader = DataLoader(val_dataset, batch_size= self.params['batch_size'],
+                                            shuffle = False, drop_last=True)
 
         self.num_val_imgs = len(val_dataset) if val_dataset is not None else 0
 
@@ -208,7 +209,7 @@ class VAEExperiment(pl.LightningModule):
                                             transforms.ToTensor(),
                                             SetRange])
 
-        elif self.params['dataset'] == 'onedim':
+        elif self.params['dataset'] in ['onedim', 'dsprites']:
             transform = None
 
         else:
