@@ -8,6 +8,7 @@ exp_params:
   data_path: "../datasets/dsprites"
   img_size: 64
   batch_size: 36 # Better to have a square number
+  num_workers: 8
   LR: 0.005
   weight_decay: 0.0
   scheduler_gamma: 0.95

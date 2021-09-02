@@ -171,7 +171,8 @@ class VAEExperiment(pl.LightningModule):
         return DataLoader(dataset,
                           batch_size= self.params['batch_size'],
                           shuffle = True,
-                          drop_last=True)
+                          drop_last=True,
+                          num_workers=self.params['num_workers'])
 
     #@data_loader
     def val_dataloader(self):
@@ -191,7 +192,8 @@ class VAEExperiment(pl.LightningModule):
             raise ValueError('Undefined dataset type')
 
         self.sample_dataloader = DataLoader(val_dataset, batch_size= self.params['batch_size'],
-                                            shuffle = False, drop_last=True)
+                                            shuffle = False, drop_last=True,
+                                            num_workers=self.params['num_workers'])
 
         self.num_val_imgs = len(val_dataset) if val_dataset is not None else 0
 
