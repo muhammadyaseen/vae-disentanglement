@@ -28,6 +28,8 @@ class VAEExperiment(pl.LightningModule):
         self.num_val_imgs = 0
         self.num_train_imgs = 0
 
+        #self.logger.experiment.add_graph(vae_model, torch.rand((1,3,64,64)))
+
         try:
             self.hold_graph = self.params['retain_first_backpass']
         except:
@@ -40,7 +42,7 @@ class VAEExperiment(pl.LightningModule):
 
         real_img, labels = batch
         self.curr_device = real_img.device
-        #print("train_step dev:" , self.curr_device)
+        #print("training_step:" , self.curr_device)
 
         results = self.forward(real_img, labels = labels)
         train_loss = self.model.loss_function(*results,
@@ -48,7 +50,7 @@ class VAEExperiment(pl.LightningModule):
                                               optimizer_idx=optimizer_idx,
                                               batch_idx = batch_idx)
 
-        self.logger.experiment.log({key: val.item() for key, val in train_loss.items()})
+        #self.logger.experiment.log({key: val.item() for key, val in train_loss.items()})
 
         return train_loss
 
@@ -58,7 +60,7 @@ class VAEExperiment(pl.LightningModule):
 
         real_img, labels = batch
         self.curr_device = real_img.device
-        #print(real_img.shape)
+        #print("validation_step:" , self.curr_device)
         results = self.forward(real_img, labels = labels)
         val_loss = self.model.loss_function(*results,
                                             M_N = self.params['batch_size']/ self.num_val_imgs,
@@ -67,46 +69,50 @@ class VAEExperiment(pl.LightningModule):
 
         return val_loss
 
-    def validation_end(self, outputs):
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
-        tensorboard_logs = {'avg_val_loss': avg_loss}
-        self.sample_images()
-        return {'val_loss': avg_loss, 'log': tensorboard_logs}
+    def _log_sampled_images(self):
 
-    def save_sample_images(self):
+        samples = self.model.sample(36, self.curr_device)
+
+        #grid_of_samples = vutils.make_grid(samples.cpu().data, normalize=True, nrow=12)
+
+        self.logger.experiment.add_images("Sampled Images", samples, global_step=self.current_epoch)
+
+        # vutils.save_image(samples.cpu().data,
+        #                   f"{self.logger.save_dir}{self.logger.name}/version_{self.logger.version}/"
+        #                   f"sampled_{self.logger.name}_{self.current_epoch}.png",
+        #                   normalize=True,
+        #                   nrow=12)
+        del samples
+
+    def _log_reconstructed_images(self):
 
         # Get sample reconstruction image
-        #print("Curr device: ", self.curr_device)
         test_input, test_label = next(iter(self.sample_dataloader))
-        #test_input = test_input.to(self.curr_device)
-        #test_label = test_label.to(self.curr_device)
-
-        #print(self.model)
+        #print(type(test_input))
+        test_input = test_input.to(self.curr_device)
+        #print(type(test_input))
 
         recons = self.model.generate(test_input, labels = test_label)
-        print(recons.shape)
-        vutils.save_image(recons.data,
-                          f"{self.logger.save_dir}{self.logger.name}/version_{self.logger.version}/"
-                          f"recons_{self.logger.name}_{self.current_epoch}.png",
-                          normalize=True,
-                          nrow=12)
+        #print(type(recons))
+        self.logger.experiment.add_images("Reconstructed Images", recons, global_step=self.current_epoch)
 
-        try:
-            samples = self.model.sample(36,
-                                        self.curr_device,
-                                        labels = test_label)
-            vutils.save_image(samples.cpu().data,
-                              f"{self.logger.save_dir}{self.logger.name}/version_{self.logger.version}/"
-                              f"{self.logger.name}_{self.current_epoch}.png",
-                              normalize=True,
-                              nrow=12)
-        except Exception as ex:
-            print("Passing...", ex)
-            pass
+        # vutils.save_image(recons.data,
+        #                   f"{self.logger.save_dir}{self.logger.name}/version_{self.logger.version}/"
+        #                   f"recons_{self.logger.name}_{self.current_epoch}.png",
+        #                   normalize=True,
+        #                   nrow=12)
 
+        del test_input, test_label, recons
 
-        del test_input, recons #, samples
+    def _log_latent_layer_activations(self):
 
+        # TODO: probably we should save hist over WHOLE val dataset and
+        # not just a single batch
+
+        test_input, _ = next(iter(self.sample_dataloader))
+        test_input = test_input.to(self.curr_device)
+        activations_mu, activations_logvar = self.model.encode(test_input)
+        self.logger.experiment.add_histogram("Latent Activations", activations_mu, self.current_epoch)
 
     def configure_optimizers(self):
 
@@ -171,8 +177,8 @@ class VAEExperiment(pl.LightningModule):
         return DataLoader(dataset,
                           batch_size= self.params['batch_size'],
                           shuffle = True,
-                          drop_last=True,
-                          num_workers=self.params['num_workers'])
+                          drop_last=True)
+                         #,num_workers=self.params['num_workers'])
 
     #@data_loader
     def val_dataloader(self):
@@ -192,8 +198,8 @@ class VAEExperiment(pl.LightningModule):
             raise ValueError('Undefined dataset type')
 
         self.sample_dataloader = DataLoader(val_dataset, batch_size= self.params['batch_size'],
-                                            shuffle = False, drop_last=True,
-                                            num_workers=self.params['num_workers'])
+                                            shuffle = False, drop_last=True)
+                                            #,num_workers=self.params['num_workers'])
 
         self.num_val_imgs = len(val_dataset) if val_dataset is not None else 0
 
@@ -255,3 +261,42 @@ class VAEExperiment(pl.LightningModule):
             'square_mus': square_mus,
             'square_logvars':square_logvars
         }, open(os.path.join(save_dir,'latent_codes.pt'),'w'))
+
+    def validation_end(self, outputs):
+
+        """
+        called at the end of every validation step
+
+        :param outputs:
+        :return:
+        """
+        print("validation_end called")
+        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
+        tensorboard_logs = {'avg_val_loss': avg_loss}
+        #self.sample_images() !! undefined ?
+        return {'val_loss': avg_loss, 'log': tensorboard_logs}
+
+    def training_epoch_end(self, outputs):
+
+        # this function is called after the epoch has completed
+
+        # 0.
+        if self.current_epoch == 1:
+            rand_input = torch.rand((1, 3, 64, 64))
+            rand_input = rand_input.to(self.curr_device)
+            self.logger.experiment.add_graph(self.model, rand_input)
+
+        # 1. Save avg loss in this epoch
+        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
+        self.logger.experiment.add_scalar("Loss (Train)", avg_loss, self.current_epoch)
+
+        # 2. save recon images and generated images
+        self._log_reconstructed_images()
+        self._log_sampled_images()
+
+        # 3. histogram of latent layer activations
+        self._log_latent_layer_activations()
+
+
+        #epoch_dictionary = { 'loss': avg_loss }
+        #return epoch_dictionary

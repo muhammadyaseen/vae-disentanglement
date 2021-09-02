@@ -7,6 +7,7 @@ from experiment import VAEExperiment
 import torch.backends.cudnn as cudnn
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers.test_tube import TestTubeLogger
+from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
 
 
 if __name__ == "__main__":
@@ -28,11 +29,16 @@ if __name__ == "__main__":
             print(exc)
 
 
-    tt_logger = TestTubeLogger(
+    # tt_logger = TestTubeLogger(
+    #     save_dir=config['logging_params']['save_dir'],
+    #     name=config['logging_params']['name'],
+    #     debug=False,
+    #     create_git_tag=False,
+    # )
+
+    tb_logger = TensorBoardLogger(
         save_dir=config['logging_params']['save_dir'],
-        name=config['logging_params']['name'],
-        debug=False,
-        create_git_tag=False,
+        name=config['logging_params']['name']
     )
 
     # For reproducibility
@@ -43,14 +49,15 @@ if __name__ == "__main__":
 
     model = vae_models[config['model_params']['name']](**config['model_params'])
     experiment = VAEExperiment(model, config['exp_params'])
-    pl_trainer = Trainer(default_root_dir=f"{tt_logger.save_dir}",
+    pl_trainer = Trainer(default_root_dir=f"{tb_logger.save_dir}",
                      min_epochs=1,
-                     logger=tt_logger,
-                     flush_logs_every_n_steps=100,
+                     logger=tb_logger,
+                     flush_logs_every_n_steps=50,
                      limit_train_batches=1.,
                      limit_val_batches=1.,
-                     num_sanity_val_steps=5,
+                     num_sanity_val_steps=2,
                      callbacks = None,
+                     accelerator='dp',
                      **config['trainer_params'])
 
     print(f"======= Training {config['model_params']['name']} =======")
@@ -58,4 +65,4 @@ if __name__ == "__main__":
     pl_trainer.fit(experiment)
 
     # Save reconstructions of images in val set
-    experiment.save_sample_images()
+    #experiment.save_sample_images()
