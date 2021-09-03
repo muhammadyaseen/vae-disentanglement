@@ -28,7 +28,7 @@ class DSpritesDataset(Dataset):
         self.latents_names = metadata['latents_names']
 
         # save about 25% as validation.
-        MAX_TRAIN_IDX = int( len(self.images) * 0.01 )
+        MAX_TRAIN_IDX = int( len(self.images) * 0.25 )
         print(MAX_TRAIN_IDX)
 
         if split == "train":
@@ -36,10 +36,10 @@ class DSpritesDataset(Dataset):
             self.latents_values = self.latents_values[: MAX_TRAIN_IDX]
 
         if split == "test":
-            #self.images = self.images[MAX_TRAIN_IDX:]
-            #self.latents_values = self.latents_values[MAX_TRAIN_IDX:]
-            self.images = self.images[MAX_TRAIN_IDX: MAX_TRAIN_IDX + 100]
-            self.latents_values = self.latents_values[MAX_TRAIN_IDX: MAX_TRAIN_IDX + 100]
+            self.images = self.images[MAX_TRAIN_IDX:]
+            self.latents_values = self.latents_values[MAX_TRAIN_IDX:]
+            #self.images = self.images[MAX_TRAIN_IDX: MAX_TRAIN_IDX + 100]
+            #self.latents_values = self.latents_values[MAX_TRAIN_IDX: MAX_TRAIN_IDX + 100]
 
     def __len__(self):
         return len(self.latents_values)

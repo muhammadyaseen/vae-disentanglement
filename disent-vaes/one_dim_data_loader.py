@@ -20,11 +20,19 @@ class OneDimLatentDataset(Dataset):
         """
         self.root_dir = root
         self.files_list = glob.glob(os.path.join(self.root_dir,"*.jpg"))
-
+        #print(self.files_list)
+        print("Total images :", len(self.files_list))
+        
+        MAX_TRAIN_IDX = int( len(self.files_list) * 0.90 )
+        print("Max train idx: ", MAX_TRAIN_IDX)
+        
         if split == "train":
-            self.files_list = self.files_list[: len(self.files_list) - 100]
+            self.files_list = self.files_list[: MAX_TRAIN_IDX]
+            print("Selected for train: ",len(self.files_list))
         if split == "test":
-            self.files_list = self.files_list[len(self.files_list) - 100:]
+            self.files_list = self.files_list[MAX_TRAIN_IDX:]
+            print("Selected for val: ",len(self.files_list))
+        #exit()
 
     def __len__(self):
         return len(self.files_list)

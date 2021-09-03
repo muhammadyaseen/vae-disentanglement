@@ -23,7 +23,7 @@ class VAEExperiment(pl.LightningModule):
         self.model = vae_model
         #print("Model dev: ", self.model.device)
         self.params = params
-        self.curr_device = None
+        self.curr_device = torch.device("cuda:6")
         self.hold_graph = False
         self.num_val_imgs = 0
         self.num_train_imgs = 0
@@ -88,6 +88,7 @@ class VAEExperiment(pl.LightningModule):
         # Get sample reconstruction image
         test_input, test_label = next(iter(self.sample_dataloader))
         test_input = test_input.to(self.curr_device)
+        print("curr dev:", self.curr_device)
         recons = self.model.generate(test_input, labels = test_label)
         recons_grid = vutils.make_grid(recons.cpu().data, normalize=True, nrow=12)
         self.logger.experiment.add_image("Reconstructed Images", recons_grid, global_step=self.current_epoch)
@@ -169,7 +170,7 @@ class VAEExperiment(pl.LightningModule):
             raise ValueError('Undefined dataset type')
 
         self.num_train_imgs = len(dataset) if dataset is not None else 0
-
+        print("# train : ", self.num_train_imgs)
         return DataLoader(dataset,
                           batch_size= self.params['batch_size'],
                           shuffle = True,
@@ -198,6 +199,7 @@ class VAEExperiment(pl.LightningModule):
                                             ,num_workers=self.params['num_workers'])
 
         self.num_val_imgs = len(val_dataset) if val_dataset is not None else 0
+        print("# val : ", self.num_val_imgs)
 
         return self.sample_dataloader
 

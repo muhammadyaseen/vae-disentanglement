@@ -1,11 +1,11 @@
 model_params:
   name: 'VanillaVAE'
   in_channels: 3
-  latent_dim: 6
+  latent_dim: 1
 
 exp_params:
-  dataset: dsprites
-  data_path: "../datasets/dsprites"
+  dataset: onedim
+  data_path: "../datasets/onedim"
   img_size: 64
   batch_size: 36 # Better to have a square number
   num_workers: 8
@@ -14,10 +14,12 @@ exp_params:
   scheduler_gamma: 0.95
 
 trainer_params:
-  gpus: 1
-  max_epochs: 2
+  gpus: "6,7"
+  max_epochs: 20
 
 logging_params:
   save_dir: "logs/"
-  name: "VanillaVAE_dsprites"
+  name: "VanillaVAE_onedim"
   manual_seed: 1265
+
+
