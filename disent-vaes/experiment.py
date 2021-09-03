@@ -73,9 +73,8 @@ class VAEExperiment(pl.LightningModule):
 
         samples = self.model.sample(36, self.curr_device)
 
-        #grid_of_samples = vutils.make_grid(samples.cpu().data, normalize=True, nrow=12)
-
-        self.logger.experiment.add_images("Sampled Images", samples, global_step=self.current_epoch)
+        grid_of_samples = vutils.make_grid(samples.cpu().data, normalize=True, nrow=12)
+        self.logger.experiment.add_image("Sampled Images", grid_of_samples, global_step=self.current_epoch)
 
         # vutils.save_image(samples.cpu().data,
         #                   f"{self.logger.save_dir}{self.logger.name}/version_{self.logger.version}/"
@@ -88,13 +87,10 @@ class VAEExperiment(pl.LightningModule):
 
         # Get sample reconstruction image
         test_input, test_label = next(iter(self.sample_dataloader))
-        #print(type(test_input))
         test_input = test_input.to(self.curr_device)
-        #print(type(test_input))
-
         recons = self.model.generate(test_input, labels = test_label)
-        #print(type(recons))
-        self.logger.experiment.add_images("Reconstructed Images", recons, global_step=self.current_epoch)
+        recons_grid = vutils.make_grid(recons.cpu().data, normalize=True, nrow=12)
+        self.logger.experiment.add_image("Reconstructed Images", recons_grid, global_step=self.current_epoch)
 
         # vutils.save_image(recons.data,
         #                   f"{self.logger.save_dir}{self.logger.name}/version_{self.logger.version}/"
@@ -177,8 +173,8 @@ class VAEExperiment(pl.LightningModule):
         return DataLoader(dataset,
                           batch_size= self.params['batch_size'],
                           shuffle = True,
-                          drop_last=True)
-                         #,num_workers=self.params['num_workers'])
+                          drop_last=True
+                         ,num_workers=self.params['num_workers'])
 
     #@data_loader
     def val_dataloader(self):
@@ -198,8 +194,8 @@ class VAEExperiment(pl.LightningModule):
             raise ValueError('Undefined dataset type')
 
         self.sample_dataloader = DataLoader(val_dataset, batch_size= self.params['batch_size'],
-                                            shuffle = False, drop_last=True)
-                                            #,num_workers=self.params['num_workers'])
+                                            shuffle = False, drop_last=True
+                                            ,num_workers=self.params['num_workers'])
 
         self.num_val_imgs = len(val_dataset) if val_dataset is not None else 0
 
