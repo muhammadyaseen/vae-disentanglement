@@ -23,7 +23,7 @@ class VAEExperiment(pl.LightningModule):
         self.model = vae_model
         #print("Model dev: ", self.model.device)
         self.params = params
-        self.curr_device = torch.device("cuda:6")
+        self.curr_device = torch.device("cuda:1")
         self.hold_graph = False
         self.num_val_imgs = 0
         self.num_train_imgs = 0
