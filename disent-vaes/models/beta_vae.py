@@ -28,13 +28,13 @@ class BetaVAE(BaseVAE):
         self.C_max = torch.Tensor([max_capacity])
         self.C_stop_iter = Capacity_max_iter
 
-        modules = []
+        encoder_modules = nn.ModuleList()
         if hidden_dims is None:
             hidden_dims = [32, 64, 128, 256, 512]
 
         # Build Encoder
         for h_dim in hidden_dims:
-            modules.append(
+            encoder_modules.append(
                 nn.Sequential(
                     nn.Conv2d(in_channels, out_channels=h_dim,
                               kernel_size= 3, stride= 2, padding  = 1),
@@ -43,20 +43,20 @@ class BetaVAE(BaseVAE):
             )
             in_channels = h_dim
 
-        self.encoder = nn.Sequential(*modules)
+        self.encoder = nn.Sequential(encoder_modules)
         self.fc_mu = nn.Linear(hidden_dims[-1]*4, latent_dim)
         self.fc_var = nn.Linear(hidden_dims[-1]*4, latent_dim)
 
 
         # Build Decoder
-        modules = []
+        decoder_modules = nn.ModuleList()
 
         self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
 
         hidden_dims.reverse()
 
         for i in range(len(hidden_dims) - 1):
-            modules.append(
+            decoder_modules.append(
                 nn.Sequential(
                     nn.ConvTranspose2d(hidden_dims[i],
                                        hidden_dims[i + 1],
@@ -70,7 +70,7 @@ class BetaVAE(BaseVAE):
 
 
 
-        self.decoder = nn.Sequential(*modules)
+        self.decoder = nn.Sequential(decoder_modules)
 
         self.final_layer = nn.Sequential(
                             nn.ConvTranspose2d(hidden_dims[-1],
