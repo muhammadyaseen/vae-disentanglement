@@ -28,7 +28,7 @@ class BetaVAE(BaseVAE):
         self.C_max = torch.Tensor([max_capacity])
         self.C_stop_iter = Capacity_max_iter
 
-        encoder_modules = nn.ModuleList()
+        encoder_modules = [] #nn.ModuleList()
         if hidden_dims is None:
             hidden_dims = [32, 64, 128, 256, 512]
 
@@ -43,13 +43,13 @@ class BetaVAE(BaseVAE):
             )
             in_channels = h_dim
 
-        self.encoder = nn.Sequential(encoder_modules)
+        self.encoder = nn.Sequential(*encoder_modules)
         self.fc_mu = nn.Linear(hidden_dims[-1]*4, latent_dim)
         self.fc_var = nn.Linear(hidden_dims[-1]*4, latent_dim)
 
 
         # Build Decoder
-        decoder_modules = nn.ModuleList()
+        decoder_modules = [] #nn.ModuleList()
 
         self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
 
@@ -70,7 +70,7 @@ class BetaVAE(BaseVAE):
 
 
 
-        self.decoder = nn.Sequential(decoder_modules)
+        self.decoder = nn.Sequential(*decoder_modules)
 
         self.final_layer = nn.Sequential(
                             nn.ConvTranspose2d(hidden_dims[-1],
@@ -121,7 +121,7 @@ class BetaVAE(BaseVAE):
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    def forward(self, input: Tensor) -> Tensor:
+    def forward(self, input: Tensor, **kwargs) -> Tensor:
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
         return  [self.decode(z), input, mu, log_var]
