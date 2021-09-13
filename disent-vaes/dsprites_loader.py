@@ -10,12 +10,13 @@ FILE_NAME = 'dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz'
 
 class DSpritesDataset(Dataset):
 
-    def __init__(self, root, split="train"):
+    def __init__(self, root, split="train", transform=None):
         """
         Args:
             root (string): Directory with the .npz file.
         """
         self.root_dir = root
+        self.transform = transform
 
         dataset_zip = np.load(os.path.join(root, FILE_NAME),
                               allow_pickle=True, encoding='latin1')
@@ -52,6 +53,9 @@ class DSpritesDataset(Dataset):
         three_channel_image = np.stack((self.images[idx], self.images[idx], self.images[idx]), axis=-1)
 
         image = transforms.ToTensor()(three_channel_image)
+        if self.transform is not None:
+            image = self.transform(image)
+
         latent = self.latents_values[idx]
 
         return image, latent

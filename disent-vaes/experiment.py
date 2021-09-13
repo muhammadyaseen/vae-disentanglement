@@ -164,7 +164,7 @@ class VAEExperiment(pl.LightningModule):
                                           split="train")
 
         elif self.params['dataset'] == 'dsprites':
-            dataset = DSpritesDataset(root=self.params['data_path'], split="train")
+            dataset = DSpritesDataset(root=self.params['data_path'], split="train", transform=transform)
 
         else:
             raise ValueError('Undefined dataset type')
@@ -189,7 +189,7 @@ class VAEExperiment(pl.LightningModule):
             val_dataset = OneDimLatentDataset(root=self.params['data_path'], split = "test")
 
         elif self.params['dataset'] == 'dsprites':
-            val_dataset = DSpritesDataset(root=self.params['data_path'], split="test")
+            val_dataset = DSpritesDataset(root=self.params['data_path'], split="test", transform=transform)
 
         else:
             raise ValueError('Undefined dataset type')
