@@ -33,15 +33,16 @@ class BetaVAE(BaseVAE):
             hidden_dims = [32, 64, 128, 256, 512]
 
         # Build Encoder
+        next_in_channels = in_channels
         for h_dim in hidden_dims:
             encoder_modules.append(
                 nn.Sequential(
-                    nn.Conv2d(in_channels, out_channels=h_dim,
+                    nn.Conv2d(next_in_channels, out_channels=h_dim,
                               kernel_size= 3, stride= 2, padding  = 1),
                     nn.BatchNorm2d(h_dim),
                     nn.LeakyReLU())
             )
-            in_channels = h_dim
+            next_in_channels = h_dim
 
         self.encoder = nn.Sequential(*encoder_modules)
         self.fc_mu = nn.Linear(hidden_dims[-1]*4, latent_dim)
@@ -81,7 +82,7 @@ class BetaVAE(BaseVAE):
                                                output_padding=1),
                             nn.BatchNorm2d(hidden_dims[-1]),
                             nn.LeakyReLU(),
-                            nn.Conv2d(hidden_dims[-1], out_channels= 3,
+                            nn.Conv2d(hidden_dims[-1], out_channels= in_channels,
                                       kernel_size= 3, padding= 1),
                             nn.Tanh())
 
@@ -96,7 +97,7 @@ class BetaVAE(BaseVAE):
         result = torch.flatten(result, start_dim=1)
 
         # Split the result into mu and var components
-        # of the latent Gaussian distribution
+        # of the latent distribution
         mu = self.fc_mu(result)
         log_var = self.fc_var(result)
 

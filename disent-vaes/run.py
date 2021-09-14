@@ -28,14 +28,6 @@ if __name__ == "__main__":
         except yaml.YAMLError as exc:
             print(exc)
 
-
-    # tt_logger = TestTubeLogger(
-    #     save_dir=config['logging_params']['save_dir'],
-    #     name=config['logging_params']['name'],
-    #     debug=False,
-    #     create_git_tag=False,
-    # )
-
     tb_logger = TensorBoardLogger(
         save_dir=config['logging_params']['save_dir'],
         name=config['logging_params']['name']

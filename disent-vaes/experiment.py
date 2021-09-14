@@ -49,9 +49,6 @@ class VAEExperiment(pl.LightningModule):
                                               M_N = self.params['batch_size']/ self.num_train_imgs,
                                               optimizer_idx=optimizer_idx,
                                               batch_idx = batch_idx)
-
-        #self.logger.experiment.log({key: val.item() for key, val in train_loss.items()})
-
         return train_loss
 
     def validation_step(self, batch, batch_idx, optimizer_idx = 0):
@@ -147,7 +144,6 @@ class VAEExperiment(pl.LightningModule):
         except:
             return optims
 
-    #@data_loader
     def train_dataloader(self):
 
         transform = self.data_transforms()
@@ -177,7 +173,6 @@ class VAEExperiment(pl.LightningModule):
                           drop_last=True
                          ,num_workers=self.params['num_workers'])
 
-    #@data_loader
     def val_dataloader(self):
         transform = self.data_transforms()
         val_dataset = None

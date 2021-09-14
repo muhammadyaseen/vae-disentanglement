@@ -29,7 +29,7 @@ class DSpritesDataset(Dataset):
         self.latents_names = metadata['latents_names']
 
         # save about 25% as validation.
-        MAX_TRAIN_IDX = int( len(self.images) * 0.25 )
+        MAX_TRAIN_IDX = int( len(self.images) * 0.75 )
         print(MAX_TRAIN_IDX)
 
         if split == "train":
@@ -50,9 +50,10 @@ class DSpritesDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        three_channel_image = np.stack((self.images[idx], self.images[idx], self.images[idx]), axis=-1)
+        #three_channel_image = np.stack((self.images[idx], self.images[idx], self.images[idx]), axis=-1).astype(np.float64)
+        image = self.images[idx].astype(np.float64)
+        image = transforms.ToTensor()(image)
 
-        image = transforms.ToTensor()(three_channel_image)
         if self.transform is not None:
             image = self.transform(image)
 
