@@ -5,7 +5,7 @@ from .factor_vae import *
 from .vq_vae import *
 from .betatc_vae import *
 from .dip_vae import *
-from beta_vae_vanilla import BetaVAE_Vanilla
+from .beta_vae_vanilla import BetaVAE_Vanilla
 
 # Aliases
 VAE = VanillaVAE

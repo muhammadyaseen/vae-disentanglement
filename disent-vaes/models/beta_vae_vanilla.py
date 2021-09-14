@@ -2,7 +2,7 @@ import torch
 from torch.autograd import Variable
 import torch.nn.init as init
 
-from base import BaseVAE
+from .base import BaseVAE
 from torch import nn
 from torch.nn import functional as F
 from .types_ import *
@@ -59,7 +59,8 @@ class BetaVAE_Vanilla(BaseVAE):
                  latent_dim=10,
                  in_channels=3,
                  beta=4,
-                 latent_dist_type="bernoulli"):
+                 latent_dist_type="bernoulli",
+                 **kwargs):
 
         super(BetaVAE_Vanilla, self).__init__()
         self.loss_type = loss_type
@@ -108,8 +109,7 @@ class BetaVAE_Vanilla(BaseVAE):
             for m in self._modules[block]:
                 kaiming_init(m)
 
-
-    def forward(self, x_input):
+    def forward(self, x_input: Tensor, **kwargs):
 
         dist_params = self.encode(x_input)
         mu = dist_params[:, :self.latent_dim]
@@ -153,10 +153,10 @@ class BetaVAE_Vanilla(BaseVAE):
                 'Reconstruction_Loss': recons_loss.detach(),
                 'KLD': kld_loss.detach }
 
-    def encode(self, x):
+    def encode(self, x: Tensor):
         return self.encoder(x)
 
-    def decode(self, z):
+    def decode(self, z: Tensor):
         return self.decoder(z)
 
     def sample(self, batch_size:int, current_device: int, **kwargs) -> Tensor:
