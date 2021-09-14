@@ -51,7 +51,7 @@ class DSpritesDataset(Dataset):
             idx = idx.tolist()
 
         #three_channel_image = np.stack((self.images[idx], self.images[idx], self.images[idx]), axis=-1).astype(np.float64)
-        image = self.images[idx].astype(np.float64)
+        image = self.images[idx].astype(np.float32)
         image = transforms.ToTensor()(image)
 
         if self.transform is not None:

@@ -154,7 +154,12 @@ class BetaVAE_Vanilla(BaseVAE):
                 'KLD': kld_loss.detach }
 
     def encode(self, x: Tensor):
-        return self.encoder(x)
+
+        result = self.encoder(x)
+        mu = result[:, :self.latent_dim]
+        logvar = result[:, self.latent_dim:]
+
+        return [mu, logvar]
 
     def decode(self, z: Tensor):
         return self.decoder(z)
