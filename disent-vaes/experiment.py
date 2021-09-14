@@ -274,8 +274,10 @@ class VAEExperiment(pl.LightningModule):
         # this function is called after the epoch has completed
 
         # 0.
-        if self.current_epoch == 1:
-            rand_input = torch.rand((1, 3, 64, 64))
+        if self.current_epoch == 0:
+            rand_input = torch.rand((1, self.params['in_channels'],
+                                     self.params['img_size'],
+                                     self.params['img_size']))
             rand_input = rand_input.to(self.curr_device)
             self.logger.experiment.add_graph(self.model, rand_input)
 

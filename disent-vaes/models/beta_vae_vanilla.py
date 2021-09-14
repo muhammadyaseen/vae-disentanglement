@@ -111,9 +111,7 @@ class BetaVAE_Vanilla(BaseVAE):
 
     def forward(self, x_input: Tensor, **kwargs):
 
-        dist_params = self.encode(x_input)
-        mu = dist_params[:, :self.latent_dim]
-        logvar = dist_params[:, self.latent_dim:]
+        mu, logvar = self.encode(x_input)
         z = reparametrize(mu, logvar)
         x_recon = self.decode(z)
 
