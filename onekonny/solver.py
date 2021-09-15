@@ -164,7 +164,7 @@ class Solver(object):
                 if self.objective == 'H':
                     beta_vae_loss = recon_loss + self.beta*total_kld
                 elif self.objective == 'B':
-                    C = torch.clamp(self.C_max/self.C_stop_iter*self.global_iter, 0, self.C_max.data[0])
+                    C = torch.clamp( (self.C_max / self.C_stop_iter) * self.global_iter, 0, self.C_max.data.item())
                     beta_vae_loss = recon_loss + self.gamma*(total_kld-C).abs()
 
                 self.optim.zero_grad()
@@ -179,7 +179,7 @@ class Solver(object):
 
                 if self.global_iter%self.display_step == 0:
                     pbar.write('[{}] recon_loss:{:.3f} total_kld:{:.3f} mean_kld:{:.3f}'.format(
-                        self.global_iter, recon_loss.data[0], total_kld.data[0], mean_kld.data[0]))
+                        self.global_iter, recon_loss.data.item(), total_kld.data.item(), mean_kld.data.item()))
 
                     var = logvar.exp().mean(0).data
                     var_str = ''
@@ -415,7 +415,7 @@ class Solver(object):
             for i, key in enumerate(Z.keys()):
                 for j, val in enumerate(interpolation):
                     save_image(tensor=gifs[i][j].cpu(),
-                               filename=os.path.join(output_dir, '{}_{}.jpg'.format(key, j)),
+                               fp=os.path.join(output_dir, '{}_{}.jpg'.format(key, j)),
                                nrow=self.z_dim, pad_value=1)
 
                 grid2gif(os.path.join(output_dir, key+'*.jpg'),

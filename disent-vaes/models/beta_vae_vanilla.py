@@ -52,7 +52,7 @@ class BetaVAE_Vanilla(BaseVAE):
 
     """Model proposed in original beta-VAE paper(Higgins et al, ICLR, 2017)."""
 
-    num_iter = 0 # Global static variable to keep track of iterations
+    num_iter = 0  # Global static variable to keep track of iterations
 
     def __init__(self,
                  loss_type="H",
@@ -60,6 +60,9 @@ class BetaVAE_Vanilla(BaseVAE):
                  in_channels=3,
                  beta=4,
                  latent_dist_type="bernoulli",
+                 gamma=100,
+                 c_max=None,
+                 c_stop_iter=None,
                  **kwargs):
 
         super(BetaVAE_Vanilla, self).__init__()
@@ -68,6 +71,10 @@ class BetaVAE_Vanilla(BaseVAE):
         self.in_channels = in_channels
         self.beta = beta
         self.latent_dist_type = latent_dist_type
+        self.gamma = gamma
+        self.c_max = c_max
+        self.c_stop_iter = c_stop_iter
+        self.c_current = 0  # track current allowed capacity
 
         self.encoder = nn.Sequential(
             nn.Conv2d(in_channels, out_channels=32,
@@ -120,18 +127,21 @@ class BetaVAE_Vanilla(BaseVAE):
     def loss_function(self, *args, **kwargs) -> dict:
 
         self.num_iter += 1
-        recons, input, mu, log_var = args[0], args[1], args[2], args[3]
+        x_recons, x_input, mu, log_var = args[0], args[1], args[2], args[3]
         kld_weight = kwargs['M_N']  # Account for the minibatch samples from the dataset
+        batch_size = x_input.size()[0]
 
         if self.latent_dist_type == "bernoulli":
-            recons_loss = F.binary_cross_entropy_with_logits(recons, input, reduction='mean')
+            recons_loss = F.binary_cross_entropy_with_logits(x_recons, x_input, reduction='sum')
         elif self.latent_dist_type == "gaussian":
-            recons_loss = F.mse_loss(recons, input, reduction='mean')
+            recons_loss = F.mse_loss(x_recons, x_input, reduction='mean')
         else:
             recons_loss = None
             Exception("Unknown latent dist type")
 
-        kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1), dim = 0)
+        recons_loss = recons_loss.div(batch_size)
+
+        kld_loss = -0.5 * torch.mean(torch.sum(1 + log_var - mu.pow(2) - log_var.exp(), dim=1), dim=0)
 
         if self.loss_type == "H":
             # Loss type H (first beta mult. loss)
@@ -139,8 +149,9 @@ class BetaVAE_Vanilla(BaseVAE):
 
         elif self.loss_type == "B":
             # Loss type B (capacitated loss)
-            self.c_max = self.c_max.to(input.device)
-            C = torch.clamp(self.c_max / self.c_stop_iter * self.num_iter, 0, self.c_max.data[0])
+            self.c_max = self.c_max.to(x_input.device)
+            C = torch.clamp(self.c_max / self.c_stop_iter * self.num_iter, 0, self.c_max.data.item())
+            self.c_current = C.detach().data.item()
             loss = recons_loss + self.gamma * kld_weight * (kld_loss - C).abs()
 
         else:
@@ -148,8 +159,8 @@ class BetaVAE_Vanilla(BaseVAE):
             Exception("Unknown latent dist type")
 
         return {'loss': loss,
-                'Reconstruction_Loss': recons_loss.detach(),
-                'KLD': kld_loss.detach }
+                'Reconstruction_Loss': recons_loss,
+                'KLD': kld_loss }
 
     def encode(self, x: Tensor):
 
@@ -183,89 +194,3 @@ class BetaVAE_Vanilla(BaseVAE):
         """
 
         return self.forward(x)[0]
-
-"""
-class BetaVAE_B_Vanilla(BetaVAE_H_Vanilla):
-    # Model proposed in understanding beta-VAE paper(Burgess et al, arxiv:1804.03599, 2018).
-
-    def __init__(self, latent_dim=10, in_channels=1, c_max=25, c_max_iter=1e5):
-        super(BetaVAE_B_Vanilla, self).__init__()
-        self.in_channels = in_channels
-        self.latent_dim = latent_dim
-        self.c_max = c_max
-        self.c_max_iter = c_max_iter
-
-        self.encoder = nn.Sequential(
-            nn.Conv2d(in_channels, 32, 4, 2, 1),          # B,  32, 32, 32
-            nn.ReLU(True),
-            nn.Conv2d(32, 32, 4, 2, 1),          # B,  32, 16, 16
-            nn.ReLU(True),
-            nn.Conv2d(32, 32, 4, 2, 1),          # B,  32,  8,  8
-            nn.ReLU(True),
-            nn.Conv2d(32, 32, 4, 2, 1),          # B,  32,  4,  4
-            nn.ReLU(True),
-            View((-1, 32*4*4)),                  # B, 512
-            nn.Linear(32*4*4, 256),              # B, 256
-            nn.ReLU(True),
-            nn.Linear(256, 256),                 # B, 256
-            nn.ReLU(True),
-            nn.Linear(256, latent_dim * 2),             # B, z_dim*2
-        )
-
-        self.decoder = nn.Sequential(
-            nn.Linear(latent_dim, 256),               # B, 256
-            nn.ReLU(True),
-            nn.Linear(256, 256),                 # B, 256
-            nn.ReLU(True),
-            nn.Linear(256, 32*4*4),              # B, 512
-            nn.ReLU(True),
-            View((-1, 32, 4, 4)),                # B,  32,  4,  4
-            nn.ConvTranspose2d(32, 32, 4, 2, 1), # B,  32,  8,  8
-            nn.ReLU(True),
-            nn.ConvTranspose2d(32, 32, 4, 2, 1), # B,  32, 16, 16
-            nn.ReLU(True),
-            nn.ConvTranspose2d(32, 32, 4, 2, 1), # B,  32, 32, 32
-            nn.ReLU(True),
-            nn.ConvTranspose2d(32, in_channels, 4, 2, 1), # B,  nc, 64, 64
-        )
-
-        self.weight_init()
-
-    def weight_init(self):
-        for block in self._modules:
-            for m in self._modules[block]:
-                kaiming_init(m)
-
-    def forward(self, x_input):
-        dist_params = self._encode(x_input)
-        mu = dist_params[:, :self.z_dim]
-        logvar = dist_params[:, self.z_dim:]
-        z = reparametrize(mu, logvar)
-        x_recon = self._decode(z).view(x_input.size())
-
-        return x_recon, x_input, mu, logvar
-
-    def loss_function(self, *args, **kwargs) -> dict:
-
-        self.num_iter += 1
-        recons, input, mu, log_var = args[0], args[1], args[2], args[3]
-        kld_weight = kwargs['M_N']  # Account for the minibatch samples from the dataset
-
-        recons_loss = F.mse_loss(recons, input)
-
-        kld_loss = torch.mean(-0.5 * torch.sum(1 + log_var - mu ** 2 - log_var.exp(), dim = 1), dim = 0)
-
-        # Loss type B https://arxiv.org/pdf/1804.03599.pdf (capacitated loss)
-        self.c_max = self.c_max.to(input.device)
-        C = torch.clamp(self.c_max / self.c_stop_iter * self.num_iter, 0, self.c_max.data[0])
-        loss = recons_loss + self.gamma * kld_weight * (kld_loss - C).abs()
-        return {'loss': loss,
-                'Reconstruction_Loss': recons_loss.detach(),
-                'KLD': kld_loss.detach }
-
-    def _encode(self, x):
-        return self.encoder(x)
-
-    def _decode(self, z):
-        return self.decoder(z)
-"""

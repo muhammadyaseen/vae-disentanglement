@@ -2,6 +2,7 @@ import math
 import torch
 from torch import optim
 from models import BaseVAE
+from models import BetaVAE_Vanilla
 from models.types_ import *
 from utils import data_loader
 import pytorch_lightning as pl
@@ -51,6 +52,32 @@ class VAEExperiment(pl.LightningModule):
                                               batch_idx = batch_idx)
         return train_loss
 
+    def training_epoch_end(self, train_step_outputs):
+
+        # this function is called after the epoch has completed
+
+        # 0.
+        if self.current_epoch == 0:
+            rand_input = torch.rand((1, self.params['in_channels'],
+                                     self.params['img_size'],
+                                     self.params['img_size']))
+            rand_input = rand_input.to(self.curr_device)
+            self.logger.experiment.add_graph(self.model, rand_input)
+
+        # 1. Save avg loss in this epoch
+        avg_loss = torch.stack([x['loss'] for x in train_step_outputs]).mean()
+        self.logger.experiment.add_scalar("Loss (Train)", avg_loss, self.current_epoch)
+
+        if isinstance(self.model, BetaVAE_Vanilla) and self.model.c_max is not None:
+            self.logger.experiment.add_scalar("C", self.model.c_max, self.model.num_iter)
+
+        # 2. save recon images and generated images
+        self._log_reconstructed_images()
+        self._log_sampled_images()
+
+        # 3. histogram of latent layer activations
+        self._log_latent_layer_activations()
+
     def validation_step(self, batch, batch_idx, optimizer_idx = 0):
 
 
@@ -65,6 +92,21 @@ class VAEExperiment(pl.LightningModule):
                                             batch_idx = batch_idx)
 
         return val_loss
+
+    def validation_end(self, outputs):
+
+        """
+        called at the end of every validation step
+
+        :param outputs:
+        :return:
+        """
+        print("validation_end called")
+        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
+        tensorboard_logs = {'avg_val_loss': avg_loss}
+        #self.sample_images() !! undefined ?
+        return {'val_loss': avg_loss, 'log': tensorboard_logs}
+
 
     def _log_sampled_images(self):
 
@@ -255,43 +297,5 @@ class VAEExperiment(pl.LightningModule):
             'square_logvars':square_logvars
         }, open(os.path.join(save_dir,'latent_codes.pt'),'w'))
 
-    def validation_end(self, outputs):
-
-        """
-        called at the end of every validation step
-
-        :param outputs:
-        :return:
-        """
-        print("validation_end called")
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
-        tensorboard_logs = {'avg_val_loss': avg_loss}
-        #self.sample_images() !! undefined ?
-        return {'val_loss': avg_loss, 'log': tensorboard_logs}
-
-    def training_epoch_end(self, outputs):
-
-        # this function is called after the epoch has completed
-
-        # 0.
-        if self.current_epoch == 0:
-            rand_input = torch.rand((1, self.params['in_channels'],
-                                     self.params['img_size'],
-                                     self.params['img_size']))
-            rand_input = rand_input.to(self.curr_device)
-            self.logger.experiment.add_graph(self.model, rand_input)
-
-        # 1. Save avg loss in this epoch
-        avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
-        self.logger.experiment.add_scalar("Loss (Train)", avg_loss, self.current_epoch)
-
-        # 2. save recon images and generated images
-        self._log_reconstructed_images()
-        self._log_sampled_images()
-
-        # 3. histogram of latent layer activations
-        self._log_latent_layer_activations()
 
 
-        #epoch_dictionary = { 'loss': avg_loss }
-        #return epoch_dictionary
