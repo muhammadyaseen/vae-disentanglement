@@ -1,5 +1,5 @@
 import torch
-from models import BaseVAE
+from .base import BaseVAE
 from torch import nn
 from torch.nn import functional as F
 from .types_ import *
@@ -124,10 +124,12 @@ class BetaTCVAE(BaseVAE):
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
-        mu, log_var = self.encode(input)
+    def forward(self, x_input: Tensor, **kwargs) -> List[Tensor]:
+
+        mu, log_var = self.encode(x_input)
         z = self.reparameterize(mu, log_var)
-        return  [self.decode(z), input, mu, log_var, z]
+
+        return  [self.decode(z), x_input, mu, log_var, z]
 
     def log_density_gaussian(self, x: Tensor, mu: Tensor, logvar: Tensor):
         """
@@ -152,15 +154,14 @@ class BetaTCVAE(BaseVAE):
         :return:
         """
             
-        recons = args[0]
-        input = args[1]
-        mu = args[2]
-        log_var = args[3]
-        z = args[4]
+        x_recons, x_inputs, mu, log_var, z = args[0], args[1], args[2], args[3], args[4]
 
         weight = 1 #kwargs['M_N']  # Account for the minibatch samples from the dataset
 
-        recons_loss =F.mse_loss(recons, input, reduction='sum')
+        if self.latent_dist_type == "bernoulli":
+            recons_loss = F.binary_cross_entropy_with_logits(x_recons, x_inputs, reduction='sum')
+        elif self.latent_dist_type == "gaussian":
+            recons_loss = F.mse_loss(x_recons, x_inputs, reduction='sum')
 
         log_q_zx = self.log_density_gaussian(z, mu, log_var).sum(dim = 1)
 
@@ -199,7 +200,7 @@ class BetaTCVAE(BaseVAE):
         else:
             anneal_rate = 1.
 
-        loss = recons_loss/batch_size + \
+        loss = (recons_loss / batch_size) + \
                self.alpha * mi_loss + \
                weight * (self.beta * tc_loss +
                          anneal_rate * self.gamma * kld_loss)
