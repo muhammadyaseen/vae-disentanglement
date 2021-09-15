@@ -24,7 +24,7 @@ class VAEExperiment(pl.LightningModule):
         self.model = vae_model
         #print("Model dev: ", self.model.device)
         self.params = params
-        self.curr_device = torch.device("cuda:1")
+        self.curr_device = torch.device("cuda:4")
         self.hold_graph = False
         self.num_val_imgs = 0
         self.num_train_imgs = 0
@@ -112,14 +112,9 @@ class VAEExperiment(pl.LightningModule):
 
         samples = self.model.sample(36, self.curr_device)
 
-        grid_of_samples = vutils.make_grid(samples.cpu().data, normalize=True, nrow=12)
+        grid_of_samples = vutils.make_grid(samples.cpu().data, normalize=True, nrow=12, value_range=(0.0,1.0))
         self.logger.experiment.add_image("Sampled Images", grid_of_samples, global_step=self.current_epoch)
 
-        # vutils.save_image(samples.cpu().data,
-        #                   f"{self.logger.save_dir}{self.logger.name}/version_{self.logger.version}/"
-        #                   f"sampled_{self.logger.name}_{self.current_epoch}.png",
-        #                   normalize=True,
-        #                   nrow=12)
         del samples
 
     def _log_reconstructed_images(self):
@@ -129,14 +124,9 @@ class VAEExperiment(pl.LightningModule):
         test_input = test_input.to(self.curr_device)
         print("curr dev:", self.curr_device)
         recons = self.model.generate(test_input, labels = test_label)
-        recons_grid = vutils.make_grid(recons.cpu().data, normalize=True, nrow=12)
-        self.logger.experiment.add_image("Reconstructed Images", recons_grid, global_step=self.current_epoch)
-
-        # vutils.save_image(recons.data,
-        #                   f"{self.logger.save_dir}{self.logger.name}/version_{self.logger.version}/"
-        #                   f"recons_{self.logger.name}_{self.current_epoch}.png",
-        #                   normalize=True,
-        #                   nrow=12)
+        recons_grid = vutils.make_grid(recons.cpu().data, normalize=True, nrow=12, value_range=(0.0,1.0))
+        self.logger.experiment.add_image("Reconstructed Images", recons_grid,
+                                         global_step=self.current_epoch)
 
         del test_input, test_label, recons
 

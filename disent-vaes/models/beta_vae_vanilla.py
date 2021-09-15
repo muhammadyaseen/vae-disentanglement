@@ -149,8 +149,8 @@ class BetaVAE_Vanilla(BaseVAE):
 
         elif self.loss_type == "B":
             # Loss type B (capacitated loss)
-            self.c_max = self.c_max.to(x_input.device)
-            C = torch.clamp(self.c_max / self.c_stop_iter * self.num_iter, 0, self.c_max.data.item())
+            self.c_max = torch.Tensor(data=[self.c_max]).to(x_input.device)
+            C = torch.clamp((self.c_max / self.c_stop_iter) * self.num_iter, 0, self.c_max.data.item())
             self.c_current = C.detach().data.item()
             loss = recons_loss + self.gamma * kld_weight * (kld_loss - C).abs()
 
