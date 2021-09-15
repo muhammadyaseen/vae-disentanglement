@@ -16,6 +16,7 @@ class BetaTCVAE(BaseVAE):
                  anneal_steps: int = 200,
                  alpha: float = 1.,
                  beta: float =  6.,
+                 latent_dist_type="bernoulli",
                  gamma: float = 1.,
                  **kwargs) -> None:
         super(BetaTCVAE, self).__init__()
@@ -26,6 +27,7 @@ class BetaTCVAE(BaseVAE):
         self.alpha = alpha
         self.beta = beta
         self.gamma = gamma
+        self.latent_dist_type = latent_dist_type
 
         modules = []
         if hidden_dims is None:
