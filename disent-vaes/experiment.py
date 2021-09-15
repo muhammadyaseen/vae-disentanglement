@@ -69,7 +69,7 @@ class VAEExperiment(pl.LightningModule):
         self.logger.experiment.add_scalar("Loss (Train)", avg_loss, self.current_epoch)
 
         if isinstance(self.model, BetaVAE_Vanilla) and self.model.c_max is not None:
-            self.logger.experiment.add_scalar("C", self.model.c_max, self.model.num_iter)
+            self.logger.experiment.add_scalar("C", self.model.c_current, self.model.num_iter)
 
         # 2. save recon images and generated images
         self._log_reconstructed_images()
