@@ -56,7 +56,6 @@ class BetaTCVAE(BaseVAE):
         self.decoder_input = nn.Linear(latent_dim, 256 *  2)
 
         hidden_dims.reverse()
-
         for i in range(len(hidden_dims) - 1):
             modules.append(
                 nn.Sequential(
@@ -79,7 +78,7 @@ class BetaTCVAE(BaseVAE):
                                                padding=1,
                                                output_padding=1),
                             nn.LeakyReLU(),
-                            nn.Conv2d(hidden_dims[-1], out_channels= 3,
+                            nn.Conv2d(hidden_dims[-1], out_channels=in_channels,
                                       kernel_size= 3, padding= 1),
                             nn.Tanh())
 
@@ -179,7 +178,7 @@ class BetaTCVAE(BaseVAE):
         # [1] https://github.com/YannDubs/disentangling-vae/blob/535bbd2e9aeb5a200663a4f82f1d34e084c4ba8d/disvae/utils/math.py#L54
         dataset_size = (1 / kwargs['M_N']) * batch_size # dataset size
         strat_weight = (dataset_size - batch_size + 1) / (dataset_size * (batch_size - 1))
-        importance_weights = torch.Tensor(batch_size, batch_size).fill_(1 / (batch_size -1)).to(input.device)
+        importance_weights = torch.Tensor(batch_size, batch_size).fill_(1 / (batch_size -1)).to(x_inputs.device)
         importance_weights.view(-1)[::batch_size] = 1 / dataset_size
         importance_weights.view(-1)[1::batch_size] = strat_weight
         importance_weights[batch_size - 2, 0] = strat_weight
