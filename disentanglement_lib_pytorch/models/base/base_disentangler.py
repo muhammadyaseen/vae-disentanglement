@@ -316,18 +316,19 @@ class BaseDisentangler(object):
 
         self.net_mode(train=False)
 
-        x_inputs = torchvision.utils.make_grid(self.visdom_gatherer.data['input_images'][:self.batch_size],
+        to_show = min(self.batch_size, 64)
+        x_inputs = torchvision.utils.make_grid(self.visdom_gatherer.data['input_images'][:to_show],
                                         normalize=True)
-        x_recons = torchvision.utils.make_grid(self.visdom_gatherer.data['recon_images'][:self.batch_size],
+        x_recons = torchvision.utils.make_grid(self.visdom_gatherer.data['recon_images'][:to_show],
                                               normalize=True)
-        white_line = torch.ones((3, x_inputs.size(1), 10)).to(self.device)
 
-        img_input_vs_recon = torch.cat([x_inputs, white_line, x_recons], dim=2).cpu()
-        #img_input_vs_recon = torch.stack([x_inputs, white_line, x_recons], dim=0).cpu()
+        #white_line = torch.ones((3, x_inputs.size(1), 10)).to(self.device)
+        img_input_vs_recon = torch.cat([x_inputs, x_recons], dim=3).cpu()
+        #img_input_vs_recon = torch.stack([x_inputs, x_recons], dim=0).cpu()
 
         self.visdom_instance.images(img_input_vs_recon,
                                     env=self.viz_name + '_reconstruction',
-                                    opts=dict(title=str(self.iter)),
+                                    opts=dict(title="Recon at {} iter".format(self.iter)),
                                     nrow=10)
 
         self.net_mode(train=True)
@@ -540,7 +541,7 @@ class BaseDisentangler(object):
                     opts=dict(
                         width=400,
                         height=400,
-                        legend=window_titles_and_values[win]['legend'],
+                        #legend=window_titles_and_values[win]['legend'],
                         xlabel='iteration',
                         title=window_titles_and_values[win]['title'], ))
             else:
@@ -553,7 +554,7 @@ class BaseDisentangler(object):
                     opts=dict(
                         width=400,
                         height=400,
-                        legend=window_titles_and_values[win]['legend'],
+                        #legend=window_titles_and_values[win]['legend'],
                         xlabel='iteration',
                         title=window_titles_and_values[win]['title'],))
 
@@ -571,7 +572,7 @@ class BaseDisentangler(object):
         self.visdom_gatherer.insert(input_images=x_inputs.data)
         self.visdom_gatherer.insert(recon_images=x_recons.data)
         self.visdom_visualize_reconstruction()
-        #self.visdom_visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
+        self.visdom_visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
         self.visdom_visualize_scalar_metrics()
 
         # clean up data for next iter
