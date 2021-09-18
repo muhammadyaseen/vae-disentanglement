@@ -99,9 +99,9 @@ def evaluate(model_dir,
     del name
 
     # Delete the output directory if it already exists.
-    if tf.gfile.IsDirectory(output_dir):
+    if tf.io.gfile.isdir(output_dir):
         if overwrite:
-            tf.gfile.DeleteRecursively(output_dir)
+            tf.io.gfile.rmtree(output_dir)
         else:
             raise ValueError("Directory already exists and overwrite is False.")
 

@@ -136,6 +136,7 @@ def get_args(sys_args):
     parser.add_argument('--recon_iter', default=None, type=int, help='iters to reconstruct image [default: 1 epoch]')
     parser.add_argument('--traverse_iter', default=None, type=int, help='iters to visualize latents [default: 1 epoch]')
     parser.add_argument('--schedulers_iter', default=None, type=int, help='iters to apply scheduler [default: 1 epoch]')
+    parser.add_argument('--visdom_update_iter', default=None, type=int, help='iters to update visdom visualizations [default: 1 epoch]')
 
     # Schedulers
     parser.add_argument('--lr_scheduler', default=None, type=str, choices=c.LR_SCHEDULERS,

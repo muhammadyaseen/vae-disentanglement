@@ -178,7 +178,9 @@ class VAE(BaseDisentangler):
                 losses[c.TOTAL_VAE_EPOCH] = vae_loss_sum / internal_iter
 
                 self.optim_G.step()
-                self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses)
+                self.log_save(input_image=x_true1, recon_image=params['x_recon'], loss=losses,
+                              mu_batch=params['mu'], logvar_batch=params['mu'],
+                              )
             # end of epoch
         self.pbar.close()
 

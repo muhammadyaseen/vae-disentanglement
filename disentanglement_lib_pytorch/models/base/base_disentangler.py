@@ -1,4 +1,6 @@
 import os
+
+import visdom
 from tqdm import tqdm
 import logging
 
@@ -14,11 +16,37 @@ from common.utils import get_scheduler
 DEBUG = False
 
 
+class VisdomDataGatherer(object):
+
+    def __init__(self):
+        self.data = self.get_empty_data_dict()
+
+    def get_empty_data_dict(self):
+
+        return dict(iter=[],
+                    recon_loss=[],
+                    kld_loss=[],
+                    total_loss=[],
+                    mu=[],
+                    var=[],
+                    input_images=[],
+                    recon_images=[])
+
+    def insert(self, **kwargs):
+
+        for key in kwargs:
+            self.data[key].append(kwargs[key])
+
+    def flush(self):
+        self.data = self.get_empty_data_dict()
+
+
 class BaseDisentangler(object):
+
     def __init__(self, args):
 
         # Cuda
-        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.device = torch.device('cuda') if torch.cuda.is_available() else 'cpu'
         logging.info('Device: {}'.format(self.device))
 
         # Misc
@@ -104,6 +132,7 @@ class BaseDisentangler(object):
         self.evaluate_iter = args.evaluate_iter if args.evaluate_iter else self.num_batches
         self.ckpt_save_iter = args.ckpt_save_iter if args.ckpt_save_iter else self.num_batches
         self.schedulers_iter = args.schedulers_iter if args.schedulers_iter else self.num_batches
+        self.visdom_update_iter = args.visdom_update_iter if args.visdom_update_iter else self.num_batches
 
         # override logging iterations if all_iter is set (except for the schedulers_iter)
         if args.all_iter:
@@ -114,6 +143,7 @@ class BaseDisentangler(object):
             self.evaluate_iter = args.all_iter
             self.ckpt_save_iter = args.all_iter
             self.schedulers_iter = args.all_iter
+            self.visdom_update_iter = args.all_iter
 
         if args.treat_iter_as_epoch:
             self.float_iter = self.float_iter * self.num_batches
@@ -123,6 +153,7 @@ class BaseDisentangler(object):
             self.evaluate_iter = self.evaluate_iter * self.num_batches
             self.ckpt_save_iter = self.ckpt_save_iter * self.num_batches
             self.schedulers_iter = self.schedulers_iter * self.num_batches
+            self.visdom_update_iter = self.visdom_update_iter * self.num_batches
 
         # traversing the latent space
         self.traverse_min = args.traverse_min
@@ -132,6 +163,16 @@ class BaseDisentangler(object):
         self.traverse_l = args.traverse_l
         self.traverse_c = args.traverse_c
         self.white_line = None
+
+        # Visdom Visualization
+        self.visdom_port = args.visdom_port
+        self.viz_name = "{} on {}".format(self.name, self.dset_name)
+        self.visdom_instance = visdom.Visdom(port=self.visdom_port)
+        self.visdom_gatherer = VisdomDataGatherer()
+        self.scalar_windows = ['recon_loss', 'total_loss', 'kld_loss', 'mu', 'var'] + self.evaluation_metric
+        self.visdom_scalar_windows = dict()
+        for win in self.scalar_windows:
+            self.visdom_scalar_windows[win] = None
 
         self.use_wandb = args.use_wandb
         if self.use_wandb:
@@ -171,6 +212,7 @@ class BaseDisentangler(object):
         self.lambda_d = self.lambda_d_factor * self.lambda_od
 
     def log_save(self, **kwargs):
+
         self.step()
 
         # don't log anything if running on the aicrowd_server
@@ -200,6 +242,17 @@ class BaseDisentangler(object):
         # if any evaluation is included in args.evaluate_metric, evaluate every evaluate_iter
         if self.evaluation_metric and is_time_for(self.iter, self.evaluate_iter):
             self.evaluate_results = evaluate_disentanglement_metric(self, metric_names=self.evaluation_metric)
+
+        # TODO: add visdom visualisation code for:
+        # 1. training progress metrics
+        # 2. disentanglement metrics
+
+        if is_time_for(self.iter, self.visdom_update_iter):
+            self.update_visdom_visualisations(kwargs[c.INPUT_IMAGE],
+                                              kwargs[c.RECON_IMAGE],
+                                              kwargs['mu_batch'],
+                                              kwargs['logvar_batch'],
+                                              kwargs[c.LOSS])
 
         # log scalar values using wandb
         if is_time_for(self.iter, self.float_iter):
@@ -258,6 +311,24 @@ class BaseDisentangler(object):
             import wandb
             wandb.log({c.RECON_IMAGE: wandb.Image(samples, caption=str(self.iter))},
                       step=self.iter)
+
+    def visdom_visualize_reconstruction(self):
+
+        self.net_mode(train=False)
+
+        x_inputs = torchvision.utils.make_grid(self.visdom_gatherer.data['input_images'][:100],
+                                        normalize=True)
+        x_recons = torchvision.utils.make_grid(self.visdom_gatherer.data['recon_images'][:100],
+                                              normalize=True)
+
+        img_input_vs_recon = torch.stack([x_inputs, x_recons], dim=0).cpu()
+
+        self.visdom_instance.images(img_input_vs_recon,
+                                    env=self.viz_name + '_reconstruction',
+                                    opts=dict(title=str(self.global_iter)),
+                                    nrow=10)
+
+        self.net_mode(train=True)
 
     def visualize_traverse(self, limit: tuple, spacing, data=None, test=False):
         self.net_mode(train=False)
@@ -356,7 +427,7 @@ class BaseDisentangler(object):
                     file_name = \
                         os.path.join(self.train_output_dir, '{}_{}_{}.{}'.format(c.TEMP, key, str(j).zfill(2), c.JPG))
                     torchvision.utils.save_image(tensor=gifs[i][j].cpu(),
-                                                 filename=file_name,
+                                                 fp=file_name,
                                                  nrow=total_rows, pad_value=1)
                 if test:
                     file_name = os.path.join(self.test_output_dir, '{}_{}_{}.{}'.format(c.GIF, self.iter, key, c.GIF))
@@ -370,6 +441,140 @@ class BaseDisentangler(object):
                 for j, val in enumerate(interp_values):
                     os.remove(
                         os.path.join(self.train_output_dir, '{}_{}_{}.{}'.format(c.TEMP, key, str(j).zfill(2), c.JPG)))
+
+    def visdom_visualize_traverse(self, limit: tuple, spacing, data=None, test=False):
+
+        self.net_mode(train=False)
+        interp_values = torch.arange(limit[0], limit[1], spacing)
+        num_cols = interp_values.size(0)
+
+        if data is None:
+            sample_images_dict, sample_labels_dict = get_data_for_visualization(self.data_loader.dataset, self.device)
+        else:
+            sample_images_dict, sample_labels_dict = prepare_data_for_visualization(data)
+
+        encodings = dict()
+        for key in sample_images_dict.keys():
+            encodings[key] = self.encode_deterministic(images=sample_images_dict[key], labels=sample_labels_dict[key])
+
+        gifs = []
+        for key in encodings:
+            latent_orig = encodings[key]
+            label_orig = sample_labels_dict[key]
+            logging.debug('latent_orig: {}, label_orig: {}'.format(latent_orig, label_orig))
+            samples = []
+
+            # encode original on the first row
+            sample = self.decode(latent=latent_orig.detach(), labels=label_orig)
+            for _ in interp_values:
+                samples.append(sample)
+
+            # traverse latents
+            if self.traverse_z:
+                for zid in range(self.z_dim):
+                    for val in interp_values:
+                        latent = latent_orig.clone()
+                        latent[:, zid] = val
+                        self.set_z(latent, zid, val)
+                        sample = self.decode(latent=latent, labels=label_orig)
+
+                        samples.append(sample)
+                        gifs.append(sample)
+
+            samples = torch.cat(samples, dim=0).cpu()
+            samples = torchvision.utils.make_grid(samples, nrow=num_cols)
+            title = '{}_latent_traversal(iter:{})'.format(key, self.iter)
+            self.visdom_instance.images(samples,
+                                        env=self.viz_name + '_traverse',
+                                        opts=dict(title=title),
+                                        nrow=len(interp_values))
+
+    def visdom_visualize_scalar_metrics(self):
+
+        self.net_mode(train=False)
+
+        recon_losses = torch.stack(self.visdom_gatherer.data['recon_loss']).cpu()
+        mus = torch.stack(self.visdom_gatherer.data['mu']).cpu()
+        vars = torch.stack(self.visdom_gatherer.data['var']).cpu()
+
+        #dim_wise_klds = torch.stack(self.visdom_gatherer.data['dim_wise_kld'])
+        #mean_klds = torch.stack(self.visdom_gatherer.data['mean_kld'])
+        total_loss = torch.stack(self.visdom_gatherer.data['total_loss'])
+        kld_loss = torch.stack(self.visdom_gatherer.data['kld_loss'])
+        #klds = torch.cat([dim_wise_klds, mean_klds, total_klds], 1).cpu()
+        iters = torch.Tensor(self.visdom_gatherer.data['iter'])
+        evaluation_metrics_results = self.evaluate_results
+
+        legend = []
+        for z_j in range(self.z_dim):
+            legend.append('z_{}'.format(z_j))
+        #legend.append('mean')
+        #legend.append('total')
+
+        window_titles_and_values = {
+            'recon_loss': {'title': 'Reconsturction Loss', 'value': recon_losses, 'legend': None},
+            'kld_loss': {'title': 'KL Divergence (mean)', 'value' : kld_loss, 'legend': None},
+            'total_loss': {'title': 'Total Loss', 'value': total_loss, 'legend': None},
+            'mu': {'title': 'Posterior Mean', 'value': mus, 'legend': legend},
+            'var': {'title': 'Posterior Variance', 'value': vars, 'legend': legend}
+        }
+
+        for eval_metric_name, eval_metric_value in evaluation_metrics_results.items():
+
+            window_titles_and_values[eval_metric_name] = {
+                'title': eval_metric_name.replace("eval_",""),
+                'value': eval_metric_value,
+                'legend': None
+            }
+
+        # Update (or create, if non-existent) the scalar windows
+        for win in self.scalar_windows:
+            if self.visdom_scalar_windows[win] is None:
+                self.visdom_scalar_windows[win] = self.visdom_instance.line(
+                    X=iters,
+                    Y=window_titles_and_values[win]['value'],
+                    env=self.viz_name + '_lines',
+                    opts=dict(
+                        width=400,
+                        height=400,
+                        legend=window_titles_and_values[win]['legend'],
+                        xlabel='iteration',
+                        title=window_titles_and_values[win]['title'], ))
+            else:
+                self.visdom_scalar_windows[win] = self.visdom_instance.line(
+                    X=iters,
+                    Y=window_titles_and_values[win]['value'],
+                    env=self.viz_name + '_lines',
+                    win=self.visdom_scalar_windows[win],
+                    update='append',
+                    opts=dict(
+                        width=400,
+                        height=400,
+                        legend=window_titles_and_values[win]['legend'],
+                        xlabel='iteration',
+                        title=window_titles_and_values[win]['title'],))
+
+    def update_visdom_visualisations(self, x_inputs, x_recons,
+                                     mu_batch, logvar_batch,
+                                     losses):
+
+        self.visdom_gatherer.insert(iter=self.iter,
+                                    mu=mu_batch.mean(0).data,
+                                    var=logvar_batch.exp().mean(0).data,
+                                    recon_loss=losses[c.RECON],
+                                    kld_loss=losses['kld'],
+                                    total_loss=losses[c.TOTAL_VAE])
+
+        #self.visdom_gatherer.insert(input_images=x_inputs.data)
+        #self.visdom_gatherer.insert(recon_images=F.sigmoid(x_recons).data)
+        #self.visdom_visualize_reconstruction()
+        #self.visdom_visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
+        self.visdom_visualize_scalar_metrics()
+
+        # clean up data for next iter
+        self.visdom_gatherer.flush()
+
+        self.net_mode(train=True)
 
     def save_checkpoint(self, ckptname='last'):
         filepath = os.path.join(self.ckpt_dir, str(ckptname))
