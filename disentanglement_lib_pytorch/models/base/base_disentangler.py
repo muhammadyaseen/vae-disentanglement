@@ -316,16 +316,18 @@ class BaseDisentangler(object):
 
         self.net_mode(train=False)
 
-        x_inputs = torchvision.utils.make_grid(self.visdom_gatherer.data['input_images'][:100],
+        x_inputs = torchvision.utils.make_grid(self.visdom_gatherer.data['input_images'][:self.batch_size],
                                         normalize=True)
-        x_recons = torchvision.utils.make_grid(self.visdom_gatherer.data['recon_images'][:100],
+        x_recons = torchvision.utils.make_grid(self.visdom_gatherer.data['recon_images'][:self.batch_size],
                                               normalize=True)
+        white_line = torch.ones((3, x_inputs.size(1), 10)).to(self.device)
 
-        img_input_vs_recon = torch.stack([x_inputs, x_recons], dim=0).cpu()
+        img_input_vs_recon = torch.cat([x_inputs, white_line, x_recons], dim=2).cpu()
+        #img_input_vs_recon = torch.stack([x_inputs, white_line, x_recons], dim=0).cpu()
 
         self.visdom_instance.images(img_input_vs_recon,
                                     env=self.viz_name + '_reconstruction',
-                                    opts=dict(title=str(self.global_iter)),
+                                    opts=dict(title=str(self.iter)),
                                     nrow=10)
 
         self.net_mode(train=True)
@@ -566,9 +568,9 @@ class BaseDisentangler(object):
                                     kld_loss=losses['kld'],
                                     total_loss=losses[c.TOTAL_VAE])
 
-        #self.visdom_gatherer.insert(input_images=x_inputs.data)
-        #self.visdom_gatherer.insert(recon_images=F.sigmoid(x_recons).data)
-        #self.visdom_visualize_reconstruction()
+        self.visdom_gatherer.insert(input_images=x_inputs.data)
+        self.visdom_gatherer.insert(recon_images=x_recons.data)
+        self.visdom_visualize_reconstruction()
         #self.visdom_visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
         self.visdom_visualize_scalar_metrics()
 
