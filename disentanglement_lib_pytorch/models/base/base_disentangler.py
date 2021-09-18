@@ -520,15 +520,16 @@ class BaseDisentangler(object):
         }
 
         for eval_metric_name, eval_metric_value in evaluation_metrics_results.items():
-
-            window_titles_and_values[eval_metric_name] = {
-                'title': eval_metric_name.replace("eval_",""),
-                'value': eval_metric_value,
+            metric_name = eval_metric_name.replace("eval_", "")
+            window_titles_and_values[metric_name] = {
+                'title': metric_name,
+                'value': torch.Tensor([eval_metric_value]),
                 'legend': None
             }
 
         # Update (or create, if non-existent) the scalar windows
         for win in self.scalar_windows:
+            print(window_titles_and_values[win]['value'])
             if self.visdom_scalar_windows[win] is None:
                 self.visdom_scalar_windows[win] = self.visdom_instance.line(
                     X=iters,
