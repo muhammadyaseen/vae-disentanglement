@@ -46,7 +46,7 @@ class BaseDisentangler(object):
     def __init__(self, args):
 
         # Cuda
-        self.device = torch.device('cuda') if torch.cuda.is_available() else 'cpu'
+        self.device = torch.device('cuda:4') if torch.cuda.is_available() else 'cpu'
         logging.info('Device: {}'.format(self.device))
 
         # Misc
@@ -232,12 +232,12 @@ class BaseDisentangler(object):
             self.pbar.write(msg)
 
         # visualize the reconstruction of the current batch every recon_iter
-        if is_time_for(self.iter, self.recon_iter):
-            self.visualize_recon(kwargs[c.INPUT_IMAGE], kwargs[c.RECON_IMAGE])
+        #if is_time_for(self.iter, self.recon_iter):
+        #    self.visualize_recon(kwargs[c.INPUT_IMAGE], kwargs[c.RECON_IMAGE])
 
         # traverse the latent factors every traverse_iter
-        if is_time_for(self.iter, self.traverse_iter):
-            self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
+        #if is_time_for(self.iter, self.traverse_iter):
+        #    self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
 
         # if any evaluation is included in args.evaluate_metric, evaluate every evaluate_iter
         if self.evaluation_metric and is_time_for(self.iter, self.evaluate_iter):
@@ -472,7 +472,7 @@ class BaseDisentangler(object):
             for _ in interp_values:
                 samples.append(sample)
 
-            # traverse latents
+            # traverse latents (deleted traverse c and l for now)
             if self.traverse_z:
                 for zid in range(self.z_dim):
                     for val in interp_values:
@@ -489,7 +489,7 @@ class BaseDisentangler(object):
             title = '{}_latent_traversal(iter:{})'.format(key, self.iter)
             self.visdom_instance.images(samples,
                                         env=self.viz_name + '_traverse',
-                                        opts=dict(title=title),
+                                        opts=dict(title="Traverse at {} iter".format(self.iter)),
                                         nrow=len(interp_values))
 
     def visdom_visualize_scalar_metrics(self):
@@ -571,6 +571,7 @@ class BaseDisentangler(object):
 
         self.visdom_gatherer.insert(input_images=x_inputs.data)
         self.visdom_gatherer.insert(recon_images=x_recons.data)
+
         self.visdom_visualize_reconstruction()
         self.visdom_visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing)
         self.visdom_visualize_scalar_metrics()
