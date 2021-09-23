@@ -126,12 +126,12 @@ class VAE(BaseDisentangler):
                 self.w_tc, self.model, self.PermD, self.optim_PermD, self.ones, self.zeros, **kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_tc_factor']
 
-        if c.DIPVAEI in self.loss_terms:
+        if c.DIPVAE_I in self.loss_terms:
             from models.dipvae import dipvaei_loss_fn
             output_losses['vae_dipi'] = dipvaei_loss_fn(self.w_dipvae, self.lambda_od, self.lambda_d, **kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_dipi']
 
-        if c.DIPVAEII in self.loss_terms:
+        if c.DIPVAE_II in self.loss_terms:
             from models.dipvae import dipvaeii_loss_fn
             output_losses['vae_dipii'] = dipvaeii_loss_fn(self.w_dipvae, self.lambda_od, self.lambda_d, **kwargs)
             output_losses[c.TOTAL_VAE] += output_losses['vae_dipii']

@@ -16,8 +16,8 @@ TEMP = 'tmp'
 GIF = 'gif'
 JPG = 'jpg'
 FACTORVAE = 'FactorVAE'
-DIPVAEI = 'DIPVAEI'
-DIPVAEII = 'DIPVAEII'
+DIPVAE_I = 'DIPVAEI'
+DIPVAE_II = 'DIPVAEII'
 BetaTCVAE = 'BetaTCVAE'
 INFOVAE = 'InfoVAE'
 TOTAL_VAE = 'total_vae'
@@ -26,7 +26,7 @@ LEARNING_RATE = 'learning_rate'
 
 # Algorithms
 ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE')
-LOSS_TERMS = (FACTORVAE, DIPVAEI, DIPVAEII, BetaTCVAE, INFOVAE)
+LOSS_TERMS = (FACTORVAE, DIPVAE_I, DIPVAE_II, BetaTCVAE, INFOVAE)
 
 # Datasets
 DATASETS = ('celebA', 'dsprites_full', 'dsprites_noshape', 'color_dsprites', 'noisy_dsprites', 'scream_dsprites',

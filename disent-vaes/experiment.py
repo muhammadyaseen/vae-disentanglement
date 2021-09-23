@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader
 
 from one_dim_data_loader import OneDimLatentDataset
 from dsprites_loader import DSpritesDataset
+from continum_loader import ContinumDataset
 
 class VAEExperiment(pl.LightningModule):
 
@@ -194,6 +195,9 @@ class VAEExperiment(pl.LightningModule):
         elif self.params['dataset'] == 'dsprites':
             dataset = DSpritesDataset(root=self.params['data_path'], split="train", transform=transform)
 
+        elif self.params['dataset'] == 'continum':
+            dataset = ContinumDataset(root=self.params['data_path'], split="train")
+
         else:
             raise ValueError('Undefined dataset type')
 
@@ -211,13 +215,12 @@ class VAEExperiment(pl.LightningModule):
 
         if self.params['dataset'] == 'celeba':
             val_dataset = CelebA(root = self.params['data_path'], split = "test", transform=transform, download=True)
-
         elif self.params['dataset'] == 'onedim':
             val_dataset = OneDimLatentDataset(root=self.params['data_path'], split = "test")
-
         elif self.params['dataset'] == 'dsprites':
             val_dataset = DSpritesDataset(root=self.params['data_path'], split="test", transform=transform)
-
+        elif self.params['dataset'] == 'continum':
+            dataset = ContinumDataset(root=self.params['data_path'], split="test")
         else:
             raise ValueError('Undefined dataset type')
 
