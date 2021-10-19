@@ -64,8 +64,7 @@ class ContinumDataset(Dataset):
                            W / (4/3) + x_offset,
                            W / (4/3) + y_offset)
 
-            #rnd_radius = np.random.randint(low=0, high=9)
-            # Radius should be modified if the shape proportions change
+            # Note: Radius should be modified if the shape proportions change
             rnd_radius = np.random.choice(range(1, 20, 4))
             draw.rounded_rectangle(rect_bounds,
                                    radius=rnd_radius,
