@@ -54,7 +54,7 @@ class ThreeShapesDataset(Dataset):
         return image, label
 
     @staticmethod
-    def generate_data(path, N, x_offset=0, y_offset=0):
+    def generate_data(path, N, add_noise=False):
 
         # white, black, black
         fill_color, outline_color, bg_color = 255, 0, 0
@@ -77,7 +77,16 @@ class ThreeShapesDataset(Dataset):
             
             chosen_shape = np.random.choice(list(n_sides.keys()))
 
-            draw.regular_polygon( bounding_circle, n_sides[chosen_shape], 
+            # This noise offsets the figure from center, if enabled            
+            if add_noise:        
+                noise_mu, noise_s = 3, 1
+                x_offset = noise_mu * np.random.randn() + noise_s  
+                y_offset = noise_mu * np.random.randn() + noise_s
+                
+                circle_center = (W/2 + x_offset, H/2 + y_offset)
+                bounding_circle = (circle_center, circle_radius)
+
+            draw.regular_polygon(bounding_circle, n_sides[chosen_shape], 
                          rotation=0,
                          fill=fill_color, 
                          outline=outline_color)
