@@ -1,7 +1,7 @@
 import os
 import numpy as np
-
 import glob
+import argparse
 
 import torch
 import matplotlib.pyplot as plt
@@ -92,3 +92,29 @@ class ThreeShapesDataset(Dataset):
                          outline=outline_color)
             
             im.save(os.path.join(path, f'image_{i}_{chosen_shape}.jpg'))
+
+
+if __name__ == "__main__":
+
+    # if called as main script, we generate data using cmdline args
+
+    parser = argparse.ArgumentParser(description='Generic runner for VAE models')
+    parser.add_argument('--path',  '-p',
+                        dest="datapath",
+                        help =  'folder path where images will be saved')
+    parser.add_argument('--num',  '-n',
+                        dest="num",
+                        type=int,
+                        help =  'how many images to generate ?')
+    parser.add_argument('--add-noise',  '-a',
+                        dest="add_noise",
+                        action='store_true',
+                        help =  'add noise in generative process ?')
+
+    args, _ = parser.parse_known_args()
+
+    ThreeShapesDataset.generate_data(
+        path=args.datapath,
+        N=args.num,
+        add_noise=args.add_noise
+    )
