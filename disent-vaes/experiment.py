@@ -199,7 +199,7 @@ class VAEExperiment(pl.LightningModule):
         elif self.params['dataset'] == 'continum':
             dataset = ContinumDataset(root=self.params['data_path'], split="train")
         
-        elif self.params['dataset'] == 'threeshapes':
+        elif self.params['dataset'] == 'threeshapes'  or self.params['dataset'] == 'threeshapesnoisy':
             dataset = ThreeShapesDataset(root=self.params['data_path'], split="train")
 
         else:
@@ -225,7 +225,7 @@ class VAEExperiment(pl.LightningModule):
             val_dataset = DSpritesDataset(root=self.params['data_path'], split="test", transform=transform)
         elif self.params['dataset'] == 'continum':
             val_dataset = ContinumDataset(root=self.params['data_path'], split="test")
-        elif self.params['dataset'] == 'threeshapes':
+        elif self.params['dataset'] == 'threeshapes' or self.params['dataset'] == 'threeshapesnoisy':
             val_dataset = ThreeShapesDataset(root=self.params['data_path'], split="test")
 
         else:
@@ -252,7 +252,7 @@ class VAEExperiment(pl.LightningModule):
                                             transforms.ToTensor(),
                                             SetRange])
 
-        elif self.params['dataset'] in ['onedim', 'dsprites', 'continum', 'threeshapes']:
+        elif self.params['dataset'] in ['onedim', 'dsprites', 'continum', 'threeshapes', 'threeshapesnoisy']:
             transform = None
 
         else:
