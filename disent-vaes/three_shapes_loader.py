@@ -48,7 +48,7 @@ class ThreeShapesDataset(Dataset):
         image = transforms.ToTensor()(image)
 
         # get filename e.g. image_257_circle.jpg and return 'circle'
-        label = int(os.path.basename(self.files_list[idx]).split("_")[2].replace(".jpg", ""))
+        label = os.path.basename(self.files_list[idx]).split("_")[2].replace(".jpg", "")
         label = np.array([label_to_sides[label]])
         label = label.astype('float')
         return image, label
