@@ -109,7 +109,6 @@ class VAEExperiment(pl.LightningModule):
         #self.sample_images() !! undefined ?
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
-
     def _log_sampled_images(self):
 
         samples = self.model.sample(36, self.curr_device)
@@ -258,7 +257,6 @@ class VAEExperiment(pl.LightningModule):
         else:
             raise ValueError('Undefined dataset type')
         return transform
-
 
     def save_latent_codes(self, save_dir):
 

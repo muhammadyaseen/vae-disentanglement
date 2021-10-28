@@ -43,7 +43,6 @@ class BetaVAE(BaseVAE):
                     nn.LeakyReLU())
             )
             next_in_channels = h_dim
-
         self.encoder = nn.Sequential(*encoder_modules)
         self.fc_mu = nn.Linear(hidden_dims[-1]*4, latent_dim)
         self.fc_var = nn.Linear(hidden_dims[-1]*4, latent_dim)
@@ -51,11 +50,8 @@ class BetaVAE(BaseVAE):
 
         # Build Decoder
         decoder_modules = [] #nn.ModuleList()
-
         self.decoder_input = nn.Linear(latent_dim, hidden_dims[-1] * 4)
-
         hidden_dims.reverse()
-
         for i in range(len(hidden_dims) - 1):
             decoder_modules.append(
                 nn.Sequential(
@@ -68,8 +64,6 @@ class BetaVAE(BaseVAE):
                     nn.BatchNorm2d(hidden_dims[i + 1]),
                     nn.LeakyReLU())
             )
-
-
 
         self.decoder = nn.Sequential(*decoder_modules)
 
@@ -122,10 +116,10 @@ class BetaVAE(BaseVAE):
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    def forward(self, input: Tensor, **kwargs) -> Tensor:
+    def forward(self, x_input: Tensor, **kwargs) -> Tensor:
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
-        return  [self.decode(z), input, mu, log_var]
+        return  [self.decode(z), z, mu, log_var]
 
     def loss_function(self,
                       *args,
