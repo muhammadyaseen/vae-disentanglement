@@ -9,7 +9,7 @@ from torchvision import transforms
 import torchvision.utils as vutils
 from torchvision.datasets import CelebA
 from torch.utils.data import DataLoader
-from disentanglement_lib_pl.models.base.base_disentangler import BaseDisentangler
+from models.base.base_disentangler import BaseDisentangler
 
 
 class VAEExperiment(pl.LightningModule):

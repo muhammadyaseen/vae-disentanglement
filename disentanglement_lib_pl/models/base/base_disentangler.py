@@ -3,6 +3,8 @@ import logging
 
 import torch
 import torchvision.utils
+import visdom
+from common.utils import VisdomDataGatherer
 
 import common.constants as c
 
@@ -44,7 +46,6 @@ class BaseDisentangler(object):
         self.beta2 = args.beta2
         self.lr_G = args.lr_G
         self.lr_D = args.lr_D
-        self.max_iter = int(args.max_iter)
         self.max_epoch = int(args.max_epoch)
 
         # Data
@@ -53,23 +54,25 @@ class BaseDisentangler(object):
         self.batch_size = args.batch_size
         self.image_size = args.image_size
 
-        from common.data_loader import get_dataloader
-        self.data_loader = get_dataloader(args.dset_name, args.dset_dir, args.batch_size, args.seed, args.num_workers,
-                                          args.image_size, args.include_labels, args.pin_memory, not args.test,
-                                          not args.test)
+        # TODO: this data loader logic shouldn't be here.
+        # Find a respectable home for this
+        # from common.data_loader import get_dataloader
+        # self.data_loader = get_dataloader(args.dset_name, args.dset_dir, args.batch_size, args.seed, args.num_workers,
+        #                                   args.image_size, args.include_labels, args.pin_memory, not args.test,
+        #                                   not args.test)
 
-        # only used if some supervision was imposed such as in Conditional VAE
-        if self.data_loader.dataset.has_labels():
-            self.num_classes = self.data_loader.dataset.num_classes()
-            self.total_num_classes = sum(self.data_loader.dataset.num_classes(False))
-            self.class_values = self.data_loader.dataset.class_values()
+        # # only used if some supervision was imposed such as in Conditional VAE
+        # if self.data_loader.dataset.has_labels():
+        #     self.num_classes = self.data_loader.dataset.num_classes()
+        #     self.total_num_classes = sum(self.data_loader.dataset.num_classes(False))
+        #     self.class_values = self.data_loader.dataset.class_values()
 
-        self.num_channels = self.data_loader.dataset.num_channels()
-        self.num_batches = len(self.data_loader)
+        # self.num_channels = self.data_loader.dataset.num_channels()
+        # self.num_batches = len(self.data_loader)
 
-        logging.info('Number of samples: {}'.format(len(self.data_loader.dataset)))
-        logging.info('Number of batches per epoch: {}'.format(self.num_batches))
-        logging.info('Number of channels: {}'.format(self.num_channels))
+        # logging.info('Number of samples: {}'.format(len(self.data_loader.dataset)))
+        # logging.info('Number of batches per epoch: {}'.format(self.num_batches))
+        # logging.info('Number of channels: {}'.format(self.num_channels))
 
         # logging
         self.info_cumulative = {}
@@ -78,11 +81,11 @@ class BaseDisentangler(object):
         self.evaluate_results = dict()
 
         # logging iterations
-        self.traverse_iter = args.traverse_iter if args.traverse_iter else self.num_batches
-        self.evaluate_iter = args.evaluate_iter if args.evaluate_iter else self.num_batches
-        self.ckpt_save_iter = args.ckpt_save_iter if args.ckpt_save_iter else self.num_batches
-        self.schedulers_iter = args.schedulers_iter if args.schedulers_iter else self.num_batches
-        self.visdom_update_iter = args.visdom_update_iter if args.visdom_update_iter else self.num_batches
+        # self.traverse_iter = args.traverse_iter if args.traverse_iter else self.num_batches
+        # self.evaluate_iter = args.evaluate_iter if args.evaluate_iter else self.num_batches
+        # self.ckpt_save_iter = args.ckpt_save_iter if args.ckpt_save_iter else self.num_batches
+        # self.schedulers_iter = args.schedulers_iter if args.schedulers_iter else self.num_batches
+        # self.visdom_update_iter = args.visdom_update_iter if args.visdom_update_iter else self.num_batches
 
         # traversing the latent space
         self.traverse_min = args.traverse_min
