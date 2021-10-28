@@ -137,7 +137,7 @@ class VAE(BaseDisentangler):
 
         return output_losses
 
-    def vae_base_forward(self, x_true: Tensor, **kwargs):
+    def vae_base_forward(self, x_true, **kwargs):
         
         mu, logvar = self.model.encode(x=x_true1, c=label1)
         z = reparametrize(mu, logvar)

@@ -160,7 +160,7 @@ class BaseDisentangler(object):
 
     def sample(self,
                num_samples:int,
-               current_device: int) -> Tensor:
+               current_device: int):
         """
         Samples from the latent space and return the corresponding
         image space map.

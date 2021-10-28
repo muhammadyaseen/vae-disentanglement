@@ -3,18 +3,19 @@ from torch import optim
 # from models import BaseVAE
 # from models import BetaVAE_Vanilla
 # from models.types_ import *
-from utils import data_loader
+from common import data_loader
 import pytorch_lightning as pl
 from torchvision import transforms
 import torchvision.utils as vutils
 from torchvision.datasets import CelebA
 from torch.utils.data import DataLoader
+from disentanglement_lib_pl.models.base.base_disentangler import BaseDisentangler
 
 
 class VAEExperiment(pl.LightningModule):
 
     def __init__(self,
-                 vae_model: BaseVAE,
+                 vae_model: BaseDisentangler,
                  params: dict) -> None:
         
         super(VAEExperiment, self).__init__()
@@ -31,11 +32,11 @@ class VAEExperiment(pl.LightningModule):
         except:
             pass
 
-    def forward(self, input: Tensor, **kwargs) -> Tensor:
+    def forward(self, x_input, **kwargs):
         
         #return self.model(input, **kwargs)
         # TODO: check if this is the right call
-        return self.model.vae_base_forward(input, **kwargs)
+        return self.model.vae_base_forward(x_input, **kwargs)
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
 
@@ -187,7 +188,6 @@ class VAEExperiment(pl.LightningModule):
 
     def train_dataloader(self):
         
-        from common import data_loader
         return data_loader.get_dataloader(self.params['dataset'],
                                             self.params['datapath'],
                                             shuffle=True,
