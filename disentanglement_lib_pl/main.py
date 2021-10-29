@@ -46,16 +46,20 @@ def main(_args):
     config['exp_params'] = dict(
         in_channels=_args.in_channels,
         img_size=64,    # fixed ???
-        LR=_args.lr,
-        weight_decay=None,
+        LR=_args.lr_G,
+        weight_decay=0.0,
         
         # TODO: integrate data loading...
         dataset=_args.dset_name,
-        data_path=_args.dset_dir,
-        drop_last=True,        
+        datapath=_args.dset_dir,
+        droplast=True,        
         batch_size=_args.batch_size,
         num_workers=_args.num_workers,
-    
+        pin_memory=_args.pin_memory,
+        seed=_args.seed,
+        image_size=_args.image_size,
+        visdom_port=_args.visdom_port,
+        eval_metrics=_args.evaluation_metric
     )
 
     # TODO: need to move this from yaml to cmdline args
@@ -63,7 +67,7 @@ def main(_args):
     experiment = VAEExperiment(model, config['exp_params'])
 
     config['trainer_params'] = dict(
-        gpus=4,
+        gpus=_args.gpus,
         max_epochs=20
     )    
 
@@ -77,8 +81,6 @@ def main(_args):
                      callbacks = None,
                      accelerator='dp',
                      **config['trainer_params'])
-
-    print(f"======= Training {config['model_params']['name']} =======")
 
     pl_trainer.fit(experiment)
 

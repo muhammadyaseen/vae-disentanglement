@@ -25,7 +25,7 @@ class VAEModel(nn.Module):
     def forward(self, x, **kwargs):
         mu, logvar = self.encode(x)
         z = reparametrize(mu, logvar)
-        return self.decode(z)
+        return self.decode(z), z, mu, logvar
 
 
 class VAE(BaseDisentangler):
@@ -139,8 +139,8 @@ class VAE(BaseDisentangler):
 
     def vae_base_forward(self, x_true, **kwargs):
         
-        mu, logvar = self.model.encode(x=x_true1, c=label1)
+        mu, logvar = self.model.encode(x=x_true)
         z = reparametrize(mu, logvar)
-        x_recon = self.model.decode(z=z, c=label1)
+        x_recon = self.model.decode(z=z)
         
         return {'x_recon': x_recon, 'mu': mu, 'z': z, 'logvar': logvar}

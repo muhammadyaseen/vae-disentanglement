@@ -3,8 +3,7 @@ import logging
 
 import torch
 import torchvision.utils
-import visdom
-from common.utils import VisdomDataGatherer
+
 
 import common.constants as c
 
@@ -20,18 +19,20 @@ class BaseDisentangler(object):
         self.name = args.name
         self.alg = args.alg
         self.loss_terms = args.loss_terms
-        self.evaluation_metric = args.evaluation_metric
-        self.lr_scheduler = None
-        self.w_recon_scheduler = None
-        self.optim_G = None
+        
+        # TODO: this logic shouldn't be here...
+        # self.lr_scheduler = None
+        # self.w_recon_scheduler = None
+        # self.optim_G = None
 
         # Output directory
-        self.train_output_dir = os.path.join(args.train_output_dir, self.name)
-        self.test_output_dir = os.path.join(args.test_output_dir, self.name)
-        self.file_save = args.file_save
-        self.gif_save = args.gif_save
-        os.makedirs(self.train_output_dir, exist_ok=True)
-        os.makedirs(self.test_output_dir, exist_ok=True)
+        # TODO: this logic shouldn't be here...
+        # self.train_output_dir = os.path.join(args.train_output_dir, self.name)
+        # self.test_output_dir = os.path.join(args.test_output_dir, self.name)
+        # self.file_save = args.file_save
+        # self.gif_save = args.gif_save
+        # os.makedirs(self.train_output_dir, exist_ok=True)
+        # os.makedirs(self.test_output_dir, exist_ok=True)
 
         # Latent space
         self.z_dim = args.z_dim
@@ -42,17 +43,20 @@ class BaseDisentangler(object):
         self.w_recon = args.w_recon
 
         # Solvers
-        self.beta1 = args.beta1
-        self.beta2 = args.beta2
-        self.lr_G = args.lr_G
-        self.lr_D = args.lr_D
-        self.max_epoch = int(args.max_epoch)
+        # TODO: this logic shouldn't be here...
+        # self.beta1 = args.beta1
+        # self.beta2 = args.beta2
+        # self.lr_G = args.lr_G
+        # self.lr_D = args.lr_D
+        # self.max_epoch = int(args.max_epoch)
 
         # Data
-        self.dset_dir = args.dset_dir
-        self.dset_name = args.dset_name
-        self.batch_size = args.batch_size
-        self.image_size = args.image_size
+        # TODO: this logic shouldn't be here...
+        # self.dset_dir = args.dset_dir
+        # self.dset_name = args.dset_name
+        # self.batch_size = args.batch_size
+        # self.image_size = args.image_size
+        # self.num_channels = args.in_channels
 
         # TODO: this data loader logic shouldn't be here.
         # Find a respectable home for this
@@ -61,7 +65,8 @@ class BaseDisentangler(object):
         #                                   args.image_size, args.include_labels, args.pin_memory, not args.test,
         #                                   not args.test)
 
-        # # only used if some supervision was imposed such as in Conditional VAE
+        # only used if some supervision was imposed such as in Conditional VAE
+        # TODO: Should this logic be here ??? find a good place for it..
         # if self.data_loader.dataset.has_labels():
         #     self.num_classes = self.data_loader.dataset.num_classes()
         #     self.total_num_classes = sum(self.data_loader.dataset.num_classes(False))
@@ -96,15 +101,6 @@ class BaseDisentangler(object):
         self.traverse_c = args.traverse_c
         self.white_line = None
 
-        # Visdom Visualization
-        self.visdom_port = args.visdom_port
-        self.viz_name = "{} on {}".format(self.name, self.dset_name)
-        self.visdom_instance = visdom.Visdom(port=self.visdom_port)
-        self.visdom_gatherer = VisdomDataGatherer()
-        self.scalar_windows = ['recon_loss', 'total_loss', 'kld_loss', 'mu', 'var'] + self.evaluation_metric
-        self.visdom_scalar_windows = dict()
-        for win in self.scalar_windows:
-            self.visdom_scalar_windows[win] = None
 
         # Checkpoint
         self.ckpt_dir = os.path.join(args.ckpt_dir, args.name)
@@ -117,10 +113,12 @@ class BaseDisentangler(object):
         self.model = None
         
         # FactorVAE args
-        self.ones = torch.ones(self.batch_size, dtype=torch.long, device=self.device, requires_grad=False)
-        self.zeros = torch.zeros(self.batch_size, dtype=torch.long, device=self.device, requires_grad=False)
-        self.num_layer_disc = args.num_layer_disc
-        self.size_layer_disc = args.size_layer_disc
+        # TODO: we shouldn't be needing device info here...
+        # move this to some other place
+        # self.ones = torch.ones(self.batch_size, dtype=torch.long, device=self.device, requires_grad=False)
+        # self.zeros = torch.zeros(self.batch_size, dtype=torch.long, device=self.device, requires_grad=False)
+        # self.num_layer_disc = args.num_layer_disc
+        # self.size_layer_disc = args.size_layer_disc
 
         # FactorVAE & BetaTCVAE args
         self.w_tc = args.w_tc

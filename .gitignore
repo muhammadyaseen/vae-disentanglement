@@ -1,4 +1,7 @@
 datasets/
+onekonny/
+pl-dt-test/
+disentanglement_lib_pytorch/
 .idea/
 .ipynb_checkpoints/
 disent-vaes/logs

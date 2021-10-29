@@ -9,8 +9,10 @@ from torchvision import transforms
 import torchvision.utils as vutils
 from torchvision.datasets import CelebA
 from torch.utils.data import DataLoader
+from models.vae import VAEModel
 from models.base.base_disentangler import BaseDisentangler
-
+import visdom
+from common.utils import VisdomDataGatherer
 
 class VAEExperiment(pl.LightningModule):
 
@@ -20,12 +22,23 @@ class VAEExperiment(pl.LightningModule):
         
         super(VAEExperiment, self).__init__()
 
-        self.model = vae_model
+        self.model = vae_model.model
         self.params = params
         self.curr_device = None
         self.hold_graph = False
         self.num_val_imgs = 0
         self.num_train_imgs = 0
+
+        # Visdom Visualization
+        self.visdom_port = self.params['visdom_port']
+        self.viz_name = "{} on {}".format(self.params['datapath'], self.params['dataset'])
+        #self.visdom_instance = visdom.Visdom(port=self.visdom_port)
+        self.visdom_gatherer = VisdomDataGatherer()
+        self.eval_metrics = self.params['eval_metrics'] if self.params['eval_metrics'] is not None else []
+        self.scalar_windows = ['recon_loss', 'total_loss', 'kld_loss', 'mu', 'var'] + self.eval_metrics
+        self.visdom_scalar_windows = dict()
+        for win in self.scalar_windows:
+            self.visdom_scalar_windows[win] = None
 
         try:
             self.hold_graph = self.params['retain_first_backpass']
@@ -36,7 +49,7 @@ class VAEExperiment(pl.LightningModule):
         
         #return self.model(input, **kwargs)
         # TODO: check if this is the right call
-        return self.model.vae_base_forward(x_input, **kwargs)
+        return self.model.forward(x_input, **kwargs)
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
 
@@ -192,9 +205,13 @@ class VAEExperiment(pl.LightningModule):
                                             self.params['datapath'],
                                             shuffle=True,
                                             batch_size=self.params['batch_size'], 
-                                            drop_last=self.params['drop_last'],
+                                            droplast=self.params['droplast'],
                                             num_workers=self.params['num_workers'],
-                                            include_labels=True)
+                                            include_labels=None,
+                                            pin_memory=self.params['pin_memory'],
+                                            seed=self.params['seed'],
+                                            image_size=self.params['image_size']
+                                            )
 
     def val_dataloader(self):
         
