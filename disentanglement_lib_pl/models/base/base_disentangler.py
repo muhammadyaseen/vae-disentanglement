@@ -1,12 +1,9 @@
 import os
-import logging
 
 import torch
 import torchvision.utils
 
-
 import common.constants as c
-
 
 DEBUG = False
 
@@ -120,19 +117,19 @@ class BaseDisentangler(object):
         # self.num_layer_disc = args.num_layer_disc
         # self.size_layer_disc = args.size_layer_disc
 
-        # FactorVAE & BetaTCVAE args
-        self.w_tc = args.w_tc
+        # # FactorVAE & BetaTCVAE args
+        # self.w_tc = args.w_tc
 
-        # InfoVAE args
-        self.w_infovae = args.w_infovae
+        # # InfoVAE args
+        # self.w_infovae = args.w_infovae
 
-        # DIPVAE args
-        self.w_dipvae = args.w_dipvae
+        # # DIPVAE args
+        # self.w_dipvae = args.w_dipvae
 
-        # DIPVAE args
-        self.lambda_od = args.lambda_od
-        self.lambda_d_factor = args.lambda_d_factor
-        self.lambda_d = self.lambda_d_factor * self.lambda_od
+        # # DIPVAE args
+        # self.lambda_od = args.lambda_od
+        # self.lambda_d_factor = args.lambda_d_factor
+        # self.lambda_d = self.lambda_d_factor * self.lambda_od
 
     def encode_deterministic(self, **kwargs):
         images = kwargs['images']
@@ -158,21 +155,6 @@ class BaseDisentangler(object):
 
     def loss_fn(self, **kwargs):
         raise NotImplementedError
-
-    def sample(self,
-               num_samples:int,
-               current_device: int):
-        """
-        Samples from the latent space and return the corresponding
-        image space map.
-        :param num_samples: (Int) Number of samples
-        :param current_device: (Int) Device to run the model
-        :return: (Tensor)
-        """
-        z = torch.randn(num_samples,
-                        self.z_dim)
-        z = z.to(current_device)
-        return self.decode(z)
 
 """
 Ignoring schedularing stuff for now

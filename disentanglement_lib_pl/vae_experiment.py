@@ -9,26 +9,28 @@ from torchvision import transforms
 import torchvision.utils as vutils
 from torchvision.datasets import CelebA
 from torch.utils.data import DataLoader
-from models.vae import VAEModel
-from models.base.base_disentangler import BaseDisentangler
+from models.vae import VAE
+# from models.base.base_disentangler import BaseDisentangler
 import visdom
 from common.utils import VisdomDataGatherer
 
 class VAEExperiment(pl.LightningModule):
 
     def __init__(self,
-                 vae_model: BaseDisentangler,
+                 vae_model: VAE,
                  params: dict) -> None:
         
         super(VAEExperiment, self).__init__()
 
-        self.model = vae_model.model
+        self.model = vae_model
         self.params = params
         self.curr_device = None
         self.hold_graph = False
         self.num_val_imgs = 0
         self.num_train_imgs = 0
-
+        self.sample_loader = None
+        #self.global_step = 0
+        
         # Visdom Visualization
         self.visdom_port = self.params['visdom_port']
         self.viz_name = "{} on {}".format(self.params['datapath'], self.params['dataset'])
@@ -52,7 +54,8 @@ class VAEExperiment(pl.LightningModule):
         return self.model.forward(x_input, **kwargs)
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
-
+        
+        #self.global_step += 1
         x_true1, label1 = batch
         self.curr_device = x_true1.device
 
@@ -67,7 +70,7 @@ class VAEExperiment(pl.LightningModule):
                             optimizer_idx=optimizer_idx,
                             batch_idx = batch_idx)
         
-        losses = self.loss_function(**loss_fn_args)
+        losses = self.model.loss_function(**loss_fn_args)
 
         # TODO: This is where all mini-batch level visualization can be done
         # that were being done in log_save() method
@@ -132,7 +135,7 @@ class VAEExperiment(pl.LightningModule):
                             optimizer_idx=optimizer_idx,
                             batch_idx = batch_idx)
         
-        val_losses = self.loss_function(**loss_fn_args)
+        val_losses = self.model.loss_function(**loss_fn_args)
 
         # TODO: Validation level visualization can be done here
         # self.visualize_recon(x_true, x_recon, test=True)
@@ -217,7 +220,8 @@ class VAEExperiment(pl.LightningModule):
         
         # for now we just return the same data
         # TODO: implement some kind of disjoing split
-        return self.train_dataloader()
+        self.sample_loader = self.train_dataloader()
+        return self.sample_loader
 
     def data_transforms(self):
 
@@ -238,32 +242,33 @@ class VAEExperiment(pl.LightningModule):
             raise ValueError('Undefined dataset type')
         return transform
 
-def _log_sampled_images(self):
+    def _log_sampled_images(self):
 
         sampled_images = self.model.sample(36, self.curr_device).cpu().data
         grid_of_samples = vutils.make_grid(sampled_images, normalize=True, nrow=12, value_range=(0.0,1.0))
         self.logger.experiment.add_image("Sampled Images", grid_of_samples, global_step=self.global_step)
 
-def _log_reconstructed_images(self):
+    def _log_reconstructed_images(self):
 
-    # Get sample reconstruction image
-    test_input, test_label = next(iter(self.sample_dataloader))
-    test_input = test_input.to(self.curr_device)
+        # Get sample reconstruction image
+        test_input, test_label = next(iter(self.sample_loader))
+        test_input = test_input.to(self.curr_device)
 
-    recons = self.model.forward(test_input, labels = test_label).cpu().data
-    recons_grid = vutils.make_grid(recons, normalize=True, nrow=12, value_range=(0.0,1.0))
-    self.logger.experiment.add_image("Reconstructed Images", recons_grid,
-                                        global_step=self.global_step)
+        recons, _, _, _ = self.model.forward(test_input, labels = test_label)
+        recons = recons.cpu().data
+        recons_grid = vutils.make_grid(recons, normalize=True, nrow=12, value_range=(0.0,1.0))
+        self.logger.experiment.add_image("Reconstructed Images", recons_grid,
+                                            global_step=self.global_step)
 
-    del test_input, test_label, recons
+        del test_input, test_label, recons
 
-def _log_latent_layer_activations(self):
+    def _log_latent_layer_activations(self):
 
-    # TODO: probably we should save hist over WHOLE val dataset and
-    # not just a single batch
+        # TODO: probably we should save hist over WHOLE val dataset and
+        # not just a single batch
 
-    test_input, _ = next(iter(self.sample_dataloader))
-    test_input = test_input.to(self.curr_device)
-    activations_mu, activations_logvar = self.model.encode(test_input)
-    self.logger.experiment.add_histogram("Latent Activations", activations_mu, self.global_step)
+        test_input, _ = next(iter(self.sample_loader))
+        test_input = test_input.to(self.curr_device)
+        activations_mu, activations_logvar = self.model.encode(test_input)
+        self.logger.experiment.add_histogram("Latent Activations", activations_mu, self.global_step)
 
