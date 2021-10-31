@@ -1,31 +1,10 @@
 import torch
 from torch import nn
-# import torch.optim as optim
 import torch.nn.functional as F
 
-# from models.base.base_disentangler import BaseDisentangler
 from architectures import encoders, decoders
 from common.ops import kl_divergence_mu0_var1, reparametrize
 from common import constants as c
-
-
-# class VAEModel(nn.Module):
-#     def __init__(self, encoder, decoder):
-#         super().__init__()
-
-#         self.encoder = encoder
-#         self.decoder = decoder
-
-#     def encode(self, x, **kwargs):
-#         return self.encoder(x)
-
-#     def decode(self, z, **kwargs):
-#         return torch.sigmoid(self.decoder(z))
-
-#     def forward(self, x, **kwargs):
-#         mu, logvar = self.encode(x)
-#         z = reparametrize(mu, logvar)
-#         return self.decode(z), z, mu, logvar
 
 
 class VAE(nn.Module):
@@ -97,20 +76,6 @@ class VAE(nn.Module):
         #     self.PermD, self.optim_PermD = factorvae_init(args.discriminator[0], self.z_dim, self.num_layer_disc,
         #                                                   self.size_layer_disc, self.lr_D, self.beta1, self.beta2)
 
-    # def encode_deterministic(self, **kwargs):
-    #     images = kwargs['images']
-    #     if images.dim() == 3:
-    #         images = images.unsqueeze(0)
-    #     mu, logvar = self.model.encode(x=images)
-    #     return mu
-
-    # def encode_stochastic(self, **kwargs):
-    #     images = kwargs['images']
-    #     if images.dim() == 3:
-    #         images = images.unsqueeze(0)
-    #     mu, logvar = self.model.encode(x=images)
-    #     return reparametrize(mu, logvar)
-
     def _kld_loss_fn(self, mu, logvar):
         if not self.controlled_capacity_increase:
             kld_loss = kl_divergence_mu0_var1(mu, logvar) * self.w_kld
@@ -132,14 +97,13 @@ class VAE(nn.Module):
         output_losses = dict()
         
         # initialize the loss of this batch with zero.
-        #output_losses[c.TOTAL_VAE] = input_losses.get(c.TOTAL_VAE, 0)
         output_losses[c.TOTAL_LOSS] = 0
 
         output_losses[c.RECON] = F.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
         output_losses[c.TOTAL_LOSS] += output_losses[c.RECON]
 
-        output_losses['kld'] = self._kld_loss_fn(mu, logvar)
-        output_losses[c.TOTAL_LOSS] += output_losses['kld']
+        output_losses[c.KLD_LOSS] = self._kld_loss_fn(mu, logvar)
+        output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
 
         if c.FACTORVAE in self.loss_terms:
             from models.factorvae import factorvae_loss_fn

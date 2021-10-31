@@ -185,26 +185,22 @@ class DisentanglementLibDataset(Dataset):
 
 class OneDimLatentDataset(Dataset):
 
-    def __init__(self, root, split="train"):
+    def __init__(self, root, split="train",transforms=None):
         """
         Args:
             root (string): Directory with all the images.
         """
         self.root_dir = root
         self.files_list = glob.glob(os.path.join(self.root_dir,"*.jpg"))
-        #print(self.files_list)
-        print("Total images :", len(self.files_list))
-        
+        self.trasnforms = transforms
+
         MAX_TRAIN_IDX = int( len(self.files_list) * 0.90 )
-        print("Max train idx: ", MAX_TRAIN_IDX)
         
         if split == "train":
             self.files_list = self.files_list[: MAX_TRAIN_IDX]
-            print("Selected for train: ",len(self.files_list))
+        
         if split == "test":
             self.files_list = self.files_list[MAX_TRAIN_IDX:]
-            print("Selected for val: ",len(self.files_list))
-        #exit()
 
     def __len__(self):
         return len(self.files_list)
@@ -216,9 +212,9 @@ class OneDimLatentDataset(Dataset):
 
         img_name = self.files_list[idx]
         image = plt.imread(img_name)
-        #image = torch.from_numpy(image).type(torch.FloatTensor).reshape(3,64,64)
-        image = transforms.ToTensor()(image)
-        #image = torch.unsqueeze(image, 0)
+        
+        if self.trasnforms is not None:
+            image = self.transforms(image)
 
         label = int(self.files_list[idx].split("_")[1].replace(".jpg",""))
         label = np.array([label])
@@ -227,23 +223,26 @@ class OneDimLatentDataset(Dataset):
 
 
 class ContinumDataset(Dataset):
-
-    def __init__(self, root, split="train", train_pct=0.90):
+    """
+    This dataset has images which form a 'continum' from a perfect square 
+    morphing into a circle, as border radius increases
+    """
+    def __init__(self, root, split="train", train_pct=0.90, transforms=None):
         """
         Args:
             root (string): Directory with all the images.
         """
         self.root_dir = root
         self.files_list = glob.glob(os.path.join(self.root_dir, "*.jpg"))
-        print("Total images :", len(self.files_list))
+        self.transforms = transforms
         MAX_TRAIN_IDX = int(len(self.files_list) * train_pct)
 
         if split == "train":
             self.files_list = self.files_list[: MAX_TRAIN_IDX]
-            print("Selected for train: ", len(self.files_list))
+
         if split == "test":
             self.files_list = self.files_list[MAX_TRAIN_IDX:]
-            print("Selected for val: ", len(self.files_list))
+
 
     def __len__(self):
         return len(self.files_list)
@@ -255,7 +254,9 @@ class ContinumDataset(Dataset):
 
         img_name = self.files_list[idx]
         image = plt.imread(img_name)
-        image = transforms.ToTensor()(image)
+        
+        if self.trasnforms is not None:
+            image = self.transforms(image)
 
         label = int(os.path.basename(self.files_list[idx]).split("_")[2].replace(".jpg", ""))
         label = np.array([label])
@@ -291,22 +292,22 @@ class ContinumDataset(Dataset):
 
 class ThreeShapesDataset(Dataset):
 
-    def __init__(self, root, split="train", train_pct=0.90):
+    def __init__(self, root, split="train", train_pct=0.90, transforms=None):
         """
         Args:
             root (string): Directory with all the images.
         """
         self.root_dir = root
         self.files_list = glob.glob(os.path.join(self.root_dir, "*.jpg"))
-        print("Total images :", len(self.files_list))
+        self.transforms = transforms
+
         MAX_TRAIN_IDX = int(len(self.files_list) * train_pct)
 
         if split == "train":
             self.files_list = self.files_list[: MAX_TRAIN_IDX]
-            print("Selected for train: ", len(self.files_list))
+
         if split == "test":
             self.files_list = self.files_list[MAX_TRAIN_IDX:]
-            print("Selected for val: ", len(self.files_list))
 
     def __len__(self):
         return len(self.files_list)
@@ -323,8 +324,10 @@ class ThreeShapesDataset(Dataset):
 
         img_name = self.files_list[idx]
         image = plt.imread(img_name)
-        image = transforms.ToTensor()(image)
-
+        
+        if self.transforms is not None:
+            image = self.transforms(image)
+        
         # get filename e.g. image_257_circle.jpg and return 'circle'
         label = os.path.basename(self.files_list[idx]).split("_")[2].replace(".jpg", "")
         label = np.array([label_to_sides[label]])
@@ -376,13 +379,13 @@ class DSpritesDataset(Dataset):
 
     FILE_NAME = 'dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz'
 
-    def __init__(self, root, split="train", transform=None, train_pct=0.75):
+    def __init__(self, root, split="train", train_pct=0.75, transforms=None):
         """
         Args:
             root (string): Directory with the .npz file.
         """
         self.root_dir = root
-        self.transform = transform
+        self.transforms = transforms
         self.split = split
 
         dataset_zip = np.load(os.path.join(root, self.FILE_NAME),
@@ -432,21 +435,33 @@ class DSpritesDataset(Dataset):
             idx = self.test_indices[idx]
 
         image = self.images[idx].astype(np.float32)
-        image = transforms.ToTensor()(image)
 
-        if self.transform is not None:
-            image = self.transform(image)
+        if self.transforms is not None:
+            image = self.transforms(image)
 
         latent = self.latents_values[idx]
 
         return image, latent
 
 
-def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
-                                shuffle, droplast):
-    transform = transforms.Compose([
+def _get_transforms_for_dataset(dataset_name, image_size):
+
+    if dataset_name == "celeba":
+        return transforms.Compose([
         transforms.Resize((image_size, image_size)),
-        transforms.ToTensor(), ])
+        transforms.ToTensor()])
+    
+    # for these datasets, we only need to convert numpy to tensors.
+    if dataset_name in ["dsprites_full", "threeshapes", "threeshapesnoisy", "onedim", "continum"]:
+        return transforms.ToTensor()
+
+
+def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
+                                shuffle, droplast):
+        
+    dataset_name = dataset_name.lower()
+    transforms = _get_transforms_for_dataset(dataset_name, image_size)
+    
     labels = None
     label_weights = None
     label_idx = None
@@ -462,7 +477,9 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
             label_names = include_labels
     logging.info('include_labels: {}'.format(include_labels))
 
-    if name.lower() == 'celeba':
+    # TODO: is there a better way to do this ???
+    if dataset_name == 'celeba':
+        
         root = os.path.join(dset_dir, 'CelebA')
         labels_file = os.path.join(root, 'list_attr_celeba.csv')
 
@@ -505,11 +522,11 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                        'num_channels': 3}
         dset = CustomImageFolder
     
-    elif name.lower() == 'dsprites_full':
+    elif dataset_name == 'dsprites_full':
+        
         root = os.path.join(dset_dir, 'dsprites','dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz')
-        print(root)
-        npz = np.load(root, allow_pickle=True, encoding='latin1')
 
+        """
         if label_idx is not None:
             labels = npz['latents_values'][:, label_idx]
             if 1 in label_idx:
@@ -533,19 +550,49 @@ def _get_dataloader_with_labels(name, dset_dir, batch_size, seed, num_workers, i
                 unique_values_mock = np.arange(len(unique_values))
                 class_values.append(unique_values_mock)
             label_weights = np.array(label_weights)
+        """
 
-        data_kwargs = {'data_images': npz['imgs'],
-                       'labels': labels,
-                       'label_weights': label_weights,
-                       'class_values': class_values,
-                       'num_channels': 1}
-        dset = CustomNpzDataset
+        data_kwargs = {'root': root,
+                       'train_pct': 0.75,
+                       'split': 'train'}
+
+        dset = DSpritesDataset
+    
+    elif dataset_name == 'threeshapes' or dataset_name == "threeshapesnoisy":
+        
+        root = os.path.join(dset_dir, dataset_name)
+
+        data_kwargs = {'root': root,
+                       'train_pct': 0.75,
+                       'split': 'train'}
+        
+        dset = ThreeShapesDataset
+
+    elif dataset_name == 'onedim':
+    
+        root = os.path.join(dset_dir, dataset_name)
+
+        data_kwargs = {'root': root,
+                       'train_pct': 0.75,
+                       'split': 'train'}
+        
+        dset = OneDimLatentDataset
+    
+    elif dataset_name == 'continum':
+    
+        root = os.path.join(dset_dir, dataset_name)
+
+        data_kwargs = {'root': root,
+                       'train_pct': 0.75,
+                       'split': 'train'}
+        
+        dset = ContinumDataset
+
     else:
         raise NotImplementedError
     
-    data_kwargs.update({'seed': seed,
-                        'name': name,
-                        'transform': transform})
+    data_kwargs.update({'transforms': transforms})
+    
     dataset = dset(**data_kwargs)
     data_loader = DataLoader(dataset,
                              batch_size=batch_size,

@@ -1,18 +1,16 @@
+from disentanglement_lib_pl.common import visdom_visualiser
 import torch
-from torch import optim
-# from models import BaseVAE
-# from models import BetaVAE_Vanilla
-# from models.types_ import *
-from common import data_loader
 import pytorch_lightning as pl
-from torchvision import transforms
 import torchvision.utils as vutils
-from torchvision.datasets import CelebA
-from torch.utils.data import DataLoader
+
+from torch import optim
+from torchvision import transforms
+
 from models.vae import VAE
-# from models.base.base_disentangler import BaseDisentangler
-import visdom
-from common.utils import VisdomDataGatherer
+from common import constants as c
+from common import data_loader
+from common.visdom_visualiser import VisdomVisualiser
+from evaluation import evaluation_utils
 
 class VAEExperiment(pl.LightningModule):
 
@@ -24,42 +22,20 @@ class VAEExperiment(pl.LightningModule):
 
         self.model = vae_model
         self.params = params
-        self.curr_device = None
-        self.hold_graph = False
         self.num_val_imgs = 0
         self.num_train_imgs = 0
         self.sample_loader = None
-        #self.global_step = 0
-        
-        # Visdom Visualization
-        self.visdom_port = self.params['visdom_port']
-        self.viz_name = "{} on {}".format(self.params['datapath'], self.params['dataset'])
-        #self.visdom_instance = visdom.Visdom(port=self.visdom_port)
-        self.visdom_gatherer = VisdomDataGatherer()
-        self.eval_metrics = self.params['eval_metrics'] if self.params['eval_metrics'] is not None else []
-        self.scalar_windows = ['recon_loss', 'total_loss', 'kld_loss', 'mu', 'var'] + self.eval_metrics
-        self.visdom_scalar_windows = dict()
-        for win in self.scalar_windows:
-            self.visdom_scalar_windows[win] = None
-
-        try:
-            self.hold_graph = self.params['retain_first_backpass']
-        except:
-            pass
+        self.curr_device = None
+        self.visdom_visualiser = VisdomVisualiser(params['visual_args'], params['visdom_args'])
 
     def forward(self, x_input, **kwargs):
         
-        #return self.model(input, **kwargs)
-        # TODO: check if this is the right call
         return self.model.forward(x_input, **kwargs)
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
-        #self.global_step += 1
         x_true1, label1 = batch
         self.curr_device = x_true1.device
-
-        # this is self.forward in PL which calls self.model(input)
         x_recon, z, mu, logvar = self.forward(x_true1, label=label1)
 
         loss_fn_args = dict(x_recon=x_recon, 
@@ -72,13 +48,12 @@ class VAEExperiment(pl.LightningModule):
         
         losses = self.model.loss_function(**loss_fn_args)
 
-        # TODO: This is where all mini-batch level visualization can be done
-        # that were being done in log_save() method
-
-        # end of mini-batch
         return losses
 
     def training_epoch_end(self, train_step_outputs):
+        
+        # TODO: figure out a way to do model / architecture specific or dataset specific 
+        # loggin w/o if-else jungle
         
         torch.set_grad_enabled(False)
         self.model.eval()
@@ -92,32 +67,39 @@ class VAEExperiment(pl.LightningModule):
             self.logger.experiment.add_graph(self.model, rand_input)
 
         # 1. Save avg loss in this epoch
-        avg_loss = torch.stack([x['loss'] for x in train_step_outputs]).mean()
+        avg_loss = torch.stack([tso[c.TOTAL_LOSS] for tso in train_step_outputs]).mean()
+        avg_kld_loss = torch.stack([tso[c.KLD_LOSS] for tso in train_step_outputs]).mean()
+        avg_recon_loss = torch.stack([tso[c.RECON] for tso in train_step_outputs]).mean()
+
         self.logger.experiment.add_scalar("Loss (Train)", avg_loss, self.current_epoch)
 
         # if isinstance(self.model, BetaVAE_Vanilla) and self.model.c_max is not None:
         #     self.logger.experiment.add_scalar("C", self.model.c_current, self.model.num_iter)
 
-        # 2. save recon images and generated images
-        self._log_reconstructed_images()
-        self._log_sampled_images()
-
-        # 3. histogram of latent layer activations
-        self._log_latent_layer_activations()
-
-
-        # TODO: when should we eval disent metrics ???
-        # if self.evaluation_metric and is_time_for(self.iter, self.evaluate_iter):
-        #    self.evaluate_results = evaluate_disentanglement_metric(self, metric_names=self.evaluation_metric)
+        # 2. save recon images and generated images, histogram of latent layer activations
+        self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(), self.current_epoch)
+        recon_grid, x_recons, x_inputs = self._get_reconstructed_images()
+        self.logger.experiment.add_image("Reconstructed Images", recon_grid, self.current_epoch)
+        self.logger.experiment.add_histogram("Latent Activations", self._get_latent_layer_activations()['mu'], self.current_epoch)
         
-        # TODO: show metrics on visdom
-        # if is_time_for(self.iter, self.visdom_update_iter):
-        #     self.update_visdom_visualisations(kwargs[c.INPUT_IMAGE],
-        #                                       kwargs[c.RECON_IMAGE],
-        #                                       kwargs['mu_batch'],
-        #                                       kwargs['logvar_batch'],
-        #                                       kwargs[c.LOSS])
+        # 3. Evaluate disent metrics
+        evaluation_results = evaluation_utils.evaluate_disentanglement_metric(self.model, 
+                                                eval_results_dir=".",
+                                                metric_names=self.params["evaluation_metrics"],
+                                                dataset_name=self.params['dataset']
+                            )
 
+        scalar_metrics = dict()
+        scalar_metrics[c.TOTAL_LOSS] = avg_loss
+        scalar_metrics[c.RECON] = avg_recon_loss
+        scalar_metrics[c.KLD_LOSS] = avg_kld_loss
+
+        
+        # reconloss, kldloss, totalloss, mu,var,capacity etc
+        self.visdom_visualiser.visualize_reconstruction(x_inputs,x_recons, self.current_epoch)
+        self.visdom_visualiser.visualize_scalar_metrics(scalar_metrics, self.current_epoch)
+        self.visdom_visualiser.visualise_disentanglement_metrics(evaluation_results, self.current_epoch)
+        
         torch.set_grad_enabled(True)
         self.model.train()
 
@@ -146,16 +128,8 @@ class VAEExperiment(pl.LightningModule):
 
     def validation_end(self, outputs):
 
-        """
-        called at the end of every validation step
-
-        :param outputs:
-        :return:
-        """
-        print("validation_end called")
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
         tensorboard_logs = {'avg_val_loss': avg_loss}
-        #self.sample_images() !! undefined ?
         return {'val_loss': avg_loss, 'log': tensorboard_logs}
 
     def configure_optimizers(self):
@@ -223,32 +197,13 @@ class VAEExperiment(pl.LightningModule):
         self.sample_loader = self.train_dataloader()
         return self.sample_loader
 
-    def data_transforms(self):
+    def _get_sampled_images(self, how_many: int):
 
-        SetRange = transforms.Lambda(lambda X: 2 * X - 1.)
-        SetScale = transforms.Lambda(lambda X: X/X.sum(0).expand_as(X))
-
-        if self.params['dataset'] == 'celeba':
-            transform = transforms.Compose([transforms.RandomHorizontalFlip(),
-                                            transforms.CenterCrop(148),
-                                            transforms.Resize(self.params['img_size']),
-                                            transforms.ToTensor(),
-                                            SetRange])
-
-        elif self.params['dataset'] in ['onedim', 'dsprites', 'continum', 'threeshapes', 'threeshapesnoisy']:
-            transform = None
-
-        else:
-            raise ValueError('Undefined dataset type')
-        return transform
-
-    def _log_sampled_images(self):
-
-        sampled_images = self.model.sample(36, self.curr_device).cpu().data
+        sampled_images = self.model.sample(how_many, self.curr_device).cpu().data
         grid_of_samples = vutils.make_grid(sampled_images, normalize=True, nrow=12, value_range=(0.0,1.0))
-        self.logger.experiment.add_image("Sampled Images", grid_of_samples, global_step=self.global_step)
+        return grid_of_samples
 
-    def _log_reconstructed_images(self):
+    def _get_reconstructed_images(self):
 
         # Get sample reconstruction image
         test_input, test_label = next(iter(self.sample_loader))
@@ -257,12 +212,10 @@ class VAEExperiment(pl.LightningModule):
         recons, _, _, _ = self.model.forward(test_input, labels = test_label)
         recons = recons.cpu().data
         recons_grid = vutils.make_grid(recons, normalize=True, nrow=12, value_range=(0.0,1.0))
-        self.logger.experiment.add_image("Reconstructed Images", recons_grid,
-                                            global_step=self.global_step)
-
-        del test_input, test_label, recons
-
-    def _log_latent_layer_activations(self):
+        
+        return recons_grid, test_input.cpu().data, recons
+        
+    def _get_latent_layer_activations(self):
 
         # TODO: probably we should save hist over WHOLE val dataset and
         # not just a single batch
@@ -270,5 +223,7 @@ class VAEExperiment(pl.LightningModule):
         test_input, _ = next(iter(self.sample_loader))
         test_input = test_input.to(self.curr_device)
         activations_mu, activations_logvar = self.model.encode(test_input)
-        self.logger.experiment.add_histogram("Latent Activations", activations_mu, self.global_step)
+
+        return {'mu': activations_mu, 'logvar': activations_logvar}
+        
 

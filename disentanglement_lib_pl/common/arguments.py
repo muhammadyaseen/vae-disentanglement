@@ -16,7 +16,7 @@ def update_args(args):
 def get_args(sys_args):
     parser = argparse.ArgumentParser(description='disentanglement-pytorch')
 
-    parser.add_argument('--evaluation_metric', default=None, type=str, choices=c.EVALUATION_METRICS, nargs='+',
+    parser.add_argument('--evaluation_metrics', default=None, type=str, choices=c.EVALUATION_METRICS, nargs='+',
                         help='Metric to evaluate the model during training')
 
     # name

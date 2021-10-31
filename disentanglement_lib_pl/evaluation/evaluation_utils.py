@@ -11,7 +11,7 @@ def get_gin_config(config_files, metric_name):
     return None
 
 
-def evaluate_disentanglement_metric(model, metric_names=['mig'], dataset_name='mpi3d_toy'):
+def evaluate_disentanglement_metric(model, eval_results_dir, metric_names=['mig'], dataset_name='mpi3d_toy'):
     # These imports are included only inside this function for code base to run on systems without
     # proper installation of tensorflow and libcublas
     from evaluation import utils_pytorch
@@ -37,15 +37,16 @@ def evaluate_disentanglement_metric(model, metric_names=['mig'], dataset_name='m
         # gin.parse_config_file(my_config)
         gin.parse_config_files_and_bindings([my_config], eval_bindings)
 
-        model_path = os.path.join(model.ckpt_dir, 'pytorch_model.pt')
-        utils_pytorch.export_model(utils_pytorch.RepresentationExtractor(model.model.encoder, 'mean'),
+        # TODO: this depends on tensorboard logger and when/where it saves ckpt
+        model_path = os.path.join(eval_results_dir, 'pytorch_model.pt')
+        utils_pytorch.export_model(utils_pytorch.RepresentationExtractor(model.encoder, 'mean'),
                                    input_shape=(1, model.num_channels, model.image_size, model.image_size),
                                    path=model_path)
 
-        output_dir = os.path.join(model.ckpt_dir, 'eval_results', metric_name)
-        os.makedirs(os.path.join(model.ckpt_dir, 'results'), exist_ok=True)
+        output_dir = os.path.join(eval_results_dir, 'eval_results', metric_name)
+        os.makedirs(os.path.join(eval_results_dir, 'results'), exist_ok=True)
 
-        results_dict = evaluate(model.ckpt_dir, output_dir, True)
+        results_dict = evaluate(eval_results_dir, output_dir, True)
         gin.clear_config()
         results = 0
         for key, value in results_dict.items():
@@ -53,5 +54,5 @@ def evaluate_disentanglement_metric(model, metric_names=['mig'], dataset_name='m
                 results = value
         logging.info('Evaluation   {}={}'.format(metric_name, results))
         results_dict_all['eval_{}'.format(metric_name)] = results
-    # print(results_dict)
+
     return results_dict_all

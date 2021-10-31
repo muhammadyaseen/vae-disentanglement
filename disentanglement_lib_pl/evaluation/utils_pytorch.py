@@ -44,7 +44,7 @@ def use_cuda():
     Whether to use CUDA for evaluation. Returns True if CUDA is available and
     the environment variable AICROWD_CUDA is not set to False.
     """
-    return torch.cuda.is_available() and os.getenv('AICROWD_CUDA', True)
+    return torch.cuda.is_available()
 
 
 def get_model_path(base_path=None, experiment_name=None, make=True):
