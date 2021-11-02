@@ -1,8 +1,8 @@
-from .ae import AE
+#from .ae import AE
 from .vae import VAE
 from .betavae import BetaVAE
-from .cvae import CVAE
-from .ifcvae import IFCVAE
+#from .cvae import CVAE
+#from .ifcvae import IFCVAE
 
 
 # TODO: add author and license info to all files.

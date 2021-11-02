@@ -623,7 +623,7 @@ def _get_dataloader(name, batch_size, seed, num_workers, pin_memory, shuffle, dr
 
 def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
                    shuffle, droplast):
-    locally_supported_datasets = c.DATASETS[0:2]
+    locally_supported_datasets = c.DATASETS[0:6]
 
     logging.info(f'Datasets root: {dset_dir}')
     logging.info(f'Dataset: {dset_name}')

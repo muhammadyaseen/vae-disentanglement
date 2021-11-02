@@ -9,7 +9,7 @@ class VisdomVisualiser:
         
         self.port = visdom_args['port'] if "port" in visdom_args.keys() else 8097
         self.logfile = visdom_args['logfile'] if "logfile" in visdom_args.keys() else None
-        self.name = "Visdom on {}".format(self.visual_args['dataset'])
+        self.name = "Visdom on {}".format(visual_args['dataset'])
         
         self.visdom_instance = visdom.Visdom(port=self.port, log_to_filename=self.logfile)
         
@@ -23,20 +23,35 @@ class VisdomVisualiser:
         
     def _initialize_scalar_windows(self):
         
-        for win in self.scalar_window_names:
-            self.scalar_windows[win] = None
+        if self.scalar_window_names is None:
+            return None
+        
+        else:
+            _scalar_windows = dict()
+            for win in self.scalar_window_names:
+                _scalar_windows[win] = None
+            
+            return _scalar_windows
 
     def _initialize_disent_metrics_windows(self):
         
-        for win in self.disent_metrics_names:
-            self.disent_windows[win] = None
+        if self.disent_metrics_names is None:
+            return None
+        
+        else:
+            _disent_windows = dict()
+            
+            for win in self.disent_metrics_names:
+                _disent_windows[win] = None
+
+            return _disent_windows
 
     def visualize_reconstruction(self, x_inputs, x_recons, global_step):
 
         x_inputs = torchvision.utils.make_grid(x_inputs, normalize=True)
         x_recons = torchvision.utils.make_grid(x_recons, normalize=True)
 
-        img_input_vs_recon = torch.cat([x_inputs, x_recons], dim=3).cpu()
+        img_input_vs_recon = torch.cat([x_inputs, x_recons], dim=1).cpu()
 
         self.visdom_instance.images(img_input_vs_recon,
                                     env=self.name + '_reconstruction',
@@ -50,21 +65,21 @@ class VisdomVisualiser:
         recon_losses, mus, vars, dim_wise_klds, mean_klds, total_loss, kld_loss 
         """
         
-        iters = torch.Tensor(global_step)
+        iters = torch.Tensor([global_step])#.unsqueeze(0)
 
-        legend = []
-        for z_j in range(new_scalar_metric_values['mu'].size()[0]):
-            legend.append('z_{}'.format(z_j))
+        # legend = []
+        # for z_j in range(new_scalar_metric_values['mus'].size()[0]):
+        #    legend.append('z_{}'.format(z_j))
         
         #legend.append('mean')
         #legend.append('total')
 
         window_titles_and_values = {
-            'recon_loss': {'title': 'Reconsturction Loss', 'legend': None},
+            'recon': {'title': 'Reconsturction Loss', 'legend': None},
             'kld_loss': {'title': 'KL Divergence (mean)', 'legend': None},
-            'total_loss': {'title': 'Total Loss', 'legend': None},
-            'mu': {'title': 'Posterior Mean', 'legend': legend},
-            'var': {'title': 'Posterior Variance', 'legend': legend}
+            'loss': {'title': 'Total Loss', 'legend': None},
+            'mu': {'title': 'Posterior Mean', 'legend': None},
+            'var': {'title': 'Posterior Variance', 'legend': None}
         }
 
         # Update (or create, if non-existent) the scalar windows
@@ -73,7 +88,7 @@ class VisdomVisualiser:
             if self.scalar_windows[win] is None:
                 self.scalar_windows[win] = self.visdom_instance.line(
                     X=iters,
-                    Y=torch.stack(new_scalar_metric_values[win]).cpu(),
+                    Y=new_scalar_metric_values[win].cpu().unsqueeze(0),
                     env=self.name + '_lines',
                     opts=dict(
                         width=400,
@@ -83,7 +98,7 @@ class VisdomVisualiser:
             else:
                 self.scalar_windows[win] = self.visdom_instance.line(
                     X=iters,
-                    Y=window_titles_and_values[win]['value'],
+                    Y=new_scalar_metric_values[win].cpu().unsqueeze(0),
                     env=self.name + '_lines',
                     win=self.scalar_windows[win],
                     update='append',

@@ -35,7 +35,7 @@ def main(_args):
 
     experiment_config = dict(        
         in_channels=_args.in_channels,
-        img_size=_args.image_size,
+        image_size=_args.image_size,
         LR=_args.lr_G,
         weight_decay=0.0,
         
@@ -47,12 +47,12 @@ def main(_args):
         pin_memory=_args.pin_memory,
 
         seed=_args.seed,
-        eval_metrics=_args.evaluation_metric
+        evaluation_metrics=_args.evaluation_metrics
     )
 
     experiment_config['visual_args'] = dict(
         dataset = _args.dset_name,
-        scalar_metrics = [''],
+        scalar_metrics = ['loss','recon', 'kld_loss'],
         disent_metrics = None,
     )
     experiment_config['visdom_args'] = dict() 
@@ -72,7 +72,7 @@ def main(_args):
                      limit_val_batches=1.,
                      num_sanity_val_steps=2,
                      callbacks = None,
-                     strategy='dp',
+                     accelerator='dp',
                      **trainer_config)
 
     pl_trainer.fit(experiment)

@@ -1,4 +1,4 @@
-from disentanglement_lib_pl.common import visdom_visualiser
+
 import torch
 import pytorch_lightning as pl
 import torchvision.utils as vutils
@@ -61,8 +61,8 @@ class VAEExperiment(pl.LightningModule):
         # 0. Add graph / architecture
         if self.current_epoch == 0:
             rand_input = torch.rand((1, self.params['in_channels'],
-                                     self.params['img_size'],
-                                     self.params['img_size']))
+                                     self.params['image_size'],
+                                     self.params['image_size']))
             rand_input = rand_input.to(self.curr_device)
             self.logger.experiment.add_graph(self.model, rand_input)
 
@@ -80,7 +80,7 @@ class VAEExperiment(pl.LightningModule):
         #     self.logger.experiment.add_scalar("C", self.model.c_current, self.model.num_iter)
 
         # 2. save recon images and generated images, histogram of latent layer activations
-        self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(), self.current_epoch)
+        self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(36), self.current_epoch)
         
         recon_grid, x_recons, x_inputs = self._get_reconstructed_images()
         self.logger.experiment.add_image("Reconstructed Images", recon_grid, self.current_epoch)
