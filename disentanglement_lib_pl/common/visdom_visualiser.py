@@ -45,17 +45,10 @@ class VisdomVisualiser:
 
     def visualize_scalar_metrics(self, new_scalar_metric_values, global_step):
         """
-        all passed in tensors should have been .cpu()'d beforehand
+        All passed in tensors should have been .cpu()'d beforehand
+        Can be used to plot things like :
+        recon_losses, mus, vars, dim_wise_klds, mean_klds, total_loss, kld_loss 
         """
-        # recon_losses = torch.stack(new_scalar_metric_values['recon_loss']).cpu()
-        # mus = torch.stack(new_scalar_metric_values['mu']).cpu()
-        # vars = torch.stack(new_scalar_metric_values['var']).cpu()
-        # dim_wise_klds = torch.stack(self.visdom_gatherer.data['dim_wise_kld'])
-        # mean_klds = torch.stack(self.visdom_gatherer.data['mean_kld'])
-        # total_loss = torch.stack(new_scalar_metric_values['total_loss']
-        # kld_loss = torch.stack(new_scalar_metric_values['kld_loss'])
-        
-        #klds = torch.cat([dim_wise_klds, mean_klds, total_klds], 1).cpu()
         
         iters = torch.Tensor(global_step)
 

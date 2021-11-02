@@ -71,34 +71,40 @@ class VAEExperiment(pl.LightningModule):
         avg_kld_loss = torch.stack([tso[c.KLD_LOSS] for tso in train_step_outputs]).mean()
         avg_recon_loss = torch.stack([tso[c.RECON] for tso in train_step_outputs]).mean()
 
-        self.logger.experiment.add_scalar("Loss (Train)", avg_loss, self.current_epoch)
+        self.logger.experiment.add_scalar("Total Loss (Train)", avg_loss, self.current_epoch)
+        self.logger.experiment.add_scalar("Recon Loss (Train)", avg_recon_loss, self.current_epoch)
+        self.logger.experiment.add_scalar("KLD Loss (Train)", avg_kld_loss, self.current_epoch)
+
 
         # if isinstance(self.model, BetaVAE_Vanilla) and self.model.c_max is not None:
         #     self.logger.experiment.add_scalar("C", self.model.c_current, self.model.num_iter)
 
         # 2. save recon images and generated images, histogram of latent layer activations
         self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(), self.current_epoch)
+        
         recon_grid, x_recons, x_inputs = self._get_reconstructed_images()
         self.logger.experiment.add_image("Reconstructed Images", recon_grid, self.current_epoch)
+        
         self.logger.experiment.add_histogram("Latent Activations", self._get_latent_layer_activations()['mu'], self.current_epoch)
         
         # 3. Evaluate disent metrics
-        evaluation_results = evaluation_utils.evaluate_disentanglement_metric(self.model, 
+        if self.params["evaluation_metrics"]:
+            evaluation_results = evaluation_utils.evaluate_disentanglement_metric(self.model, 
                                                 eval_results_dir=".",
                                                 metric_names=self.params["evaluation_metrics"],
                                                 dataset_name=self.params['dataset']
                             )
+            self.visdom_visualiser.visualise_disentanglement_metrics(evaluation_results, self.current_epoch)
 
         scalar_metrics = dict()
         scalar_metrics[c.TOTAL_LOSS] = avg_loss
         scalar_metrics[c.RECON] = avg_recon_loss
         scalar_metrics[c.KLD_LOSS] = avg_kld_loss
 
-        
+
         # reconloss, kldloss, totalloss, mu,var,capacity etc
         self.visdom_visualiser.visualize_reconstruction(x_inputs,x_recons, self.current_epoch)
         self.visdom_visualiser.visualize_scalar_metrics(scalar_metrics, self.current_epoch)
-        self.visdom_visualiser.visualise_disentanglement_metrics(evaluation_results, self.current_epoch)
         
         torch.set_grad_enabled(True)
         self.model.train()

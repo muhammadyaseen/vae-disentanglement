@@ -50,6 +50,13 @@ def main(_args):
         eval_metrics=_args.evaluation_metric
     )
 
+    experiment_config['visual_args'] = dict(
+        dataset = _args.dset_name,
+        scalar_metrics = [''],
+        disent_metrics = None,
+    )
+    experiment_config['visdom_args'] = dict() 
+
     experiment = VAEExperiment(model, experiment_config)
 
     trainer_config = dict(
