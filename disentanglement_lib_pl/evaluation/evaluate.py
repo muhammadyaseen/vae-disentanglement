@@ -43,8 +43,8 @@ from tensorflow.python.framework.errors_impl import NotFoundError
 
 # Some more redundant code, but this allows us to not import utils_pytorch
 def get_dataset_name():
-    """Reads the name of the dataset from the environment variable `AICROWD_DATASET_NAME`."""
-    return os.getenv("AICROWD_DATASET_NAME", "cars3d")
+    """Reads the name of the dataset from the environment variable `DATASET_NAME`."""
+    return os.getenv("DATASET_NAME", "dsprites_full")
 
 
 def evaluate_with_gin(model_dir,
@@ -75,7 +75,7 @@ def evaluate_with_gin(model_dir,
 
 
 @gin.configurable(
-    "evaluation", blacklist=["model_dir", "output_dir", "overwrite"])
+    "evaluation", denylist=["model_dir", "output_dir", "overwrite"])
 def evaluate(model_dir,
              output_dir,
              overwrite=False,
@@ -176,7 +176,7 @@ def _evaluate_with_tensorflow(module_path, evaluation_fn, dataset, random_seed):
 
 
 def _evaluate_with_pytorch(module_path, evalulation_fn, dataset, random_seed):
-    from aicrowd import utils_pytorch
+    from evaluation import utils_pytorch
     # Load model and make a representor
     model = utils_pytorch.import_model(path=module_path)
     _representation_function = utils_pytorch.make_representor(model)

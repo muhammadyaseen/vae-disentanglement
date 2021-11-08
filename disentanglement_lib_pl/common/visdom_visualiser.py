@@ -121,10 +121,10 @@ class VisdomVisualiser:
                 'legend': None
             }
 
-        for win in self.evaluation_window_names:
+        for win in self.disent_metrics_names:
 
-            if self.evaluation_windows[win] is None:
-                self.evaluation_windows[win] = self.visdom_instance.line(
+            if self.disent_windows[win] is None:
+                self.disent_windows[win] = self.visdom_instance.line(
                     X=iters,
                     Y=window_titles_and_values[win]['value'],
                     env=self.name + '_disent_eval',
@@ -134,7 +134,7 @@ class VisdomVisualiser:
                         xlabel='iteration',
                         title=window_titles_and_values[win]['title']))
             else:
-                self.evaluation_windows[win] = self.visdom_instance.line(
+                self.disent_windows[win] = self.visdom_instance.line(
                     X=iters,
                     Y=window_titles_and_values[win]['value'],
                     env=self.name + '_disent_eval',

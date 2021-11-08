@@ -61,7 +61,7 @@ def main(_args):
 
     trainer_config = dict(
         gpus=_args.gpus,
-        max_epochs=20
+        max_epochs=_args.max_epoch
     )
 
     pl_trainer = Trainer(default_root_dir=f"{tb_logger.save_dir}",
