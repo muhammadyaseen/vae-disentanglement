@@ -49,11 +49,11 @@ def main(_args):
         seed=_args.seed,
         evaluation_metrics=_args.evaluation_metrics
     )
-
+    print(_args.evaluation_metrics)
     experiment_config['visual_args'] = dict(
         dataset = _args.dset_name,
         scalar_metrics = ['loss','recon', 'kld_loss'],
-        disent_metrics = None,
+        disent_metrics = _args.evaluation_metrics,
     )
     experiment_config['visdom_args'] = dict() 
 

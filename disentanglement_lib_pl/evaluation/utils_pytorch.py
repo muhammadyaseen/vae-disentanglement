@@ -21,8 +21,6 @@ if 'DISENTANGLEMENT_LIB_DATA' not in os.environ:
 # noinspection PyUnresolvedReferences
 from disentanglement_lib.data.ground_truth.named_data import get_named_ground_truth_data
 
-from common.data_loader import get_dataset_name
-
 
 ExperimentConfig = namedtuple('ExperimentConfig',
                               ('base_path', 'experiment_name', 'dataset_name'))

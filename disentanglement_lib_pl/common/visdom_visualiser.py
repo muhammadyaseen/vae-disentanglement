@@ -111,13 +111,14 @@ class VisdomVisualiser:
     def visualise_disentanglement_metrics(self, new_disent_metrics, global_step):
 
         window_titles_and_values = dict()
-        iters = torch.Tensor(global_step)
+        iters = torch.Tensor([global_step])
         
         for eval_metric_name, eval_metric_value in new_disent_metrics.items():
+            print(eval_metric_name, eval_metric_value)
             metric_name = eval_metric_name.replace("eval_", "")
             window_titles_and_values[metric_name] = {
                 'title': metric_name,
-                'value': torch.Tensor([eval_metric_value]),
+                'value': torch.Tensor([eval_metric_value]).unsqueeze(0),
                 'legend': None
             }
 
@@ -138,7 +139,7 @@ class VisdomVisualiser:
                     X=iters,
                     Y=window_titles_and_values[win]['value'],
                     env=self.name + '_disent_eval',
-                    win=self.scalar_windows[win],
+                    win=self.disent_windows[win],
                     update='append',
                     opts=dict(
                         width=400,
