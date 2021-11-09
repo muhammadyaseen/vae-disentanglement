@@ -2,6 +2,8 @@ datasets/
 onekonny/
 pl-dt-test/
 disentanglement_lib_pytorch/
+disentanglement_lib_pl/eval_results
+*.pt
 .idea/
 .ipynb_checkpoints/
 disent-vaes/logs
