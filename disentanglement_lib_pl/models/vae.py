@@ -131,6 +131,13 @@ class VAE(nn.Module):
             output_losses['vae_mmd'] = infovae_loss_fn(self.w_infovae, self.z_dim, self.device, **kwargs)
             output_losses[c.TOTAL_LOSS] += output_losses['vae_mmd']
 
+        # detach all losses except for the full loss
+        for loss_type in output_losses.keys():
+            if loss_type == c.LOSS:
+                continue
+            else:
+                output_losses[loss_type] = output_losses[loss_type].detach()
+
         return output_losses
 
     def encode(self, x, **kwargs):

@@ -59,12 +59,13 @@ class VAEExperiment(pl.LightningModule):
         self.model.eval()
 
         # 0. Add graph / architecture
-        if self.current_epoch == 0:
-            rand_input = torch.rand((1, self.params['in_channels'],
-                                     self.params['image_size'],
-                                     self.params['image_size']))
-            rand_input = rand_input.to(self.curr_device)
-            self.logger.experiment.add_graph(self.model, rand_input)
+        # TODO: for some reason this causes TracerWarning. Commenting it for now
+        # if self.current_epoch == 0:
+        #     rand_input = torch.rand((1, self.params['in_channels'],
+        #                              self.params['image_size'],
+        #                              self.params['image_size']))
+        #     rand_input = rand_input.to(self.model.device)
+        #     self.logger.experiment.add_graph(self.model, rand_input)
 
         # 1. Save avg loss in this epoch
         avg_loss = torch.stack([tso[c.TOTAL_LOSS] for tso in train_step_outputs]).mean()
@@ -113,8 +114,10 @@ class VAEExperiment(pl.LightningModule):
 
         x_true, labels = batch
         self.curr_device = x_true.device
+        #print("before val fwd")
         x_recon, z, mu, logvar  = self.forward(x_true, labels = labels)
-        
+        #print("after val fwd")
+
         loss_fn_args = dict(x_recon=x_recon, 
                             x_true=x_true, 
                             mu=mu, 
@@ -124,11 +127,6 @@ class VAEExperiment(pl.LightningModule):
                             batch_idx = batch_idx)
         
         val_losses = self.model.loss_function(**loss_fn_args)
-
-        # TODO: Validation level visualization can be done here
-        # self.visualize_recon(x_true, x_recon, test=True)
-        # self.visualize_traverse(limit=(self.traverse_min, self.traverse_max), spacing=self.traverse_spacing,
-        #                            data=(x_true, label), test=True)
         
         return val_losses
 
