@@ -34,10 +34,10 @@ def evaluate_disentanglement_metric(model, eval_results_dir, metric_names=['mig'
         if my_config is None:
             logging.warning('metric {} not among available configs: {}'.format(metric_name, evaluation_configs))
             return 0
-        # gin.parse_config_file(my_config)
+
         gin.parse_config_files_and_bindings([my_config], eval_bindings)
 
-        # TODO: this depends on tensorboard logger and when/where it saves ckpt
+        # TODO: do we need to save model every time for this ?
         model_path = os.path.join(eval_results_dir, 'pytorch_model.pt')
         utils_pytorch.export_model(utils_pytorch.RepresentationExtractor(model.encoder, 'mean'),
                                    input_shape=(1, model.num_channels, model.image_size, model.image_size),
