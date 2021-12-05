@@ -378,9 +378,9 @@ class ThreeShapesDataset(Dataset):
 class DSpritesDataset(Dataset):
 
     FILE_NAME = 'dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz'
-    CORRELATED_FILE_NAME = 'dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz'
+    CORRELATED_FILE_NAME = 'dsprites_ndarray_co3sh3sc6or40x32y32_64x64.npz'
 
-    def __init__(self, root, split="train", train_pct=0.75, transforms=None, correlated=False):
+    def __init__(self, root, split="train", train_pct=0.90, transforms=None, correlated=False):
         """
         Args:
             root (string): Directory with the .npz file.
@@ -454,8 +454,7 @@ def _get_transforms_for_dataset(dataset_name, image_size):
         transforms.ToTensor()])
     
     # for these datasets, we only need to convert numpy to tensors.
-    if dataset_name in ["dsprites_full", "dsprites_correlated", "threeshapes", 
-                        "threeshapesnoisy", "onedim", "continum"]:
+    if dataset_name in ["dsprites_full", "dsprites_correlated", "threeshapes", "threeshapesnoisy", "onedim", "continum"]:
         return transforms.ToTensor()
 
 
@@ -558,8 +557,7 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
         data_kwargs = {'root': root,
                        'train_pct': 0.75,
                        'split': 'train',
-                       'correlated': dataset_name == 'dsprites_correlated'
-                    }
+                       'correlated': dataset_name == 'dsprites_correlated'}
 
         dset = DSpritesDataset
     
@@ -593,9 +591,6 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
         
         dset = ContinumDataset
 
-    elif dataset_name == 'dsprites_correlated':
-        pass
-    
     else:
         raise NotImplementedError
     
@@ -608,9 +603,7 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
                              num_workers=num_workers,
                              pin_memory=pin_memory,
                              drop_last=droplast)
-'}
 
-        dset = DSpritesDataset
     if include_labels is not None:
         logging.info('num_classes: {}'.format(dataset.num_classes(False)))
         logging.info('class_values: {}'.format(class_values))

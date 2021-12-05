@@ -13,7 +13,7 @@ class VisdomVisualiser:
         
         self.visdom_instance = visdom.Visdom(port=self.port, log_to_filename=self.logfile)
         
-        # ['recon_loss', 'total_loss', 'kld_loss', 'mu', 'var'] 
+        # ['recon_loss', 'total_loss', 'kld_loss', 'mu', 'var' etc.] 
         self.scalar_window_names = visual_args['scalar_metrics']
         self.scalar_windows = self._initialize_scalar_windows()
 
@@ -51,7 +51,7 @@ class VisdomVisualiser:
         x_inputs = torchvision.utils.make_grid(x_inputs, normalize=True)
         x_recons = torchvision.utils.make_grid(x_recons, normalize=True)
 
-        img_input_vs_recon = torch.cat([x_inputs, x_recons], dim=1).cpu()
+        img_input_vs_recon = torch.cat([x_inputs, x_recons], dim=2).cpu()
 
         self.visdom_instance.images(img_input_vs_recon,
                                     env=self.name + '_reconstruction',

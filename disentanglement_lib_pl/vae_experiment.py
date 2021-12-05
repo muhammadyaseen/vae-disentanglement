@@ -26,7 +26,10 @@ class VAEExperiment(pl.LightningModule):
         self.num_train_imgs = 0
         self.sample_loader = None
         self.curr_device = None
-        self.visdom_visualiser = VisdomVisualiser(params['visual_args'], params['visdom_args'])
+        self.visdom_on = params['visdom_on']
+
+        if self.visdom_on:
+            self.visdom_visualiser = VisdomVisualiser(params['visual_args'], params['visdom_args'])
 
     def forward(self, x_input, **kwargs):
         
@@ -95,7 +98,8 @@ class VAEExperiment(pl.LightningModule):
                                                 metric_names=self.params["evaluation_metrics"],
                                                 dataset_name=self.params['dataset']
                             )
-            self.visdom_visualiser.visualise_disentanglement_metrics(evaluation_results, self.current_epoch)
+            if self.visdom_on:
+                self.visdom_visualiser.visualise_disentanglement_metrics(evaluation_results, self.current_epoch)
 
         scalar_metrics = dict()
         scalar_metrics[c.TOTAL_LOSS] = avg_loss
@@ -197,7 +201,7 @@ class VAEExperiment(pl.LightningModule):
     def val_dataloader(self):
         
         # for now we just return the same data
-        # TODO: implement some kind of disjoing split
+        # TODO: implement some kind of disjoint split
         self.sample_loader = self.train_dataloader()
         return self.sample_loader
 
