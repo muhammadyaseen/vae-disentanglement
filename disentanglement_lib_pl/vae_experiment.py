@@ -1,4 +1,5 @@
 
+from numpy.lib.function_base import select
 import torch
 import pytorch_lightning as pl
 import torchvision.utils as vutils
@@ -27,6 +28,7 @@ class VAEExperiment(pl.LightningModule):
         self.sample_loader = None
         self.curr_device = None
         self.visdom_on = params['visdom_on']
+        self.save_dir = params['save_dir']
 
         if self.visdom_on:
             self.visdom_visualiser = VisdomVisualiser(params)
@@ -41,8 +43,6 @@ class VAEExperiment(pl.LightningModule):
         self.curr_device = x_true1.device
         x_recon, mu, z, logvar = self.forward(x_true1, label=label1)
 
-        #print(mu.shape)
-        #print(logvar.shape)
         loss_fn_args = dict(x_recon=x_recon, 
                             x_true=x_true1, 
                             mu=mu, 
@@ -52,24 +52,20 @@ class VAEExperiment(pl.LightningModule):
                             batch_idx = batch_idx)
         
         losses = self.model.loss_function(**loss_fn_args)
-        #print(mu.shape)
-        #print(logvar.shape)
+
         losses['mu_batch'] = mu.detach().cpu()
         losses['logvar_batch'] = logvar.detach().cpu()
-        #print(losses)
 
         return losses
 
     def training_step_end(self, train_step_output):
         pass
-        #print(train_step_output)
     
     def training_epoch_end(self, train_step_outputs):
         
         # TODO: figure out a way to do model / architecture specific or dataset specific 
         # logging w/o if-else jungle
         
-        # TODO: inspect the structure of train_steps_outputs
         torch.set_grad_enabled(False)
         self.model.eval()
 
@@ -120,10 +116,22 @@ class VAEExperiment(pl.LightningModule):
             self.visdom_visualiser.visualize_scalar_metrics(scalar_metrics, self.current_epoch)
             self.visdom_visualiser.visualize_multidim_metrics( {
                                             "mu_batch" : torch.stack([tso['mu_batch'] for tso in train_step_outputs]),
-                                            "logvar_batch" : torch.stack([tso['logvar_batch'] for tso in train_step_outputs]),
+                                            "var_batch" : torch.stack([tso['logvar_batch'].exp() for tso in train_step_outputs]),
                                         }, self.current_epoch)
         torch.set_grad_enabled(True)
         self.model.train()
+
+    def on_train_end(self):
+
+        print("Training finished.")
+        if self.visdom_on:
+            print("Saving visdom environments to logs folder: (%s)" % self.save_dir)
+            print("Available: ")
+            for i, env_name in enumerate(self.visdom_visualiser.visdom_instance.get_env_list()):
+                print(f"[{i}] - {env_name}")
+                if env_name in self.visdom_visualiser.environmets:
+                    self.visdom_visualiser.visdom_instance.save([env_name])
+                    print("saved...")
 
     def validation_step(self, batch, batch_idx, optimizer_idx = 0):
 

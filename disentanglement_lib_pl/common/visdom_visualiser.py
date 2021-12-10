@@ -1,3 +1,4 @@
+from numpy.lib.function_base import select
 import visdom
 import torch
 import torchvision
@@ -12,8 +13,9 @@ class VisdomVisualiser:
 
         self.port = visdom_args['port'] if "port" in visdom_args.keys() else 8097
         self.logfile = visdom_args['logfile'] if "logfile" in visdom_args.keys() else None
-        self.name = "Visdom on {}".format(visual_args['dataset'])
-        
+        self.name = "visdom_{}".format(visual_args['dataset'])
+        self.environmets = [ self.name + '_lines', self.name + '_disent_eval', self.name + '_reconstruction']
+
         self.visdom_instance = visdom.Visdom(port=self.port, log_to_filename=self.logfile)
         
         # ['recon_loss', 'total_loss', 'kld_loss', 'mu', 'var' etc.] 
@@ -26,12 +28,12 @@ class VisdomVisualiser:
         self.disent_windows = self._initialize_disent_metrics_windows()
         self.multidim_windows = dict(
             mu_batch=None,
-            logvar_batch=None
+            var_batch=None
         )
 
     def _initialize_scalar_windows(self):
         
-        if self.scalar_window_names is None:
+        if self.scalar_window_names is None or len(self.scalar_window_names) == 0:
             return None
         
         else:
@@ -43,7 +45,7 @@ class VisdomVisualiser:
 
     def _initialize_disent_metrics_windows(self):
         
-        if self.disent_metrics_names is None:
+        if self.disent_metrics_names is None  or len(self.disent_metrics_names) == 0:
             return None
         
         else:
@@ -174,15 +176,11 @@ class VisdomVisualiser:
         Mainly used to plot \mu and \Sigma for each dimension on one plot
         """
         assert "mu_batch" in multidim_metrics.keys()
-        assert "logvar_batch" in multidim_metrics.keys()
+        assert "var_batch" in multidim_metrics.keys()
 
         iters = torch.Tensor([global_step])
-
-        print("in mdm()")
-        print(multidim_metrics['mu_batch'].shape)
-        print(multidim_metrics['logvar_batch'].shape)
         
-        for mdm in ['mu_batch', 'logvar_batch']:
+        for mdm in ['mu_batch', 'var_batch']:
             
             if self.multidim_windows[mdm] is None:
                 self.multidim_windows[mdm] = self.visdom_instance.line(

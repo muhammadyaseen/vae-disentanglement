@@ -48,8 +48,10 @@ def main(_args):
 
         seed=_args.seed,
         evaluation_metrics=_args.evaluation_metrics,
-        visdom_on=_args.visdom_on
+        visdom_on=_args.visdom_on,
+        save_dir=os.path.join(_args.ckpt_dir, _args.expr_name)
     )
+    
     print(_args.evaluation_metrics)
     experiment_config['visual_args'] = dict(
         dataset = _args.dset_name,
