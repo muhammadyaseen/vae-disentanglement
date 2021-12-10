@@ -29,7 +29,7 @@ class VAEExperiment(pl.LightningModule):
         self.visdom_on = params['visdom_on']
 
         if self.visdom_on:
-            self.visdom_visualiser = VisdomVisualiser(params['visual_args'], params['visdom_args'])
+            self.visdom_visualiser = VisdomVisualiser(params)
 
     def forward(self, x_input, **kwargs):
         
@@ -39,8 +39,10 @@ class VAEExperiment(pl.LightningModule):
         
         x_true1, label1 = batch
         self.curr_device = x_true1.device
-        x_recon, z, mu, logvar = self.forward(x_true1, label=label1)
+        x_recon, mu, z, logvar = self.forward(x_true1, label=label1)
 
+        #print(mu.shape)
+        #print(logvar.shape)
         loss_fn_args = dict(x_recon=x_recon, 
                             x_true=x_true1, 
                             mu=mu, 
@@ -50,25 +52,31 @@ class VAEExperiment(pl.LightningModule):
                             batch_idx = batch_idx)
         
         losses = self.model.loss_function(**loss_fn_args)
+        #print(mu.shape)
+        #print(logvar.shape)
+        losses['mu_batch'] = mu.detach().cpu()
+        losses['logvar_batch'] = logvar.detach().cpu()
+        #print(losses)
 
         return losses
 
+    def training_step_end(self, train_step_output):
+        pass
+        #print(train_step_output)
+    
     def training_epoch_end(self, train_step_outputs):
         
         # TODO: figure out a way to do model / architecture specific or dataset specific 
-        # loggin w/o if-else jungle
+        # logging w/o if-else jungle
         
+        # TODO: inspect the structure of train_steps_outputs
         torch.set_grad_enabled(False)
         self.model.eval()
 
-        # 0. Add graph / architecture
-        # TODO: for some reason this causes TracerWarning. Commenting it for now
-        # if self.current_epoch == 0:
-        #     rand_input = torch.rand((1, self.params['in_channels'],
-        #                              self.params['image_size'],
-        #                              self.params['image_size']))
-        #     rand_input = rand_input.to(self.model.device)
-        #     self.logger.experiment.add_graph(self.model, rand_input)
+        #print(train_step_outputs.keys())
+        #mu_batch_recs = [tso['mu_batch'] for tso in train_step_outputs]
+        #print(mu_batch_recs)
+        #print(len(mu_batch_recs))
 
         # 1. Save avg loss in this epoch
         avg_loss = torch.stack([tso[c.TOTAL_LOSS] for tso in train_step_outputs]).mean()
@@ -99,7 +107,7 @@ class VAEExperiment(pl.LightningModule):
                                                 dataset_name=self.params['dataset']
                             )
             if self.visdom_on:
-                self.visdom_visualiser.visualise_disentanglement_metrics(evaluation_results, self.current_epoch)
+                self.visdom_visualiser.visualize_disentanglement_metrics(evaluation_results, self.current_epoch)
 
         scalar_metrics = dict()
         scalar_metrics[c.TOTAL_LOSS] = avg_loss
@@ -107,10 +115,13 @@ class VAEExperiment(pl.LightningModule):
         scalar_metrics[c.KLD_LOSS] = avg_kld_loss
 
 
-        # reconloss, kldloss, totalloss, mu,var,capacity etc
-        self.visdom_visualiser.visualize_reconstruction(x_inputs,x_recons, self.current_epoch)
-        self.visdom_visualiser.visualize_scalar_metrics(scalar_metrics, self.current_epoch)
-        
+        if self.visdom_on:
+            self.visdom_visualiser.visualize_reconstruction(x_inputs,x_recons, self.current_epoch)
+            self.visdom_visualiser.visualize_scalar_metrics(scalar_metrics, self.current_epoch)
+            self.visdom_visualiser.visualize_multidim_metrics( {
+                                            "mu_batch" : torch.stack([tso['mu_batch'] for tso in train_step_outputs]),
+                                            "logvar_batch" : torch.stack([tso['logvar_batch'] for tso in train_step_outputs]),
+                                        }, self.current_epoch)
         torch.set_grad_enabled(True)
         self.model.train()
 
@@ -195,14 +206,26 @@ class VAEExperiment(pl.LightningModule):
                                             include_labels=None,
                                             pin_memory=self.params['pin_memory'],
                                             seed=self.params['seed'],
-                                            image_size=self.params['image_size']
+                                            image_size=self.params['image_size'],
+                                            split="train",
+                                            train_pct=0.90
                                             )
 
     def val_dataloader(self):
         
-        # for now we just return the same data
-        # TODO: implement some kind of disjoint split
-        self.sample_loader = self.train_dataloader()
+        self.sample_loader = data_loader.get_dataloader(self.params['dataset'],
+                                            self.params['datapath'],
+                                            shuffle=False,
+                                            batch_size=self.params['batch_size'], 
+                                            droplast=self.params['droplast'],
+                                            num_workers=self.params['num_workers'],
+                                            include_labels=None,
+                                            pin_memory=self.params['pin_memory'],
+                                            seed=self.params['seed'],
+                                            image_size=self.params['image_size'],
+                                            split="test",
+                                            train_pct=0.90
+                                            )
         return self.sample_loader
 
     def _get_sampled_images(self, how_many: int):

@@ -192,24 +192,44 @@ class OneDimLatentDataset(Dataset):
         """
         self.root_dir = root
         self.files_list = glob.glob(os.path.join(self.root_dir,"*.jpg"))
+        self.split = split
         self.trasnforms = transforms
 
         MAX_TRAIN_IDX = int( len(self.files_list) * 0.90 )
+        # get shuffled indices of training samples
+        self.train_indices = np.random.choice(len(self.files_list),
+                         size=MAX_TRAIN_IDX,
+                         replace=False)
+
+        # disjoint (shuffled) validation set indices
+        self.test_indices = np.random.permutation(
+                                np.setdiff1d(
+                                    range(len(self.files_list)), self.train_indices
+                                )
+                            )
+        # if split == "train":
+        #     self.files_list = self.files_list[: MAX_TRAIN_IDX]
         
-        if split == "train":
-            self.files_list = self.files_list[: MAX_TRAIN_IDX]
-        
-        if split == "test":
-            self.files_list = self.files_list[MAX_TRAIN_IDX:]
+        # if split == "test":
+        #     self.files_list = self.files_list[MAX_TRAIN_IDX:]
 
     def __len__(self):
-        return len(self.files_list)
+        if self.split == "train":
+            return len(self.train_indices)
+        elif self.split == "test":
+            return len(self.test_indices)
 
     def __getitem__(self, idx):
 
         if torch.is_tensor(idx):
             idx = idx.tolist()
+        
+        if self.split == "train":
+            idx = self.train_indices[idx]
 
+        if self.split == "test":
+            idx = self.test_indices[idx]
+        
         img_name = self.files_list[idx]
         image = plt.imread(img_name)
         
@@ -234,28 +254,51 @@ class ContinumDataset(Dataset):
         """
         self.root_dir = root
         self.files_list = glob.glob(os.path.join(self.root_dir, "*.jpg"))
+        self.split = split
         self.transforms = transforms
         MAX_TRAIN_IDX = int(len(self.files_list) * train_pct)
+        
+        # get shuffled indices of training samples
+        self.train_indices = np.random.choice(len(self.files_list),
+                         size=MAX_TRAIN_IDX,
+                         replace=False)
 
-        if split == "train":
-            self.files_list = self.files_list[: MAX_TRAIN_IDX]
+        # disjoint (shuffled) validation set indices
+        self.test_indices = np.random.permutation(
+                                np.setdiff1d(
+                                    range(len(self.files_list)), self.train_indices
+                                )
+                            )
+        # TODO: this is NOT random. glob will have some specific ordering 
+        # of file names. Should convert it to random
+        # if split == "train":
+        #     self.files_list = self.files_list[: MAX_TRAIN_IDX]
 
-        if split == "test":
-            self.files_list = self.files_list[MAX_TRAIN_IDX:]
-
+        # if split == "test":
+        #     self.files_list = self.files_list[MAX_TRAIN_IDX:]
 
     def __len__(self):
-        return len(self.files_list)
+        
+        if self.split == "train":
+            return len(self.train_indices)
+        elif self.split == "test":
+            return len(self.test_indices)
 
     def __getitem__(self, idx):
 
         if torch.is_tensor(idx):
             idx = idx.tolist()
+        
+        if self.split == "train":
+            idx = self.train_indices[idx]
 
+        if self.split == "test":
+            idx = self.test_indices[idx]
+        
         img_name = self.files_list[idx]
         image = plt.imread(img_name)
         
-        if self.trasnforms is not None:
+        if self.transforms is not None:
             image = self.transforms(image)
 
         label = int(os.path.basename(self.files_list[idx]).split("_")[2].replace(".jpg", ""))
@@ -300,17 +343,37 @@ class ThreeShapesDataset(Dataset):
         self.root_dir = root
         self.files_list = glob.glob(os.path.join(self.root_dir, "*.jpg"))
         self.transforms = transforms
+        self.split = split
 
         MAX_TRAIN_IDX = int(len(self.files_list) * train_pct)
+        
+        # get shuffled indices of training samples
+        self.train_indices = np.random.choice(len(self.files_list),
+                         size=MAX_TRAIN_IDX,
+                         replace=False)
 
-        if split == "train":
-            self.files_list = self.files_list[: MAX_TRAIN_IDX]
+        # disjoint (shuffled) validation set indices
+        self.test_indices = np.random.permutation(
+                                np.setdiff1d(
+                                    range(len(self.files_list)), self.train_indices
+                                )
+                            )
+        
+        # TODO: this is NOT random. glob will have some specific ordering 
+        # of file names. Should convert it to random
+        # if self.split == "train":
+        #     self.files_list = self.files_list[: MAX_TRAIN_IDX]
 
-        if split == "test":
-            self.files_list = self.files_list[MAX_TRAIN_IDX:]
+        # if self.split == "test":
+        #     self.files_list = self.files_list[MAX_TRAIN_IDX:]
 
     def __len__(self):
-        return len(self.files_list)
+        if self.split == "train":
+            return len(self.train_indices)
+        elif self.split == "test":
+            return len(self.test_indices)
+        else:
+            Exception("Unknown split type")
 
     def __getitem__(self, idx):
 
@@ -322,6 +385,12 @@ class ThreeShapesDataset(Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
+        if self.split == "train":
+            idx = self.train_indices[idx]
+
+        if self.split == "test":
+            idx = self.test_indices[idx]
+        
         img_name = self.files_list[idx]
         image = plt.imread(img_name)
         
@@ -459,7 +528,7 @@ def _get_transforms_for_dataset(dataset_name, image_size):
 
 
 def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
-                                shuffle, droplast):
+                                shuffle, droplast, split, train_pct):
         
     dataset_name = dataset_name.lower()
     transforms = _get_transforms_for_dataset(dataset_name, image_size)
@@ -555,8 +624,8 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
         """
 
         data_kwargs = {'root': root,
-                       'train_pct': 0.75,
-                       'split': 'train',
+                       'train_pct': train_pct,
+                       'split': split,
                        'correlated': dataset_name == 'dsprites_correlated'}
 
         dset = DSpritesDataset
@@ -566,8 +635,8 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
         root = os.path.join(dset_dir, dataset_name)
 
         data_kwargs = {'root': root,
-                       'train_pct': 0.75,
-                       'split': 'train'}
+                       'train_pct': train_pct,
+                       'split': split}
         
         dset = ThreeShapesDataset
 
@@ -576,8 +645,8 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
         root = os.path.join(dset_dir, dataset_name)
 
         data_kwargs = {'root': root,
-                       'train_pct': 0.75,
-                       'split': 'train'}
+                       'train_pct': train_pct,
+                       'split': split}
         
         dset = OneDimLatentDataset
     
@@ -586,8 +655,8 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
         root = os.path.join(dset_dir, dataset_name)
 
         data_kwargs = {'root': root,
-                       'train_pct': 0.75,
-                       'split': 'train'}
+                       'train_pct': train_pct,
+                       'split': split}
         
         dset = ContinumDataset
 
@@ -625,7 +694,8 @@ def _get_dataloader(name, batch_size, seed, num_workers, pin_memory, shuffle, dr
 
 
 def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
-                   shuffle, droplast):
+                   shuffle, droplast, split="train", train_pct=0.90):
+    
     locally_supported_datasets = c.DATASETS[0:7]
 
     logging.info(f'Datasets root: {dset_dir}')
@@ -633,7 +703,7 @@ def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_siz
 
     if dset_name in locally_supported_datasets:
         return _get_dataloader_with_labels(dset_name, dset_dir, batch_size, seed, num_workers, image_size,
-                                           include_labels, pin_memory, shuffle, droplast)
+                                           include_labels, pin_memory, shuffle, droplast, split, train_pct)
     else:
         # use the dataloader of Google's disentanglement_lib
         return _get_dataloader(dset_name, batch_size, seed, num_workers, pin_memory, shuffle, droplast)

@@ -5,8 +5,11 @@ import matplotlib.pyplot as plt
 
 class VisdomVisualiser:
 
-    def __init__(self, visual_args, visdom_args):
+    def __init__(self, params):
         
+        visual_args = params['visual_args'] 
+        visdom_args = params['visdom_args']
+
         self.port = visdom_args['port'] if "port" in visdom_args.keys() else 8097
         self.logfile = visdom_args['logfile'] if "logfile" in visdom_args.keys() else None
         self.name = "Visdom on {}".format(visual_args['dataset'])
@@ -16,11 +19,16 @@ class VisdomVisualiser:
         # ['recon_loss', 'total_loss', 'kld_loss', 'mu', 'var' etc.] 
         self.scalar_window_names = visual_args['scalar_metrics']
         self.scalar_windows = self._initialize_scalar_windows()
+        self.visualize_experiment_metadata(params)
 
         # ['beta-vae', 'factorvae' etc.] 
         self.disent_metrics_names = visual_args['disent_metrics']
         self.disent_windows = self._initialize_disent_metrics_windows()
-        
+        self.multidim_windows = dict(
+            mu_batch=None,
+            logvar_batch=None
+        )
+
     def _initialize_scalar_windows(self):
         
         if self.scalar_window_names is None:
@@ -47,11 +55,16 @@ class VisdomVisualiser:
             return _disent_windows
 
     def visualize_reconstruction(self, x_inputs, x_recons, global_step):
+        
+        # input is BCHW
+        # we want to see image and its reconstruction side-by-side, and not the 
+        # images and recons grid side-by-side
+        inputs_and_reconds_side_by_side = torch.cat([x_inputs, x_recons], dim = 3)
+        img_input_vs_recon = torchvision.utils.make_grid(inputs_and_reconds_side_by_side, normalize=True)
 
-        x_inputs = torchvision.utils.make_grid(x_inputs, normalize=True)
-        x_recons = torchvision.utils.make_grid(x_recons, normalize=True)
-
-        img_input_vs_recon = torch.cat([x_inputs, x_recons], dim=2).cpu()
+        # x_inputs = torchvision.utils.make_grid(x_inputs, normalize=True)
+        # x_recons = torchvision.utils.make_grid(x_recons, normalize=True)
+        # img_input_vs_recon = torch.cat([x_inputs, x_recons], dim=2).cpu()
 
         self.visdom_instance.images(img_input_vs_recon,
                                     env=self.name + '_reconstruction',
@@ -108,7 +121,7 @@ class VisdomVisualiser:
                         xlabel='iteration',
                         title=window_titles_and_values[win]['title']))
 
-    def visualise_disentanglement_metrics(self, new_disent_metrics, global_step):
+    def visualize_disentanglement_metrics(self, new_disent_metrics, global_step):
 
         window_titles_and_values = dict()
         iters = torch.Tensor([global_step])
@@ -146,3 +159,50 @@ class VisdomVisualiser:
                         height=400,
                         xlabel='iteration',
                         title=window_titles_and_values[win]['title']))
+
+    def visualize_experiment_metadata(self, expr_config):
+        
+        metadata = ""
+        for param, value in expr_config.items():
+            if not type(value) in [dict, list]:
+                metadata += f"<b> {param} </b> = {str(value)} <br /> "
+
+        self.visdom_instance.text(metadata, win='metadata', env=self.name + '_lines')
+    
+    def visualize_multidim_metrics(self, multidim_metrics, global_step):
+        """
+        Mainly used to plot \mu and \Sigma for each dimension on one plot
+        """
+        assert "mu_batch" in multidim_metrics.keys()
+        assert "logvar_batch" in multidim_metrics.keys()
+
+        iters = torch.Tensor([global_step])
+
+        print("in mdm()")
+        print(multidim_metrics['mu_batch'].shape)
+        print(multidim_metrics['logvar_batch'].shape)
+        
+        for mdm in ['mu_batch', 'logvar_batch']:
+            
+            if self.multidim_windows[mdm] is None:
+                self.multidim_windows[mdm] = self.visdom_instance.line(
+                    X=iters,
+                    Y=multidim_metrics[mdm].mean(0).mean(0, keepdim=True),
+                    env=self.name + '_lines',
+                    opts=dict(
+                        width=400,
+                        height=400,
+                        xlabel='iteration',
+                        title=mdm))
+            else:
+                self.multidim_windows[mdm] = self.visdom_instance.line(
+                    X=iters,
+                    Y=multidim_metrics[mdm].mean(0).mean(0, keepdim=True),
+                    env=self.name + '_lines',
+                    win=self.multidim_windows[mdm],
+                    update='append',
+                    opts=dict(
+                        width=400,
+                        height=400,
+                        xlabel='iteration',
+                        title=mdm))

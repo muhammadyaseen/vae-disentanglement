@@ -47,7 +47,8 @@ def main(_args):
         pin_memory=_args.pin_memory,
 
         seed=_args.seed,
-        evaluation_metrics=_args.evaluation_metrics
+        evaluation_metrics=_args.evaluation_metrics,
+        visdom_on=_args.visdom_on
     )
     print(_args.evaluation_metrics)
     experiment_config['visual_args'] = dict(

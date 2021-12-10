@@ -138,6 +138,7 @@ class VAE(nn.Module):
             else:
                 output_losses[loss_type] = output_losses[loss_type].detach()
 
+        #print(" in loss fn ", mu.shape)
         return output_losses
 
     def encode(self, x, **kwargs):
