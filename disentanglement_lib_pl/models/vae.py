@@ -20,7 +20,7 @@ class VAE(nn.Module):
 
         # Misc
         # self.name = args.name
-        # self.alg = args.alg
+        self.alg = args.alg
         self.loss_terms = args.loss_terms
 
         # Misc params related to data
@@ -88,7 +88,7 @@ class VAE(nn.Module):
             kld_loss = (kl_divergence_mu0_var1(mu, logvar) - capacity).abs() * self.w_kld
         return kld_loss
 
-    def loss_function(self, **kwargs):
+    def loss_function(self, loss_type='cross_ent', **kwargs):
         
         x_recon, x_true = kwargs['x_recon'], kwargs['x_true']
         mu, logvar = kwargs['mu'], kwargs['logvar']
@@ -99,7 +99,12 @@ class VAE(nn.Module):
         # initialize the loss of this batch with zero.
         output_losses[c.TOTAL_LOSS] = 0
 
-        output_losses[c.RECON] = F.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
+        if loss_type == 'cross_ent':
+            output_losses[c.RECON] = F.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs * self.w_recon
+        
+        if loss_type == 'mse':
+            output_losses[c.RECON] = F.mse_loss(x_recon, x_true, reduction='sum') / bs * self.w_recon
+
         output_losses[c.TOTAL_LOSS] += output_losses[c.RECON]
 
         output_losses[c.KLD_LOSS] = self._kld_loss_fn(mu, logvar)

@@ -33,7 +33,8 @@ def main(_args):
                                 load_iternum=_args.ckpt_load_iternum, 
                                 load_optim=_args.ckpt_load_optim)
 
-    experiment_config = dict(        
+    experiment_config = dict(
+        name=_args.expr_name,        
         in_channels=_args.in_channels,
         image_size=_args.image_size,
         LR=_args.lr_G,

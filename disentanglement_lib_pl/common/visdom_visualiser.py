@@ -13,7 +13,7 @@ class VisdomVisualiser:
 
         self.port = visdom_args['port'] if "port" in visdom_args.keys() else 8097
         self.logfile = visdom_args['logfile'] if "logfile" in visdom_args.keys() else None
-        self.name = "visdom_{}".format(visual_args['dataset'])
+        self.name = params['name'] #"visdom_{}".format(visual_args['dataset'])
         self.environmets = [ self.name + '_lines', self.name + '_disent_eval', self.name + '_reconstruction']
 
         self.visdom_instance = visdom.Visdom(port=self.port, log_to_filename=self.logfile)

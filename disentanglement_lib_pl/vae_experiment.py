@@ -51,7 +51,7 @@ class VAEExperiment(pl.LightningModule):
                             optimizer_idx=optimizer_idx,
                             batch_idx = batch_idx)
         
-        losses = self.model.loss_function(**loss_fn_args)
+        losses = self.model.loss_function(loss_type='cross_ent', **loss_fn_args)
 
         losses['mu_batch'] = mu.detach().cpu()
         losses['logvar_batch'] = logvar.detach().cpu()
@@ -224,7 +224,7 @@ class VAEExperiment(pl.LightningModule):
         self.sample_loader = data_loader.get_dataloader(self.params['dataset'],
                                             self.params['datapath'],
                                             shuffle=False,
-                                            batch_size=self.params['batch_size'], 
+                                            batch_size=64, 
                                             droplast=self.params['droplast'],
                                             num_workers=self.params['num_workers'],
                                             include_labels=None,

@@ -448,8 +448,9 @@ class DSpritesDataset(Dataset):
 
     FILE_NAME = 'dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz'
     CORRELATED_FILE_NAME = 'dsprites_ndarray_co3sh3sc6or40x32y32_64x64.npz'
+    CORRELATED_3C_FILE_NAME = 'dsprites_ndarray_co3sh3sc6or40x32y32_64x64x3.npz'
 
-    def __init__(self, root, split="train", train_pct=0.90, transforms=None, correlated=False):
+    def __init__(self, root, split="train", train_pct=0.90, transforms=None, correlated=False, colored=False):
         """
         Args:
             root (string): Directory with the .npz file.
@@ -458,7 +459,8 @@ class DSpritesDataset(Dataset):
         self.transforms = transforms
         self.split = split
         self.correlated = correlated
-        file_to_load = self.CORRELATED_FILE_NAME if self.correlated else self.FILE_NAME
+        self.colored = colored
+        file_to_load = self.CORRELATED_3C_FILE_NAME if (self.correlated and self.colored) else self.FILE_NAME
         dataset_zip = np.load(os.path.join(root, file_to_load),
                               allow_pickle=True, encoding='latin1')
 
@@ -523,7 +525,7 @@ def _get_transforms_for_dataset(dataset_name, image_size):
         transforms.ToTensor()])
     
     # for these datasets, we only need to convert numpy to tensors.
-    if dataset_name in ["dsprites_full", "dsprites_correlated", "threeshapes", "threeshapesnoisy", "onedim", "continum"]:
+    if dataset_name in ["dsprites_full", "dsprites_correlated", "dsprites_colored", "threeshapes", "threeshapesnoisy", "onedim", "continum"]:
         return transforms.ToTensor()
 
 
@@ -593,7 +595,7 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
                        'num_channels': 3}
         dset = CustomImageFolder
     
-    elif dataset_name == 'dsprites_full' or dataset_name == 'dsprites_correlated':
+    elif dataset_name == 'dsprites_full' or dataset_name == 'dsprites_correlated' or dataset_name == 'dsprites_colored':
         
         root = os.path.join(dset_dir, 'dsprites')
 
@@ -626,7 +628,8 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
         data_kwargs = {'root': root,
                        'train_pct': train_pct,
                        'split': split,
-                       'correlated': dataset_name == 'dsprites_correlated'}
+                       'correlated': dataset_name == 'dsprites_correlated' or dataset_name == 'dsprites_colored',
+                       'colored': dataset_name == 'dsprites_colored'}
 
         dset = DSpritesDataset
     
@@ -696,10 +699,11 @@ def _get_dataloader(name, batch_size, seed, num_workers, pin_memory, shuffle, dr
 def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
                    shuffle, droplast, split="train", train_pct=0.90):
     
-    locally_supported_datasets = c.DATASETS[0:7]
+    locally_supported_datasets = c.DATASETS[0:8]
 
     logging.info(f'Datasets root: {dset_dir}')
     logging.info(f'Dataset: {dset_name}')
+    logging.info("Locally supported: " + ','.join(locally_supported_datasets))
 
     if dset_name in locally_supported_datasets:
         return _get_dataloader_with_labels(dset_name, dset_dir, batch_size, seed, num_workers, image_size,
