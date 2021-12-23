@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 
 from collections import defaultdict, namedtuple
 from tqdm import tqdm
+from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 import torch
 import torchvision.utils as vutils
@@ -195,6 +196,21 @@ def do_latent_traversal_scatter(vae_model, random_img, limit=3, inter=2/3, loc=-
                 samples.append((z[:, row].cpu().item(),sample))
 
     return samples, ref
+
+def show_traversal_plot(vae_model, anchor_image, limit, interp_step, dim=-1, mode='relative'):
+    
+    traverse_maps, ref = do_latent_traversal_scatter(vae_model, anchor_image, limit=limit, 
+                                            inter=interp_step, loc=dim, mode=mode)
+
+    _ , ax = plt.subplots(figsize=(15,1))
+    
+    for z, img in traverse_maps:
+        ax.scatter(z, 0.2) 
+        ab = AnnotationBbox(OffsetImage(img.squeeze(0).cpu().permute(1,2,0), zoom=0.5,cmap='gray'), 
+                            (z, 0.2), 
+                            frameon=False)
+        ax.add_artist(ab)
+    ax.vlines(ref,0,0.5)
 
 def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_dim , beta, 
                                             checkpoint_path, current_device, 
