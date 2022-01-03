@@ -56,7 +56,7 @@ def main(_args):
     print(_args.evaluation_metrics)
     experiment_config['visual_args'] = dict(
         dataset = _args.dset_name,
-        scalar_metrics = ['loss','recon', 'kld_loss'],
+        scalar_metrics = ['loss','recon', 'kld_loss', 'vae_betatc'],
         disent_metrics = _args.evaluation_metrics,
     )
     experiment_config['visdom_args'] = dict() 

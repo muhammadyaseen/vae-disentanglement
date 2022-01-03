@@ -20,6 +20,70 @@ ModelParams = namedtuple('ModelParams', ["z_dim", "l_dim", "num_labels" , "in_ch
                                         "w_tc", "w_infovae", "w_dipvae", "lambda_od", "lambda_d_factor",
                                         "encoder", "decoder", "loss_terms", "alg"])
 
+"""
+Start: dsprites notebook functions
+These functions were orignally part of dsprites loading notebook file but 
+have been adapted to our setup
+"""
+
+def load_dsprites(npz_path):
+    """
+    npz_path: string like "../datasets/dsprites/dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz"
+    """
+
+    dataset_zip = np.load(npz_path, allow_pickle=True, encoding='latin1')
+    metadata = dataset_zip['metadata'][()]
+
+    return {
+        'images': dataset_zip['imgs'],
+        'latent_values': dataset_zip['latents_values'],
+        'latent_classes': dataset_zip['latents_classes'],
+        'metadata': metadata,
+        'latents_sizes': metadata['latents_sizes'],
+        'latents_bases': np.concatenate((metadata['latents_sizes'][::-1].cumprod()[::-1][1:], np.array([1,])))
+    }
+
+def latent_to_index(latents, latents_bases):
+    
+    # when indexing we have to fix color=0 because of how they generated the dataset
+    latents[:,0] = np.zeros(len(latents)) 
+    return np.dot(latents, latents_bases).astype(int)
+
+def sample_latent(how_many, latents_sizes, correlated=False, 
+                    in_idx=None, out_idx=None, map_fn=None):
+    
+    samples = np.zeros((how_many, latents_sizes.size))
+    
+    for lat_i, lat_size in enumerate(latents_sizes):
+        samples[:, lat_i] = np.random.randint(lat_size, size=how_many)
+
+    if correlated:
+        samples[:, out_idx] = map_fn(samples[:,in_idx])
+    
+    return samples
+
+def show_images_grid(imgs_, num_images=25):
+    
+    from matplotlib import cm
+
+    ncols = int(np.ceil(num_images**0.5))
+    nrows = int(np.ceil(num_images / ncols))
+    _, axes = plt.subplots(ncols, nrows, figsize=(nrows * 3, ncols * 3))
+    axes = axes.flatten()
+
+    norm = cm.colors.Normalize(vmax=1.0, vmin=0.0)
+    
+    for ax_i, ax in enumerate(axes):
+        if ax_i < num_images:
+            ax.imshow(imgs_[ax_i], cmap='gray',  norm=norm)#, interpolation='nearest')
+            ax.set_xticks([])
+            ax.set_yticks([])
+    else:
+        ax.axis('off')
+
+"""
+End: dsprites notebook functions
+"""
 
 def load_vae_model(algo_name, checkpoint_path, curr_dev, 
                    model_params, exp_params):
@@ -281,3 +345,129 @@ def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_
                                     batches=batches)
                         
     return activations, dataset, model_for_dset
+
+def do_semantic_manipulation(sampled_images, vae_model, current_device):
+
+    fig, axs = plt.subplots(1,4)
+    mus, logvars = [], []
+
+    with torch.no_grad():
+        
+        for i, img in enumerate(sampled_images):
+
+            # show the three images we'll operate on
+            axs[i].imshow(img, cmap='gray')
+            axs[i].axis('off')
+            
+            # conver to tensor and encode
+            img = transforms.ToTensor()(img.astype(np.float32)).to(current_device)
+            mu, logvar = vae_model.model.encode(img.unsqueeze(0))
+            mus.append(mu)
+            logvars.append(logvars)
+
+        # create a new conversion vector in direction of change 
+        change_vec = mus[1] - mus[0]  # from x0 to x1
+        test_mu = mus[2] + change_vec 
+        new_img = vae_model.model.decode(test_mu).squeeze(0)
+        axs[3].imshow(new_img.cpu().permute(1,2,0), cmap='gray')
+        axs[3].axis('off')    
+
+        return mus, logvars, new_img
+
+def sample_latent_pairs_differing_in_one_factor(diff_factor_idx, npz_dataset, how_many_pairs=1):
+    
+    pairs = []
+    
+    for _ in range(how_many_pairs):
+        
+        # sample a value for factors which changes b/w pair
+        diff_factor_val1 = np.random.randint(npz_dataset['latents_sizes'][diff_factor_idx], size=1)
+        diff_factor_val2 = np.random.randint(npz_dataset['latents_sizes'][diff_factor_idx], size=1)
+
+        l1 = sample_latent(1, npz_dataset['latents_sizes'])
+        l1[:, diff_factor_idx] = diff_factor_val1
+        indices_sampled = latent_to_index(l1, npz_dataset['latents_bases'])
+        img1 = npz_dataset['images'][indices_sampled]
+
+        l2 = l1.copy()
+        l2[:, diff_factor_idx] = diff_factor_val2
+        indices_sampled = latent_to_index(l2, npz_dataset['latents_bases'])
+        img2 = npz_dataset['images'][indices_sampled]
+        
+        pairs.append((l1,img1.squeeze(0),
+                      l2,img2.squeeze(0)))
+    
+    return pairs
+
+def sample_latent_pairs_maximally_differing_in_one_factor(diff_factor_idx, npz_dataset, direction='min-to-max', 
+    how_many_pairs=1, latent_min_val=0,latent_max_val=0):
+    
+    assert diff_factor_idx != 0, "Changing Color not supported"
+    
+    pairs = []
+    
+    for _ in range(how_many_pairs):
+        
+        # sample a value for factors which changes b/w pair
+        # this gives us the index of minimum value for this latent dim
+        diff_factor_val_min = latent_min_val
+        # this gives us the index of maximum possible value for this latent dim
+        diff_factor_val_max = latent_max_val
+
+        l1 = sample_latent(1, npz_dataset['latents_sizes'])
+        l1[:, diff_factor_idx] = diff_factor_val_min
+        indices_sampled = latent_to_index(l1, npz_dataset['latents_bases'])
+        img1 = npz_dataset['images'][indices_sampled]
+
+        l2 = l1.copy()
+        l2[:, diff_factor_idx] = diff_factor_val_max
+        indices_sampled = latent_to_index(l2, npz_dataset['latents_bases'])
+        img2 = npz_dataset['images'][indices_sampled]
+        
+        # We have to sample a third image to which we will apply semantic changes
+        # if direction='min-to-max', it means we want to change from smallest possible value to largest 
+        # so our sampled images should have smallest value. So we will use l1 as base and (randomly) change shape
+        # Converse reasoning for direction='max-to-min' case
+        
+        l3 = l1.copy() if direction == 'min-to-max' else l2.copy()
+        # get a random shape, but don't reuse shapes from l1 or l2
+        l3[:, 1] = np.random.choice(
+            list(set(range(npz_dataset['latents_sizes'][1])).difference(l1[:,1])), size=1
+        )
+        indices_sampled = latent_to_index(l3, npz_dataset['latents_bases']) 
+        img3 = npz_dataset['images'][indices_sampled]
+        
+        pairs.append(
+            { 
+                'latents': (l1, l2, l3), 
+                'images': (img1.squeeze(0), img2.squeeze(0), img3.squeeze(0))
+            }
+        )
+    
+    return pairs
+
+def estimate_responsible_dimension(pairs, vae_model, current_device):
+    
+    assert len(pairs) > 1, "Need > 1 pairs to compute variance"
+
+    with torch.no_grad():
+        
+        diff_vecs = []
+        
+        for (latent1,image1,latent2,image2) in pairs:
+            
+            image1 = transforms.ToTensor()(image1.astype(np.float32)).to(current_device)
+            image2 = transforms.ToTensor()(image2.astype(np.float32)).to(current_device)
+
+            mu1, logvar1 = vae_model.model.encode(image1.unsqueeze(0))
+            mu2, logvar2 = vae_model.model.encode(image2.unsqueeze(0))
+            
+            # TODO: should we ignore the color dimension forcefully when calcultaing variance?
+            diff_vec = (mu1 - mu2).squeeze()
+            diff_vecs.append(diff_vec)
+            
+        diff_vecs = torch.stack(diff_vecs)
+        dim_wise_variance = diff_vecs.pow(2).sum(0)/(len(pairs)-1)
+        most_varied_dim = torch.argmax(dim_wise_variance)
+        return diff_vecs.cpu().numpy(), dim_wise_variance.cpu().numpy(), most_varied_dim.item()
+

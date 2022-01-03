@@ -89,11 +89,9 @@ class VAEExperiment(pl.LightningModule):
 
         # 2. save recon images and generated images, histogram of latent layer activations
         self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(36), self.current_epoch)
-        
+        self.logger.experiment.add_histogram("Latent Activations", self._get_latent_layer_activations()['mu'], self.current_epoch)       
         recon_grid, x_recons, x_inputs = self._get_reconstructed_images()
         self.logger.experiment.add_image("Reconstructed Images", recon_grid, self.current_epoch)
-        
-        self.logger.experiment.add_histogram("Latent Activations", self._get_latent_layer_activations()['mu'], self.current_epoch)
         
         # 3. Evaluate disent metrics
         if self.params["evaluation_metrics"]:
@@ -109,6 +107,11 @@ class VAEExperiment(pl.LightningModule):
         scalar_metrics[c.TOTAL_LOSS] = avg_loss
         scalar_metrics[c.RECON] = avg_recon_loss
         scalar_metrics[c.KLD_LOSS] = avg_kld_loss
+
+        if 'BetaTCVAE' in self.model.loss_terms:
+            avg_tc_loss = torch.stack([tso['vae_betatc'] for tso in train_step_outputs]).mean()
+            self.logger.experiment.add_scalar("TC Loss (Train)", avg_tc_loss, self.current_epoch)
+            scalar_metrics['vae_betatc'] = avg_tc_loss
 
 
         if self.visdom_on:

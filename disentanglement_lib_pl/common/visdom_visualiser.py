@@ -80,21 +80,15 @@ class VisdomVisualiser:
         recon_losses, mus, vars, dim_wise_klds, mean_klds, total_loss, kld_loss 
         """
         
-        iters = torch.Tensor([global_step])#.unsqueeze(0)
-
-        # legend = []
-        # for z_j in range(new_scalar_metric_values['mus'].size()[0]):
-        #    legend.append('z_{}'.format(z_j))
-        
-        #legend.append('mean')
-        #legend.append('total')
+        iters = torch.Tensor([global_step])
 
         window_titles_and_values = {
             'recon': {'title': 'Reconsturction Loss', 'legend': None},
             'kld_loss': {'title': 'KL Divergence (mean)', 'legend': None},
             'loss': {'title': 'Total Loss', 'legend': None},
             'mu': {'title': 'Posterior Mean', 'legend': None},
-            'var': {'title': 'Posterior Variance', 'legend': None}
+            'var': {'title': 'Posterior Variance', 'legend': None},
+            'vae_betatc': {'title': 'Total Corr.', 'legend': None}
         }
 
         # Update (or create, if non-existent) the scalar windows
