@@ -347,7 +347,16 @@ def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_
     return activations, dataset, model_for_dset
 
 def do_semantic_manipulation(sampled_images, vae_model, current_device):
+    """
+    sampled_images: Currently we expect it to contain three images (x0,x1,x2)
 
+    We transfer a property of x1 to x2. Assume:
+    x0 = square on right
+    x1 = square on left
+    x3 = heart on right
+    Then, we expect after decoding \mu(x2) + (\mu(x1) - \mu(x0)) to be a heart on the left
+    x0 and x1 share all factors except one factor F_t. This F_t is what we want to transfer to x2
+    """
     fig, axs = plt.subplots(1,4)
     mus, logvars = [], []
 
@@ -366,7 +375,7 @@ def do_semantic_manipulation(sampled_images, vae_model, current_device):
             logvars.append(logvars)
 
         # create a new conversion vector in direction of change 
-        change_vec = mus[1] - mus[0]  # from x0 to x1
+        change_vec = mus[1] - mus[0]  # points from x0 to x1
         test_mu = mus[2] + change_vec 
         new_img = vae_model.model.decode(test_mu).squeeze(0)
         axs[3].imshow(new_img.cpu().permute(1,2,0), cmap='gray')
@@ -374,21 +383,28 @@ def do_semantic_manipulation(sampled_images, vae_model, current_device):
 
         return mus, logvars, new_img
 
-def sample_latent_pairs_differing_in_one_factor(diff_factor_idx, npz_dataset, how_many_pairs=1):
+def sample_latent_pairs_differing_in_one_factor(diff_factor_idx, npz_dataset, how_many_pairs=1, val1=None, val2=None):
     
+    """
+    diff_factor_idx: All factors except this one will be shared b/w x_1 and x_2 in each pair
+    val1 / val2: If we want to fix a value of F_t in either x_1 or x_2 we can supply it here.
+    """
+
     pairs = []
     
     for _ in range(how_many_pairs):
         
         # sample a value for factors which changes b/w pair
-        diff_factor_val1 = np.random.randint(npz_dataset['latents_sizes'][diff_factor_idx], size=1)
-        diff_factor_val2 = np.random.randint(npz_dataset['latents_sizes'][diff_factor_idx], size=1)
+        diff_factor_val1 = np.random.randint(npz_dataset['latents_sizes'][diff_factor_idx], size=1) if val1 is None else val1
+        diff_factor_val2 = np.random.randint(npz_dataset['latents_sizes'][diff_factor_idx], size=1) if val2 is None else val2
 
+        # Latent for x_1
         l1 = sample_latent(1, npz_dataset['latents_sizes'])
         l1[:, diff_factor_idx] = diff_factor_val1
         indices_sampled = latent_to_index(l1, npz_dataset['latents_bases'])
         img1 = npz_dataset['images'][indices_sampled]
 
+        # Latent for x_2
         l2 = l1.copy()
         l2[:, diff_factor_idx] = diff_factor_val2
         indices_sampled = latent_to_index(l2, npz_dataset['latents_bases'])
@@ -402,6 +418,14 @@ def sample_latent_pairs_differing_in_one_factor(diff_factor_idx, npz_dataset, ho
 def sample_latent_pairs_maximally_differing_in_one_factor(diff_factor_idx, npz_dataset, direction='min-to-max', 
     how_many_pairs=1, latent_min_val=0,latent_max_val=0):
     
+    """
+    Same as `sample_latent_pairs_differing_in_one_factor` but here we want the lantent values to differ maximally.
+    That is we fix one value to the minimum or range and other to maximum of range
+    diff_factor_idx: All factors except this one will be shared b/w x_1 and x_2 in each pair
+    latent_min_val: If we want to fix a min value of F_t we can supply it here.
+    latent_max_val: If we want to fix a max value of F_t we can supply it here.
+    """
+
     assert diff_factor_idx != 0, "Changing Color not supported"
     
     pairs = []
@@ -447,6 +471,10 @@ def sample_latent_pairs_maximally_differing_in_one_factor(diff_factor_idx, npz_d
     return pairs
 
 def estimate_responsible_dimension(pairs, vae_model, current_device):
+    """
+    Given pairs of examples which differ in one factor, estimate which latent unit is responsbile for which factor.
+    We use maximum variance in latent dimension as a proxy for responsiblity
+    """
     
     assert len(pairs) > 1, "Need > 1 pairs to compute variance"
 

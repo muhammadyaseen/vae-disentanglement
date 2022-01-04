@@ -6,6 +6,15 @@ from common.utils import init_layers
 
 
 class SimpleConv64(BaseImageEncoder):
+    """We use this as a public class example class.
+
+    You never call this class before calling :func:`public_fn_with_sphinxy_docstring`.
+
+    .. note::
+
+       An example of intersphinx is this: you **cannot** use :mod:`pickle` on this class.
+
+    """
     def __init__(self, latent_dim, num_channels, image_size):
         super().__init__(latent_dim, num_channels, image_size)
         assert image_size == 64, 'This model only works with image size 64x64.'

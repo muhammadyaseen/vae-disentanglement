@@ -70,7 +70,7 @@ class VAE(nn.Module):
 
         # FactorVAE
         # TODO: we can probably keep permD here, but should move optim_PermD to 
-        # the place where we config other optimizers...
+        # a place where we config other optimizers...
         # if c.FACTORVAE in self.loss_terms:
         #     from models.factorvae import factorvae_init
         #     self.PermD, self.optim_PermD = factorvae_init(args.discriminator[0], self.z_dim, self.num_layer_disc,
