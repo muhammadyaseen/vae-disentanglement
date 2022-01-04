@@ -455,9 +455,11 @@ def sample_latent_pairs_maximally_differing_in_one_factor(diff_factor_idx, npz_d
         
         l3 = l1.copy() if direction == 'min-to-max' else l2.copy()
         # get a random shape, but don't reuse shapes from l1 or l2
-        l3[:, 1] = np.random.choice(
-            list(set(range(npz_dataset['latents_sizes'][1])).difference(l1[:,1])), size=1
-        )
+        if diff_factor_idx != 1:
+            l3[:, 1] = np.random.choice(
+                list(set(range(npz_dataset['latents_sizes'][1])).difference(l1[:,1])), size=1
+            )
+        
         indices_sampled = latent_to_index(l3, npz_dataset['latents_bases']) 
         img3 = npz_dataset['images'][indices_sampled]
         
