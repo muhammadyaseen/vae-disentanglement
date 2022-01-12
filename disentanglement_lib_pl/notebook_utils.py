@@ -223,10 +223,12 @@ def do_latent_traversal(vae_model, random_img, limit=3, inter=2/3, loc=-1, mode=
 
     return samples
 
-def do_latent_traversal_scatter(vae_model, random_img, limit=3, inter=2/3, loc=-1, mode='relative'):
+def do_latent_traversal_scatter(vae_model, random_img, limit=3, inter=2/3, 
+    dim_to_explore=-1, mode='relative', lb=None, ub=None, fix_dim=None, fix_val=None):
 
     """
-    This function also 
+    This function also
+    dim_to_explore: Dimension that we want to traverse. 
     random_image: image to be used as starting point to traversal (relevant in case of mode='relative')
     mode        : If 'relative', random image's Z is used as starting point for traversal.
                   If 'fixed', the space is explored uniformly in the given interval
@@ -238,26 +240,32 @@ def do_latent_traversal_scatter(vae_model, random_img, limit=3, inter=2/3, loc=-
         
         samples = []
 
-        for row in range(vae_model.model.z_dim):
-            if loc != -1 and row != loc:
+        for current_dim in range(vae_model.model.z_dim):
+                     
+            if dim_to_explore != -1 and current_dim != dim_to_explore:
                 continue
 
             z = random_img_z.clone()
+            
+            if fix_dim is not None and fix_val is not None:
+                z[:, fix_dim] = fix_val
+            
             if mode == 'relative':
-                ref, lim = z[:, row].item(), 3
-                lower_bound, upper_bound = ref - lim, ref + lim + 0.1 
+                ref, lim = z[:, current_dim].item(), 3
+                lower_bound = ref - lim if lb is None else lb
+                upper_bound = ref + lim + 0.1 if ub is None else ub
                 if lower_bound > upper_bound:
                     inter = -inter
                     lim = -lim
-                print(f"Visualizing latent space from {lower_bound:3.2f} to {upper_bound:3.2f}, with center at {ref:3.2f}")
+                print(f"Visualizing latent space from {lower_bound:3.2f} to {upper_bound:3.2f}, with center at {(upper_bound - lower_bound)/2:3.2f}")
                 interpolation = torch.arange(lower_bound, upper_bound, inter)
             else:
                 interpolation = torch.arange(-limit, limit+0.1, inter)
                 
             for val in interpolation:
-                z[:, row] = val
+                z[:, current_dim] = val
                 sample = vae_model.model.decode(z).data
-                samples.append((z[:, row].cpu().item(),sample))
+                samples.append((z[:, current_dim].cpu().item(),sample))
 
     return samples, ref
 
@@ -483,7 +491,7 @@ def estimate_responsible_dimension(pairs, vae_model, current_device):
     with torch.no_grad():
         
         diff_vecs = []
-        
+        mu_vecs = []
         for (latent1,image1,latent2,image2) in pairs:
             
             image1 = transforms.ToTensor()(image1.astype(np.float32)).to(current_device)
@@ -495,9 +503,48 @@ def estimate_responsible_dimension(pairs, vae_model, current_device):
             # TODO: should we ignore the color dimension forcefully when calcultaing variance?
             diff_vec = (mu1 - mu2).squeeze()
             diff_vecs.append(diff_vec)
-            
+            mu_vecs.append((mu1, mu2))
+        
         diff_vecs = torch.stack(diff_vecs)
         dim_wise_variance = diff_vecs.pow(2).sum(0)/(len(pairs)-1)
         most_varied_dim = torch.argmax(dim_wise_variance)
         return diff_vecs.cpu().numpy(), dim_wise_variance.cpu().numpy(), most_varied_dim.item()
 
+def sample_latent_pairs_differing_in_k_factors(diff_factor_indices, npz_dataset, how_many_pairs=1):
+    
+    """
+    diff_factor_idx: All factors except this one will be shared b/w x_1 and x_2 in each pair
+    val1 / val2: If we want to fix a value of F_t in either x_1 or x_2 we can supply it here.
+    """
+
+    pairs = []
+    K = len(diff_factor_indices)
+
+    for _ in range(how_many_pairs):
+        
+        # sample a value for factors which changes b/w pair
+        D = []
+        for diff_factor_idx in diff_factor_indices:
+            diff_factor_val1 = np.random.randint(npz_dataset['latents_sizes'][diff_factor_idx], size=1)
+            diff_factor_val2 = np.random.randint(npz_dataset['latents_sizes'][diff_factor_idx], size=1)
+
+            D.append((diff_factor_val1, diff_factor_val2))
+
+        # Latent for x_1
+        l1 = sample_latent(1, npz_dataset['latents_sizes'])
+        for vals, diff_factor_idx in zip(D, diff_factor_indices):
+            l1[:, diff_factor_idx] = vals[0]
+        indices_sampled = latent_to_index(l1, npz_dataset['latents_bases'])
+        img1 = npz_dataset['images'][indices_sampled]
+
+        # Latent for x_2
+        l2 = l1.copy()
+        for vals, diff_factor_idx in zip(D, diff_factor_indices):
+            l1[:, diff_factor_idx] = vals[1]
+        indices_sampled = latent_to_index(l2, npz_dataset['latents_bases'])
+        img2 = npz_dataset['images'][indices_sampled]
+        
+        pairs.append((l1,img1.squeeze(0),
+                      l2,img2.squeeze(0)))
+    
+    return pairs

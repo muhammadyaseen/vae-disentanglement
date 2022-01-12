@@ -443,6 +443,59 @@ class ThreeShapesDataset(Dataset):
             
             im.save(os.path.join(path, f'image_{i}_{chosen_shape}.jpg'))
 
+    @staticmethod
+    def generate_npz_data(path, N, add_noise=False):
+
+        # white, black, black
+        fill_color, outline_color, bg_color = 255, 0, 0
+        W, H = 64, 64
+        circle_radius = 24
+        circle_center = (W/2,H/2)
+        bounding_circle = (circle_center, circle_radius)
+
+        n_sides = [3, 4, 500]
+
+        numpy_images = np.zeros((N, W, H))
+        numpy_latents = np.zeros(N)
+        one_third = N // 3
+        shape_ranges = {
+            'triangle': range(0, one_third),
+            'square':   range(one_third, 2*one_third),
+            'circle':   range(2*one_third, N)
+        }
+        
+        for i in range(N):
+
+            # single channel black/white image. Should use cmap='gray' when showing in matplotlib
+            img = Image.new('L', (W, H), bg_color)
+            draw = ImageDraw.Draw(img)
+
+            which_shape = np.argmax([i in shape_range for _, shape_range in shape_ranges.items()])
+
+            # This noise offsets the figure from center, if enabled            
+            if add_noise:        
+                noise_mu, noise_s = 3, 1
+                x_offset = noise_mu * np.random.randn() + noise_s  
+                y_offset = noise_mu * np.random.randn() + noise_s
+
+                circle_center = (W/2 + x_offset, H/2 + y_offset)
+                bounding_circle = (circle_center, circle_radius)
+
+            draw.regular_polygon(bounding_circle, n_sides[which_shape], 
+                        rotation=0,
+                        fill=fill_color, 
+                        outline=outline_color)
+            
+            numpy_images[i] = np.array(img)
+            numpy_latents[i] = which_shape
+        
+        np.savez_compressed(
+            path,
+            images=numpy_images, 
+            latents=numpy_latents,
+            ranges=shape_ranges
+        )
+    
 
 class DSpritesDataset(Dataset):
 

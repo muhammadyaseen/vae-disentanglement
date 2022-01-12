@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import os
+from disentanglement_lib.data.ground_truth import ground_truth_data
 from disentanglement_lib.data.ground_truth import dsprites
 from disentanglement_lib.data.ground_truth import util
 import numpy as np
@@ -94,10 +95,75 @@ class CorrelatedDSprites(dsprites.DSprites):
         
         return np.vectorize(__get_color_from_orientation)(orientation_values)
 
+class ThreeShapesData(ground_truth_data.GroundTruthData):
+    """
+    There is just one ground-truth factor of variation i.e. shape with possible values:
+    0. 3 - Triangle 
+    1. 4 - Square
+    2. 500 - Circle 
+    """
 
-def get_evaluation_dataset(dataset_name):
+    THREESHAPES_PATH = os.path.join(
+        os.environ.get("DISENTANGLEMENT_LIB_DATA", "."), "threeshapes",
+        "threeshapes.npz")
+
+    NOISY_THREESHAPES_PATH = os.path.join(
+        os.environ.get("DISENTANGLEMENT_LIB_DATA", "."), "noisythreeshapes",
+        "noisythreeshapes.npz")
+    
+    def __init__(self, is_noisy):
+
+        # There's just one FoV
+        self.latent_factor_indices = [0]
+        self.data_shape = [64, 64, 1]
+        self.factor_sizes = np.array([3], dtype=np.int64)
+        self.full_factor_sizes = [3]
+        self.is_noisy = is_noisy
+
+        # Load the data so that we can sample from it.
+        to_open = self.NOISY_THREESHAPES_PATH if self.is_noisy else self.THREESHAPES_PATH
+        with gfile.Open(to_open, "rb") as data_file:
+            data = np.load(data_file, allow_pickle=True)
+            self.images = np.array(data["images"])
+            self.ranges = data['ranges']
+        
+        self.factor_bases = np.prod(self.factor_sizes) / np.cumprod(
+            self.factor_sizes)
+        self.state_space = util.SplitDiscreteStateSpace(self.factor_sizes,
+                                                        self.latent_factor_indices)
+
+    @property
+    def num_factors(self):
+        return self.state_space.num_latent_factors
+
+    @property
+    def factors_num_values(self):
+        return [self.full_factor_sizes[i] for i in self.latent_factor_indices]
+
+    @property
+    def observation_shape(self):
+        return self.data_shape
+
+    def sample_factors(self, num, random_state):
+        """Sample a batch of factors Y."""
+        return self.state_space.sample_latent_factors(num, random_state)
+
+    def sample_observations_from_factors(self, factors, random_state):
+        
+        # `factors` represents shape value here
+        #all_factors = self.state_space.sample_all_factors(factors, random_state)
+        #indices = np.array(np.dot(all_factors, self.factor_bases), dtype=np.int64)
+        indices = [random_state.choice(self.ranges[shape]) for shape in factors]
+        return np.expand_dims(self.images[indices].astype(np.float32), axis=2)
+
+    def _sample_factor(self, i, num, random_state):
+        return random_state.randint(self.factor_sizes[i], size=num)
+
+def get_evaluation_dataset(dataset_name, **kwargs):
 
     if dataset_name == "dsprites_correlated":
         return CorrelatedDSprites([0, 1, 2, 3, 4, 5])
+    elif dataset_name in ["threeshapes", "noisythreeshapes"]:
+        return ThreeShapesData(kwargs['is_noisy'])
     
-    raise NotImplementedError()
+    raise NotImplementedError(f"This dataset has not been configured. See {__file__} for an example.")

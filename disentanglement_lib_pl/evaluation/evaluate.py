@@ -133,7 +133,7 @@ def evaluate(model_dir,
             dataset = named_data.get_named_ground_truth_data()
         
         except ValueError:    
-            # the dataset is not present in disent_lib
+            # the dataset is not present in disentanglement_lib
             # it is one of our own, probably
             dset_name = get_dataset_name()
             print("Getting non-builtin dataset [{dset_name}] for eval... ")
