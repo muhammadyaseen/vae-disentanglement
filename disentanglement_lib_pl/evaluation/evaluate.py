@@ -45,7 +45,7 @@ from common.evaluation_datasets import get_evaluation_dataset
 # Some more redundant code, but this allows us to not import utils_pytorch
 def get_dataset_name():
     """Reads the name of the dataset from the environment variable `DATASET_NAME`."""
-    return os.getenv("DATASET_NAME", "dsprites_full")
+    return os.getenv("DATASET_NAME", "threeshapesnoisy")
 
 
 def evaluate_with_gin(model_dir,
@@ -136,8 +136,10 @@ def evaluate(model_dir,
             # the dataset is not present in disentanglement_lib
             # it is one of our own, probably
             dset_name = get_dataset_name()
-            print("Getting non-builtin dataset [{dset_name}] for eval... ")
-            dataset = get_evaluation_dataset(dset_name)
+            #with gin.unlock_config():
+            #    gin.bind_parameter("dataset.name", get_dataset_name())
+            print(f"Getting non-builtin dataset [{dset_name}] for eval... ")                
+            dataset = get_evaluation_dataset(dset_name, is_noisy= dset_name == 'threeshapesnoisy')
 
     if os.path.exists(os.path.join(model_dir, 'tfhub')):
         # Path to TFHub module of previously trained representation.

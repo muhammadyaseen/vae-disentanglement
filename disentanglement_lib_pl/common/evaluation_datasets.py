@@ -104,12 +104,11 @@ class ThreeShapesData(ground_truth_data.GroundTruthData):
     """
 
     THREESHAPES_PATH = os.path.join(
-        os.environ.get("DISENTANGLEMENT_LIB_DATA", "."), "threeshapes",
+        os.environ.get("DISENTANGLEMENT_LIB_DATA", "/home/c01muya/vae-disentanglement/datasets/"), "threeshapes",
         "threeshapes.npz")
 
-    NOISY_THREESHAPES_PATH = os.path.join(
-        os.environ.get("DISENTANGLEMENT_LIB_DATA", "."), "noisythreeshapes",
-        "noisythreeshapes.npz")
+    NOISY_THREESHAPES_PATH = os.path.join("/home/c01muya/vae-disentanglement/datasets/", "threeshapesnoisy",
+        "threeshapesnoisy.npz")
     
     def __init__(self, is_noisy):
 
@@ -153,8 +152,21 @@ class ThreeShapesData(ground_truth_data.GroundTruthData):
         # `factors` represents shape value here
         #all_factors = self.state_space.sample_all_factors(factors, random_state)
         #indices = np.array(np.dot(all_factors, self.factor_bases), dtype=np.int64)
-        indices = [random_state.choice(self.ranges[shape]) for shape in factors]
-        return np.expand_dims(self.images[indices].astype(np.float32), axis=2)
+        #print(factors.shape)
+        #print(factors.shape)
+        code_to_name = {0: 'triangle', 1: 'square', 2: 'circle'}
+        N = len(self.images)
+        one_third = N // 3
+        t=np.array([
+                [0, one_third],
+                [one_third, 2*one_third],
+                [2*one_third, N]
+            ])
+
+        # TODO: this looks ugly af . change it
+        indices = [random_state.choice( range( t[shape_code.item()][0], t[shape_code.item()][1]) ) for shape_code in factors]
+
+        return np.expand_dims(self.images[indices].astype(np.float32), axis=3)
 
     def _sample_factor(self, i, num, random_state):
         return random_state.randint(self.factor_sizes[i], size=num)
@@ -163,7 +175,7 @@ def get_evaluation_dataset(dataset_name, **kwargs):
 
     if dataset_name == "dsprites_correlated":
         return CorrelatedDSprites([0, 1, 2, 3, 4, 5])
-    elif dataset_name in ["threeshapes", "noisythreeshapes"]:
+    elif dataset_name in ["threeshapes", "threeshapesnoisy"]:
         return ThreeShapesData(kwargs['is_noisy'])
     
-    raise NotImplementedError(f"This dataset has not been configured. See {__file__} for an example.")
+    raise NotImplementedError(f"Dataset {dataset_name} has not been configured. See {__file__} for an example.")

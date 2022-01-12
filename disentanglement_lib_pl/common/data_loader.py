@@ -493,7 +493,11 @@ class ThreeShapesDataset(Dataset):
             path,
             images=numpy_images, 
             latents=numpy_latents,
-            ranges=shape_ranges
+            ranges=np.array([
+                [0, one_third],
+                [one_third, 2*one_third],
+                [2*one_third, N]
+            ])
         )
     
 
