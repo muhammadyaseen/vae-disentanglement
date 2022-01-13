@@ -506,18 +506,34 @@ class DSpritesDataset(Dataset):
     FILE_NAME = 'dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz'
     CORRELATED_FILE_NAME = 'dsprites_ndarray_co3sh3sc6or40x32y32_64x64.npz'
     CORRELATED_3C_FILE_NAME = 'dsprites_ndarray_co3sh3sc6or40x32y32_64x64x3.npz'
+    COND_FILE_NAME = 'dsprites_ndarray_co1sh3sc6or40x1y32_64x64.npz'
 
-    def __init__(self, root, split="train", train_pct=0.90, transforms=None, correlated=False, colored=False):
+    def __init__(self, root, split="train", train_pct=0.90, 
+        transforms=None, correlated=False, colored=False,
+        conditioned=False):
         """
         Args:
             root (string): Directory with the .npz file.
         """
+
+        assert transforms is not None, "need to give transform"
+
         self.root_dir = root
         self.transforms = transforms
         self.split = split
         self.correlated = correlated
         self.colored = colored
-        file_to_load = self.CORRELATED_3C_FILE_NAME if (self.correlated and self.colored) else self.FILE_NAME
+        self.conditioned = conditioned
+
+        file_to_load = self.FILE_NAME
+        
+        if self.correlated and self.colored:
+            print("Loading correlated and colored dataset")
+            file_to_load = self.CORRELATED_3C_FILE_NAME 
+        elif self.conditioned:
+            print("Loading conditioned dataset")
+            file_to_load = self.COND_FILE_NAME
+        
         dataset_zip = np.load(os.path.join(root, file_to_load),
                               allow_pickle=True, encoding='latin1')
 
@@ -529,6 +545,7 @@ class DSpritesDataset(Dataset):
         self.latents_names = metadata['latents_names']
 
         MAX_TRAIN_IDX = int(len(self.images) * train_pct)
+        print(f"Loaded {len(self.images)} images")
 
         # get shuffled indices of training samples
         self.train_indices = np.random.choice(len(self.images),
@@ -571,6 +588,8 @@ class DSpritesDataset(Dataset):
 
         latent = self.latents_values[idx]
 
+        #print(image.shape)
+        #print(latent.shape)
         return image, latent
 
 
@@ -582,7 +601,8 @@ def _get_transforms_for_dataset(dataset_name, image_size):
         transforms.ToTensor()])
     
     # for these datasets, we only need to convert numpy to tensors.
-    if dataset_name in ["dsprites_full", "dsprites_correlated", "dsprites_colored", "threeshapes", "threeshapesnoisy", "onedim", "continum"]:
+    if dataset_name in ["dsprites_full", "dsprites_correlated", "dsprites_colored", "dsprites_cond",  
+                        "threeshapes", "threeshapesnoisy", "onedim", "continum"]:
         return transforms.ToTensor()
 
 
@@ -590,8 +610,7 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
                                 shuffle, droplast, split, train_pct):
         
     dataset_name = dataset_name.lower()
-    transforms = _get_transforms_for_dataset(dataset_name, image_size)
-    
+        
     labels = None
     label_weights = None
     label_idx = None
@@ -652,7 +671,7 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
                        'num_channels': 3}
         dset = CustomImageFolder
     
-    elif dataset_name == 'dsprites_full' or dataset_name == 'dsprites_correlated' or dataset_name == 'dsprites_colored':
+    elif dataset_name in ['dsprites_full', 'dsprites_correlated', 'dsprites_colored', 'dsprites_cond']:
         
         root = os.path.join(dset_dir, 'dsprites')
 
@@ -686,8 +705,9 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
                        'train_pct': train_pct,
                        'split': split,
                        'correlated': dataset_name == 'dsprites_correlated' or dataset_name == 'dsprites_colored',
-                       'colored': dataset_name == 'dsprites_colored'}
-
+                       'colored': dataset_name == 'dsprites_colored',
+                       'conditioned': dataset_name == 'dsprites_cond'}
+        
         dset = DSpritesDataset
     
     elif dataset_name == 'threeshapes' or dataset_name == "threeshapesnoisy":
@@ -723,8 +743,9 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
     else:
         raise NotImplementedError
     
+    transforms = _get_transforms_for_dataset(dataset_name, image_size)
     data_kwargs.update({'transforms': transforms})
-    
+    print(data_kwargs)
     dataset = dset(**data_kwargs)
     data_loader = DataLoader(dataset,
                              batch_size=batch_size,
@@ -756,7 +777,7 @@ def _get_dataloader(name, batch_size, seed, num_workers, pin_memory, shuffle, dr
 def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
                    shuffle, droplast, split="train", train_pct=0.90):
     
-    locally_supported_datasets = c.DATASETS[0:8]
+    locally_supported_datasets = c.DATASETS[0:9]
 
     logging.info(f'Datasets root: {dset_dir}')
     logging.info(f'Dataset: {dset_name}')

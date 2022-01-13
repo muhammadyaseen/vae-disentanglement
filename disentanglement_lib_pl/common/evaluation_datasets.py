@@ -104,10 +104,11 @@ class ThreeShapesData(ground_truth_data.GroundTruthData):
     """
 
     THREESHAPES_PATH = os.path.join(
-        os.environ.get("DISENTANGLEMENT_LIB_DATA", "/home/c01muya/vae-disentanglement/datasets/"), "threeshapes",
+        os.environ.get("DISENTANGLEMENT_LIB_DATA", "."), "threeshapes",
         "threeshapes.npz")
 
-    NOISY_THREESHAPES_PATH = os.path.join("/home/c01muya/vae-disentanglement/datasets/", "threeshapesnoisy",
+    NOISY_THREESHAPES_PATH = os.path.join(
+        os.environ.get("DISENTANGLEMENT_LIB_DATA", "."), "threeshapesnoisy",
         "threeshapesnoisy.npz")
     
     def __init__(self, is_noisy):

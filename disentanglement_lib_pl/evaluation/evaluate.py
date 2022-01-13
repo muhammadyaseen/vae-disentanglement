@@ -45,7 +45,7 @@ from common.evaluation_datasets import get_evaluation_dataset
 # Some more redundant code, but this allows us to not import utils_pytorch
 def get_dataset_name():
     """Reads the name of the dataset from the environment variable `DATASET_NAME`."""
-    return os.getenv("DATASET_NAME", "threeshapesnoisy")
+    return os.getenv("DATASET_NAME", "dsprites_full")
 
 
 def evaluate_with_gin(model_dir,

@@ -331,6 +331,10 @@ def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_
     elif dset_name == 'dsprites_colored':
         dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor(), 
         correlated=True, colored=True)
+    elif dset_name == 'dsprites_cond':
+        dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor(), 
+        correlated=False, colored=False, conditioned=True)
+
     elif dset_name == 'threeshapesnoisy':
         dataset = ThreeShapesDataset(root="../datasets/threeshapesnoisy/", split="train", transforms=transforms.ToTensor())
     elif dset_name == 'threeshapes':

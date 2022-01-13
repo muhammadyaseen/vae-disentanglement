@@ -47,6 +47,7 @@ def evaluate_disentanglement_metric(model, eval_results_dir, metric_names=['mig'
         os.makedirs(os.path.join(eval_results_dir, 'results'), exist_ok=True)
 
         results_dict = evaluate(eval_results_dir, output_dir, True)
+        print(results_dict)
         gin.clear_config()
         results = 0
         for key, value in results_dict.items():

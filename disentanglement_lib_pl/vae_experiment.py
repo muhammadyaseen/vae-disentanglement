@@ -40,6 +40,7 @@ class VAEExperiment(pl.LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
         x_true1, label1 = batch
+        #print(x_true1.shape)
         self.curr_device = x_true1.device
         x_recon, mu, z, logvar = self.forward(x_true1, label=label1)
 
@@ -139,9 +140,10 @@ class VAEExperiment(pl.LightningModule):
     def validation_step(self, batch, batch_idx, optimizer_idx = 0):
 
         x_true, labels = batch
+        #print(x_true.shape)
         self.curr_device = x_true.device
         #print("before val fwd")
-        x_recon, z, mu, logvar  = self.forward(x_true, labels = labels)
+        x_recon, mu, z, logvar  = self.forward(x_true, labels = labels)
         #print("after val fwd")
 
         loss_fn_args = dict(x_recon=x_recon, 
@@ -152,7 +154,7 @@ class VAEExperiment(pl.LightningModule):
                             optimizer_idx=optimizer_idx,
                             batch_idx = batch_idx)
         
-        val_losses = self.model.loss_function(**loss_fn_args)
+        val_losses = self.model.loss_function(loss_type='cross_ent', **loss_fn_args)
         
         return val_losses
 
