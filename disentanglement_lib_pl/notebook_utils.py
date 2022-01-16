@@ -190,7 +190,7 @@ def get_latent_activations_with_labels(dataset, vae_model, curr_dev, batch_size 
     
     return label_and_latent_act_dict
 
-def do_latent_traversal(vae_model, random_img, limit=3, inter=2/3, loc=-1, mode='relative'):
+def do_latent_traversal(vae_model, random_img, limit=3, inter=2/3, dim=-1, mode='relative'):
 
     """
     random_image: image to be used as starting point to traversal (relevant in case of mode='relative')
@@ -205,7 +205,7 @@ def do_latent_traversal(vae_model, random_img, limit=3, inter=2/3, loc=-1, mode=
         samples = []
 
         for row in range(vae_model.model.z_dim):
-            if loc != -1 and row != loc:
+            if dim != -1 and row != dim:
                 continue
 
             z = random_img_z.clone()
@@ -272,7 +272,7 @@ def do_latent_traversal_scatter(vae_model, random_img, limit=3, inter=2/3,
 def show_traversal_plot(vae_model, anchor_image, limit, interp_step, dim=-1, mode='relative'):
     
     traverse_maps, ref = do_latent_traversal_scatter(vae_model, anchor_image, limit=limit, 
-                                            inter=interp_step, loc=dim, mode=mode)
+                                            inter=interp_step, dim_to_explore=dim, mode=mode)
 
     _ , ax = plt.subplots(figsize=(15,1))
     
