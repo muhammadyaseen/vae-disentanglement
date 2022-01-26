@@ -152,7 +152,7 @@ def plot_latent_dist(activations, label="Factor X"):
     axes.hist(activations, label=label, align='mid')
     axes.legend(prop={'size': 10},loc='upper left')
 
-def get_latent_activations_with_labels(dataset, vae_model, curr_dev, batch_size = 32, batches = None):
+def get_latent_activations_with_labels(dataset, vae_model, curr_dev, batch_size = 32, batches = None, group_by=False):
    
     loader = DataLoader(dataset, batch_size=batch_size, shuffle = True, drop_last=True)
     label_and_latent_act_dict = defaultdict(list)
@@ -174,13 +174,12 @@ def get_latent_activations_with_labels(dataset, vae_model, curr_dev, batch_size 
             label_batch = label_batch.cpu().numpy()
             
             # using labels, we place all \mu's belonging to same class together
-            for b in range(batch_size):
-
-                mu_of_this_x = mu_batch[b]
-                
-                # this only words if label is 1-dim
-                label_of_this_x = label_batch[b].item()
-                label_and_latent_act_dict[label_of_this_x].append(mu_of_this_x)
+            if group_by:
+                for b in range(batch_size):
+                    mu_of_this_x = mu_batch[b]
+                    # this only words if label is 1-dim
+                    label_of_this_x = label_batch[b].item()
+                    label_and_latent_act_dict[label_of_this_x].append(mu_of_this_x)
             
             batches_processed += 1
     
@@ -189,6 +188,39 @@ def get_latent_activations_with_labels(dataset, vae_model, curr_dev, batch_size 
         label_and_latent_act_dict[k] = np.array(label_and_latent_act_dict[k])
     
     return label_and_latent_act_dict
+
+def get_latent_activations_with_labels_for_scatter(dataset, vae_model, curr_dev, z_dim, l_dim, 
+                                batch_size = 32, batches = None):
+   
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle = True, drop_last=True)
+    
+    B = batches if batches is not None else len(loader)
+    mu_batches = np.zeros(shape=(batch_size * B, z_dim))
+    label_batches = np.zeros(shape=(batch_size * B, l_dim))
+    
+    batches_processed = 0
+    with torch.no_grad():
+        for x_batch, label_batch in tqdm(loader):
+            
+            if batches is not None and batches_processed >= batches:
+                break
+            
+            # First we encode this batch and get \mu and \sigma
+            x_batch = x_batch.to(curr_dev)
+            mu_batch, log_var_batch = vae_model.model.encode(x_batch)
+            
+            # convert to numpy format so that we can easily use in matplotlib
+            mu_batch = mu_batch.detach().cpu().numpy()
+            #log_var_batch = log_var_batch.detach().cpu().numpy()
+            label_batch = label_batch.cpu().numpy()
+            
+            for i in range(batch_size):
+                mu_batches[batches_processed*batch_size + i] = mu_batch[i]
+                label_batches[batches_processed*batch_size + i] = label_batch[i]
+
+            batches_processed += 1
+        
+    return mu_batches, label_batches
 
 def do_latent_traversal(vae_model, random_img, limit=3, inter=2/3, dim=-1, mode='relative'):
 
@@ -272,7 +304,7 @@ def do_latent_traversal_scatter(vae_model, random_img, limit=3, inter=2/3,
 def show_traversal_plot(vae_model, anchor_image, limit, interp_step, dim=-1, mode='relative'):
     
     traverse_maps, ref = do_latent_traversal_scatter(vae_model, anchor_image, limit=limit, 
-                                            inter=interp_step, dim_to_explore=dim, mode=mode)
+                                            inter=interp_step, dim_to_explore=dim, mode=mode)                                                  
 
     _ , ax = plt.subplots(figsize=(15,1))
     
@@ -286,8 +318,8 @@ def show_traversal_plot(vae_model, anchor_image, limit, interp_step, dim=-1, mod
 
 def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_dim , beta, 
                                             checkpoint_path, current_device, 
-                                            activation_with_label=False, seed=123,  batches=None,
-                                            in_channels=1
+                                            activation_type='without_labels', seed=123,  batches=None,
+                                            in_channels=1, **kwargs
     ):
 
     bvae_model_params = ModelParams(
@@ -343,16 +375,25 @@ def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_
         raise NotImplementedError
     
     activations = None
-    if activation_with_label:
+    if activation_type == 'with_labels':
         activations = get_latent_activations_with_labels(dataset, model_for_dset, 
                                     current_device,
                                     batch_size=batch_size,
                                     batches=batches)
         
-    else:
+    elif activation_type == 'without_labels':
         activations = get_latent_activations(dataset, 
                                     model_for_dset,
                                     current_device,
+                                    batch_size=batch_size,
+                                    batches=batches)
+    
+    elif activation_type == 'for_scatter':
+        activations = get_latent_activations_with_labels_for_scatter(dataset, 
+                                    model_for_dset,
+                                    current_device,
+                                    z_dim=z_dim,
+                                    l_dim=kwargs['l_dim'],
                                     batch_size=batch_size,
                                     batches=batches)
                         
