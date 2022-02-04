@@ -12,6 +12,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 
+from torch.distributions import normal
+
 from common import constants as c
 
 
@@ -358,14 +360,7 @@ class ThreeShapesDataset(Dataset):
                                     range(len(self.files_list)), self.train_indices
                                 )
                             )
-        
-        # TODO: this is NOT random. glob will have some specific ordering 
-        # of file names. Should convert it to random
-        # if self.split == "train":
-        #     self.files_list = self.files_list[: MAX_TRAIN_IDX]
 
-        # if self.split == "test":
-        #     self.files_list = self.files_list[MAX_TRAIN_IDX:]
 
     def __len__(self):
         if self.split == "train":
@@ -501,6 +496,42 @@ class ThreeShapesDataset(Dataset):
         )
     
 
+class PolynomialDataset(Dataset):
+
+    def __init__(self, num_points=10000, **kwargs):
+        
+        self.num_points = num_points
+
+        norm_dist_x = normal.Normal(loc=0, scale=3., validate_args=True)
+        norm_dist_y = normal.Normal(loc=0, scale=1., validate_args=True)
+
+        samples_x = norm_dist_x.sample(sample_shape=(num_points,1))
+        samples_y = norm_dist_y.sample(sample_shape=(num_points,1))
+
+        self.x_y_joint_samples = torch.cat([samples_x, samples_y], dim=1)
+
+        # polynom: x^2 + 2*x + 3*y + xy
+        self.polynomial_points = torch.cat([
+                            torch.pow(samples_x, 2), 
+                            2 * samples_x,
+                            3 * samples_y, 
+                            samples_x * samples_y
+                        ], dim=1
+        )
+
+    def __len__(self):
+        return self.num_points
+    
+    def __getitem__(self, idx):
+
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        y = self.polynomial_points[idx]
+        latent = self.x_y_joint_samples[idx]
+
+        return y, latent
+
 class DSpritesDataset(Dataset):
 
     FILE_NAME = 'dsprites_ndarray_co1sh3sc6or40x32y32_64x64.npz'
@@ -604,6 +635,8 @@ def _get_transforms_for_dataset(dataset_name, image_size):
     if dataset_name in ["dsprites_full", "dsprites_correlated", "dsprites_colored", "dsprites_cond",  
                         "threeshapes", "threeshapesnoisy", "onedim", "continum"]:
         return transforms.ToTensor()
+
+    return None
 
 
 def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
@@ -740,6 +773,12 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
         
         dset = ContinumDataset
 
+    elif dataset_name == 'polynomial':
+    
+        data_kwargs = {}
+        
+        dset = PolynomialDataset
+    
     else:
         raise NotImplementedError
     
@@ -777,7 +816,7 @@ def _get_dataloader(name, batch_size, seed, num_workers, pin_memory, shuffle, dr
 def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
                    shuffle, droplast, split="train", train_pct=0.90):
     
-    locally_supported_datasets = c.DATASETS[0:9]
+    locally_supported_datasets = c.DATASETS[0:10]
 
     logging.info(f'Datasets root: {dset_dir}')
     logging.info(f'Dataset: {dset_name}')

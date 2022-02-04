@@ -27,13 +27,13 @@ TOTAL_VAE_EPOCH = 'total_vae_epoch'
 LEARNING_RATE = 'learning_rate'
 
 # Algorithms
-ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE')
+ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE')
 LOSS_TERMS = (FACTORVAE, DIPVAE_I, DIPVAE_II, BetaTCVAE, INFOVAE)
 
 # Datasets
 DATASETS = ('celebA', 'dsprites_full', 
             'onedim','threeshapes','threeshapesnoisy', 'continum', 'dsprites_correlated', 'dsprites_colored',
-            'dsprites_cond',
+            'dsprites_cond', 'polynomial',
             'dsprites_noshape', 'color_dsprites', 'noisy_dsprites', 'scream_dsprites',
             'smallnorb', 'cars3d', 'shapes3d',
             'mpi3d_toy', 'mpi3d_realistic', 'mpi3d_real')
@@ -43,9 +43,9 @@ TEST_DATASETS = DATASETS[0:2]  # celebA, dsprites_full
 # Architectures
 DISCRIMINATORS = ('SimpleDiscriminator', 'SimpleDiscriminatorConv64')
 TILERS = ('MultiTo2DChannel',)
-DECODERS = ('SimpleConv64', 'ShallowLinear', 'DeepLinear')
+DECODERS = ('SimpleConv64', 'ShallowLinear', 'DeepLinear','SimpleFCNNDencoder')
 ENCODERS = ('SimpleConv64', 'SimpleGaussianConv64', 'PadlessConv64', 'PadlessGaussianConv64',
-            'ShallowGaussianLinear', 'DeepGaussianLinear')
+            'ShallowGaussianLinear', 'DeepGaussianLinear','SimpleFCNNEncoder')
 
 # Evaluation Metrics
 EVALUATION_METRICS = ('dci', 'factor_vae_metric', 'sap_score', 'mig', 'irs', 'beta_vae_sklearn')

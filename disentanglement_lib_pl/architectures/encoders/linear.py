@@ -1,9 +1,28 @@
 import torch.nn as nn
 
-from architectures.encoders.base.base_encoder import BaseImageEncoder
+from architectures.encoders.base.base_encoder import BaseImageEncoder, BaseEncoder
 from common.utils import init_layers
 from common.ops import Flatten3D
 
+class SimpleFCNNEncoder(BaseEncoder):
+    
+    def __init__(self, latent_dim, in_dim, h_dims):
+        super().__init__(latent_dim, in_dim)
+
+        self.main = nn.Sequential(
+            nn.Linear(in_dim, h_dims[0]),
+            nn.Tanh()
+            #nn.Linear(h_dims[0], latent_dim)
+        )
+
+        self.head_mu = nn.Linear(h_dims[0], latent_dim)
+        self.head_logvar = nn.Linear(h_dims[0], latent_dim)
+
+        init_layers(self._modules)
+
+    def forward(self, x):
+        h = self.main(x)
+        return self.head_mu(h), self.head_logvar(h)
 
 class ShallowGaussianLinear(BaseImageEncoder):
     def __init__(self, latent_dim, num_channels, image_size):

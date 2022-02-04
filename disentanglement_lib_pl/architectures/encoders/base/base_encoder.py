@@ -20,3 +20,20 @@ class BaseImageEncoder(nn.Module):
 
     def image_size(self):
         return self._image_size
+
+class BaseEncoder(nn.Module):
+    def __init__(self, latent_dim, in_dim):
+        super().__init__()
+
+        self._latent_dim = latent_dim
+        self._in_dim = in_dim
+
+    def forward(self, *input):
+        raise NotImplementedError
+
+    def latent_dim(self):
+        return self._latent_dim
+
+    def num_in_dim(self):
+        return self._in_dim
+

@@ -1,6 +1,8 @@
 #from .ae import AE
 from .vae import VAE
 from .betavae import BetaVAE
+from .fc_vae import FC_VAE
+
 #from .cvae import CVAE
 #from .ifcvae import IFCVAE
 
