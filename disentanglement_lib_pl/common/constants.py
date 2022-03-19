@@ -27,7 +27,7 @@ TOTAL_VAE_EPOCH = 'total_vae_epoch'
 LEARNING_RATE = 'learning_rate'
 
 # Algorithms
-ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE')
+ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE', 'LadderVAE')
 LOSS_TERMS = (FACTORVAE, DIPVAE_I, DIPVAE_II, BetaTCVAE, INFOVAE)
 
 # Datasets

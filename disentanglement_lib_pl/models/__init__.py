@@ -2,6 +2,7 @@
 from .vae import VAE
 from .betavae import BetaVAE
 from .fc_vae import FC_VAE
+from .ladder_vae import LadderVAE
 
 #from .cvae import CVAE
 #from .ifcvae import IFCVAE

@@ -27,9 +27,9 @@ def get_args(sys_args):
     parser.add_argument('--name', default='unknown_experiment', type=str, help='name of the experiment')
 
     # Neural architectures
-    parser.add_argument('--encoder', type=str, nargs='+', required=True, choices=c.ENCODERS,
+    parser.add_argument('--encoder', type=str, nargs='+', choices=c.ENCODERS,
                         help='name of the encoder network')
-    parser.add_argument('--decoder', type=str, nargs='+', required=True, choices=c.DECODERS,
+    parser.add_argument('--decoder', type=str, nargs='+', choices=c.DECODERS,
                         help='name of the decoder network')
     parser.add_argument('--label_tiler', type=str, nargs='*', choices=c.TILERS,
                         help='the tile network used to convert one hot labels to 2D channels')
