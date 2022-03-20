@@ -13,7 +13,6 @@ class LadderVAE(nn.Module):
         
         super(LadderVAE, self).__init__()
         
-        self.name = args.name
         self.alg = args.alg
         
         self.z_dim = args.z_dim
@@ -137,6 +136,11 @@ class LadderVAE(nn.Module):
         return z_1, z_2, var_dist_params
 
     def decode(self, z1, **kwargs):
+        
+        # TODO: find a way to use given z2 value as well
+        # this could be useful in `notebook_utils.do_latent_traversal_scatter` func 
+        # for example
+        
         return torch.sigmoid(self.nn_x(z1))
     
     def forward(self, x_true, **kwargs):
