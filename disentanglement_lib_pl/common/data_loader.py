@@ -52,8 +52,8 @@ class LabelHandler(object):
 
 
 class CustomImageFolder(ImageFolder):
-    def __init__(self, root, transform, labels, label_weights, name, class_values, num_channels, seed):
-        super(CustomImageFolder, self).__init__(root, transform)
+    def __init__(self, root, transforms, labels, label_weights, name, class_values, num_channels, seed):
+        super(CustomImageFolder, self).__init__(root, transforms)
         self.indices = range(len(self))
         self._num_channels = num_channels
         self._name = name
@@ -662,7 +662,7 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
     # TODO: is there a better way to do this ???
     if dataset_name == 'celeba':
         
-        root = os.path.join(dset_dir, 'CelebA')
+        root = os.path.join(dset_dir, 'celeba')
         labels_file = os.path.join(root, 'list_attr_celeba.csv')
 
         # celebA images are properly numbered, so the order should remain intact in loading
@@ -701,7 +701,10 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
                        'labels': labels,
                        'label_weights': label_weights,
                        'class_values': class_values,
-                       'num_channels': 3}
+                       'num_channels': 3,
+                       'name': dataset_name,
+                       'seed': seed}
+    
         dset = CustomImageFolder
     
     elif dataset_name in ['dsprites_full', 'dsprites_correlated', 'dsprites_colored', 'dsprites_cond']:

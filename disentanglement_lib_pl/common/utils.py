@@ -22,6 +22,19 @@ def static_var(varname, value):
     return decorate
 
 
+def list_str_to_list_int(list_str):
+    """
+    :param list_str: A command line argument with integers represented as string 
+     e.g ['1', '123']
+    """
+
+    print(list_str)
+    try:
+        return int(list_str[0]) if len(list_str) == 1 else [int(int_str) for int_str in list_str]
+    except:
+        raise argparse.ArgumentTypeError('Integer value expected.')
+
+
 def str2bool(v):
     """
     Thank to stackoverflow user: Maxim

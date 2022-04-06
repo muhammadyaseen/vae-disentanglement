@@ -31,7 +31,7 @@ ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE', 'LadderVAE')
 LOSS_TERMS = (FACTORVAE, DIPVAE_I, DIPVAE_II, BetaTCVAE, INFOVAE)
 
 # Datasets
-DATASETS = ('celebA', 'dsprites_full', 
+DATASETS = ('celeba', 'dsprites_full', 
             'onedim','threeshapes','threeshapesnoisy', 'continum', 'dsprites_correlated', 'dsprites_colored',
             'dsprites_cond', 'polynomial',
             'dsprites_noshape', 'color_dsprites', 'noisy_dsprites', 'scream_dsprites',

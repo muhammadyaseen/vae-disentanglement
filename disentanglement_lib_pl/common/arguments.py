@@ -3,7 +3,7 @@ import os
 import logging
 
 from common import constants as c
-from common.utils import str2bool, StoreDictKeyPair
+from common.utils import str2bool, list_str_to_list_int, StoreDictKeyPair
 
 
 def update_args(args):
@@ -49,7 +49,7 @@ def get_args(sys_args):
     parser.add_argument('--in_dim', default=4, type=int, help='Number of polynomial terms')
 
     # latent encoding
-    parser.add_argument('--z_dim', default=16, type=int, help='size of the encoded z space')
+    parser.add_argument('--z_dim', default=None, type=int, nargs='+', help='size of the encoded z space')
     parser.add_argument('--include_labels', default=None, type=str, nargs='*',
                         help='Labels (indices or names) to include in latent encoding.')
     parser.add_argument('--l_dim', default=0, type=str, help='size of the encoded w space (for each label)')
