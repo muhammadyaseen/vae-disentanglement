@@ -4,14 +4,14 @@ from architectures.encoders.base.base_encoder import BaseImageEncoder, BaseEncod
 from common.utils import init_layers
 from common.ops import Reshape
 
-class SimpleFCNNDencoder(BaseEncoder):
+class SimpleFCNNDecoder(BaseEncoder):
     def __init__(self, latent_dim, in_dim, h_dims):
         super().__init__(latent_dim, in_dim)
 
         self.main = nn.Sequential(
-            nn.Linear(latent_dim, h_dims[0]),
+            nn.Linear(in_dim, h_dims[0]),
             nn.Tanh(),
-            nn.Linear(h_dims[0], in_dim)
+            nn.Linear(h_dims[0], latent_dim)
         )
 
         init_layers(self._modules)

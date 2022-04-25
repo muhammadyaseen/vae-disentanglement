@@ -11,18 +11,14 @@ class SimpleFCNNEncoder(BaseEncoder):
 
         self.main = nn.Sequential(
             nn.Linear(in_dim, h_dims[0]),
-            nn.Tanh()
-            #nn.Linear(h_dims[0], latent_dim)
+            nn.Tanh(),
+            nn.Linear(h_dims[0], latent_dim)
         )
-
-        self.head_mu = nn.Linear(h_dims[0], latent_dim)
-        self.head_logvar = nn.Linear(h_dims[0], latent_dim)
 
         init_layers(self._modules)
 
     def forward(self, x):
-        h = self.main(x)
-        return self.head_mu(h), self.head_logvar(h)
+        return self.main(x)
 
 class ShallowGaussianLinear(BaseImageEncoder):
     def __init__(self, latent_dim, num_channels, image_size):

@@ -85,6 +85,8 @@ class VisdomVisualiser:
         window_titles_and_values = {
             'recon': {'title': 'Reconsturction Loss', 'legend': None},
             'kld_loss': {'title': 'KL Divergence (mean)', 'legend': None},
+            'kld_z1': {'title': 'KL Div z1 (mean)', 'legend': None},
+            'kld_z2': {'title': 'KL Div z2 (mean)', 'legend': None},
             'loss': {'title': 'Total Loss', 'legend': None},
             'mu': {'title': 'Posterior Mean', 'legend': None},
             'var': {'title': 'Posterior Variance', 'legend': None},

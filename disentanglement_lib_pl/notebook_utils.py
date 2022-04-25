@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -12,7 +13,8 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 
 from vae_experiment import VAEExperiment
-from common.data_loader import DSpritesDataset, ThreeShapesDataset, ContinumDataset
+from laddervae_experiment import LadderVAEExperiment
+from common.data_loader import DSpritesDataset, ThreeShapesDataset, ContinumDataset, CustomImageFolder
 
 ModelParams = namedtuple('ModelParams', ["z_dim", "l_dim", "num_labels" , "in_channels", 
                                         "image_size", "batch_size", "w_recon", "w_kld", 
@@ -84,67 +86,204 @@ def show_images_grid(imgs_, num_images=25):
 """
 End: dsprites notebook functions
 """
+def __show(imgs):
+    if not isinstance(imgs, list):
+        imgs = [imgs]
+    fix, axs = plt.subplots(ncols=len(imgs), squeeze=False)
+    for i, img in enumerate(imgs):
+        img = img.detach()
+        img = T.to_pil_image(img)
+        axs[0, i].imshow(np.asarray(img))
+        axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
 
-def load_vae_model(algo_name, checkpoint_path, curr_dev, 
+def __handle_celeba(dset_dir):
+
+    # TODO: this is quick and dirty fix. need to better handle it
+    labels = None
+    label_weights = None
+    label_idx = None
+    label_names = None
+    class_values = None
+
+    root = os.path.join(dset_dir, 'celeba')
+    labels_file = os.path.join(root, 'list_attr_celeba.csv')
+
+    # celebA images are properly numbered, so the order should remain intact in loading
+    labels = None
+    if label_names is not None:
+        labels = []
+        labels_all = np.genfromtxt(labels_file, delimiter=',', names=True)
+        for label_name in label_names:
+            labels.append(labels_all[label_name])
+        labels = np.array(labels).transpose()
+    elif label_idx is not None:
+        labels_all = np.genfromtxt(labels_file, delimiter=',', skip_header=True)
+        labels = labels_all[:, label_idx]
+
+    if labels is not None:
+        # celebA labels are all binary with values -1 and +1
+        labels[labels == -1] = 0
+        from pathlib import Path
+        num_l = labels.shape[0]
+        num_i = len(list(Path(root).glob('**/*.jpg')))
+        assert num_i == num_l, 'num_images ({}) != num_labels ({})'.format(num_i, num_l)
+
+        # calculate weight adversely proportional to each class's population
+        num_labels = labels.shape[1]
+        label_weights = []
+        for i in range(num_labels):
+            ones = labels[:, i].sum()
+            prob_one = ones / labels.shape[0]
+            label_weights.append([prob_one, 1 - prob_one])
+        label_weights = np.array(label_weights)
+
+        # all labels in celebA are binary
+        class_values = [[0, 1]] * num_labels
+
+    data_kwargs = {'root': root,
+                    'labels': labels,
+                    'label_weights': label_weights,
+                    'class_values': class_values,
+                    'num_channels': 3,
+                    'name': 'celeba',
+                    'seed': 123,
+                    'transforms': transforms.Compose([
+                    transforms.Resize((64, 64)),
+                    transforms.ToTensor()])}
+
+    return CustomImageFolder(**data_kwargs)
+
+def get_configured_dataset(dset_name):
+    
+    dataset = None
+
+    if dset_name == 'dsprites_full':
+        dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor())
+    elif dset_name == 'dsprites_correlated':
+        dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor())
+    elif dset_name == 'dsprites_colored':
+        dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor(), 
+        correlated=True, colored=True)
+    elif dset_name == 'dsprites_cond':
+        dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor(), 
+        correlated=False, colored=False, conditioned=True)
+
+    elif dset_name == 'threeshapesnoisy':
+        dataset = ThreeShapesDataset(root="../datasets/threeshapesnoisy/", split="train", transforms=transforms.ToTensor())
+    elif dset_name == 'threeshapes':
+        dataset = ThreeShapesDataset(root="../datasets/threeshapes/", split="train", transforms=transforms.ToTensor())
+    elif dset_name == 'celeba':
+        dataset = __handle_celeba("../datasets/")
+    else:
+        raise NotImplementedError
+
+    return dataset
+
+def load_vae_model(algo_name, algo_type, checkpoint_path, curr_dev, 
                    model_params, exp_params):
     
+    assert algo_type in ['bvae', 'laddervae']
+
     import models
     
     vae_model_class = getattr(models, algo_name)
     vae_model = vae_model_class(model_params)
         
-    vae_experiment = VAEExperiment.load_from_checkpoint(
-        checkpoint_path,
-        map_location=curr_dev,
-        vae_model=vae_model, 
-        params=exp_params)
+    vae_experiment = None
+
+    if algo_type == 'bvae':
+        vae_experiment = VAEExperiment.load_from_checkpoint(
+            checkpoint_path,
+            map_location=curr_dev,
+            vae_model=vae_model, 
+            params=exp_params)
+    
+    if algo_type == 'laddervae':
+        vae_experiment = LadderVAEExperiment.load_from_checkpoint(
+            checkpoint_path,
+            map_location=curr_dev,
+            vae_model=vae_model, 
+            params=exp_params)
 
     vae_experiment = vae_experiment.to(curr_dev)
 
     return vae_experiment
 
-def get_latent_activations(dataset, vae_model, curr_dev, batch_size = 32, batches = None):
+def get_latent_activations(dataset, vae_model, curr_dev, batch_size = 32, batches = None, 
+                                    model_type='bvae'):
    
+    assert model_type in ['bvae', 'laddervae']
+    #assert latent_layer in ['z1', 'z2']
+
     loader = DataLoader(dataset, batch_size=batch_size, shuffle = True, drop_last=True)
-    latent_acts = []
-    for _ in range(vae_model.model.z_dim):
-        latent_acts.append([])
+    
+    latent_acts = None
+    
+    if model_type == 'bvae':
+        latent_acts = []
+        for _ in range(vae_model.model.z_dim):
+            latent_acts.append([])
+    
+    if model_type == 'laddervae':
+        latent_acts = {'z1': [], 'z2': []}
+    
+        for _ in range(vae_model.model.z1_dim):
+            latent_acts['z1'].append([])
+        for _ in range(vae_model.model.z2_dim):
+            latent_acts['z2'].append([])
     
     batches_processed = 0
 
     with torch.no_grad():
 
-        for x_batch, label_batch in tqdm(loader):
+        for x_batch, _ in tqdm(loader):
             
             if batches is not None and batches_processed >= batches:
                 break
             
             # First we encode this batch
             x_batch = x_batch.to(curr_dev)
-            #print(x_batch.shape)
-            mu_batch, log_var_batch = vae_model.model.encode(x_batch)
-
-            # Then, we get \mu and \sigma for this batch
-            mu_batch = mu_batch.detach().cpu().numpy()
-            log_var_batch = log_var_batch.detach().cpu().numpy()
-
-            # and labels
-            label_batch = label_batch.cpu().numpy()
             
-            # using labels, we place all \mu's belonging to same class together
-            for b in range(batch_size):
-
-                mu_of_this_x = mu_batch[b]
+            # -- For Single Latent layer models
+            mu_batch = None
+            
+            if model_type == 'bvae':
                 
-                # for reach dimension
-                for m, m_dim in enumerate(mu_of_this_x): 
+                # Then, we get \mu and \sigma for this batch
+                mu_batch, _ = vae_model.model.encode(x_batch)
+                mu_batch = mu_batch.detach().cpu().numpy()
+
+                for b in range(batch_size):
+                    mu_of_this_x = mu_batch[b]              
+                    # for reach dimension
+                    for m, m_dim in enumerate(mu_of_this_x): 
+                        latent_acts[m].append(m_dim.item())
+
+            # -- For Multiple Latent layer models
+            z1_batch, z2_batch = None, None
+
+            if model_type == 'laddervae':
+            
+                z1_batch, z2_batch, _ = vae_model.model.encode(x_batch)
+                
+                z1_batch = z1_batch.detach().cpu().numpy()
+                z2_batch = z2_batch.detach().cpu().numpy()
+            
+                for b in range(batch_size):
                     
-                    #latent_act_dict[m].append(m_dim.item())
-                    latent_acts[m].append(m_dim.item())
+                    z1_of_this_x = z1_batch[b]
+                    z2_of_this_x = z2_batch[b]
                     
+                    # for reach dimension
+                    for m, m_dim in enumerate(z1_of_this_x): 
+                        latent_acts['z1'][m].append(m_dim.item())
+                    
+                    for m, m_dim in enumerate(z2_of_this_x): 
+                        latent_acts['z2'][m].append(m_dim.item())
+
             batches_processed += 1
     
-    return latent_acts #latent_act_dict
+    return latent_acts
 
 def plot_latent_dist(activations, label="Factor X"):
 
@@ -152,8 +291,12 @@ def plot_latent_dist(activations, label="Factor X"):
     axes.hist(activations, label=label, align='mid')
     axes.legend(prop={'size': 10},loc='upper left')
 
-def get_latent_activations_with_labels(dataset, vae_model, curr_dev, batch_size = 32, batches = None, group_by=False):
+def get_latent_activations_with_labels(dataset, vae_model, curr_dev, batch_size = 32, 
+                                    batches = None, group_by=False, model_type='bvae', latent_layer='z1'):
    
+    assert model_type in ['bvae', 'laddervae']
+    assert latent_layer in ['z1', 'z2']
+
     loader = DataLoader(dataset, batch_size=batch_size, shuffle = True, drop_last=True)
     label_and_latent_act_dict = defaultdict(list)
     
@@ -166,18 +309,26 @@ def get_latent_activations_with_labels(dataset, vae_model, curr_dev, batch_size 
             
             # First we encode this batch and get \mu and \sigma
             x_batch = x_batch.to(curr_dev)
-            mu_batch, log_var_batch = vae_model.model.encode(x_batch)
+            
+            mu_batch = None
+            
+            if model_type == 'bvae':
+                mu_batch, _ = vae_model.model.encode(x_batch)
+            
+            if model_type == 'laddervae':
+                z1, z2, _ = vae_model.model.encode(x_batch)
+                mu_batch = z1 if latent_layer == 'z1' else z2
             
             # convert to numpy format so that we can easily use in matplotlib
             mu_batch = mu_batch.detach().cpu().numpy()
-            log_var_batch = log_var_batch.detach().cpu().numpy()
+            
             label_batch = label_batch.cpu().numpy()
             
             # using labels, we place all \mu's belonging to same class together
             if group_by:
                 for b in range(batch_size):
                     mu_of_this_x = mu_batch[b]
-                    # this only words if label is 1-dim
+                    # this only works if label is 1-dim
                     label_of_this_x = label_batch[b].item()
                     label_and_latent_act_dict[label_of_this_x].append(mu_of_this_x)
             
@@ -190,8 +341,11 @@ def get_latent_activations_with_labels(dataset, vae_model, curr_dev, batch_size 
     return label_and_latent_act_dict
 
 def get_latent_activations_with_labels_for_scatter(dataset, vae_model, curr_dev, z_dim, l_dim, 
-                                batch_size = 32, batches = None):
+                                batch_size = 32, batches = None, model_type='bvae', latent_layer='z1'):
    
+    assert model_type in ['bvae', 'laddervae']
+    assert latent_layer in ['z1', 'z2']
+
     loader = DataLoader(dataset, batch_size=batch_size, shuffle = True, drop_last=True)
     
     B = batches if batches is not None else len(loader)
@@ -207,11 +361,17 @@ def get_latent_activations_with_labels_for_scatter(dataset, vae_model, curr_dev,
             
             # First we encode this batch and get \mu and \sigma
             x_batch = x_batch.to(curr_dev)
-            mu_batch, log_var_batch = vae_model.model.encode(x_batch)
             
+            mu_batch = None
+            if model_type == 'bvae':
+                mu_batch, _ = vae_model.model.encode(x_batch)
+            
+            if model_type == 'laddervae':
+                z1, z2, _ = vae_model.model.encode(x_batch)
+                mu_batch = z1 if latent_layer == 'z1' else z2
+
             # convert to numpy format so that we can easily use in matplotlib
             mu_batch = mu_batch.detach().cpu().numpy()
-            #log_var_batch = log_var_batch.detach().cpu().numpy()
             label_batch = label_batch.cpu().numpy()
             
             for i in range(batch_size):
@@ -255,24 +415,46 @@ def do_latent_traversal(vae_model, random_img, limit=3, inter=2/3, dim=-1, mode=
 
     return samples
 
-def do_latent_traversal_scatter(vae_model, random_img, limit=3, inter=2/3, 
-    dim_to_explore=-1, mode='relative', lb=None, ub=None, fix_dim=None, fix_val=None):
+def do_latent_traversal_scatter(vae_model, ref_img, limit=3, inter=2/3, 
+    layer_to_explore='z1', dim_to_explore=-1, model_type='bvae', mode='relative', 
+    lb=None, ub=None, fix_dim=None, fix_val=None):
 
     """
     This function also
     dim_to_explore: Dimension that we want to traverse. 
-    random_image: image to be used as starting point to traversal (relevant in case of mode='relative')
-    mode        : If 'relative', random image's Z is used as starting point for traversal.
+    ref_img       : Image to be used as starting point to traversal (relevant in case of mode='relative')
+    mode          : If 'relative', random image's Z is used as starting point for traversal.
                   If 'fixed', the space is explored uniformly in the given interval
-    """    
+    """
+
+    assert model_type in ['bvae', 'laddervae']
+    assert layer_to_explore in ['z1', 'z2']
+
     with torch.no_grad():
 
         interpolation, ref = None, None
-        random_img_z, _ = vae_model.model.encode(random_img)
+
+        random_img_z = None
+        var_dist_params = None
+        dim_size_to_iter = 0
+
+        if model_type == 'bvae':
+            random_img_z, _ = vae_model.model.encode(ref_img)
+            dim_size_to_iter = vae_model.model.z_dim
+        
+        if model_type == 'laddervae':
+            z1, z2, var_dist_params = vae_model.model.encode(ref_img)
+            
+            if layer_to_explore == 'z1':
+                random_img_z = z1
+                dim_size_to_iter = vae_model.model.z1_dim
+            if layer_to_explore == 'z2':
+                random_img_z = z2
+                dim_size_to_iter = vae_model.model.z2_dim
         
         samples = []
 
-        for current_dim in range(vae_model.model.z_dim):
+        for current_dim in range(dim_size_to_iter):
                      
             if dim_to_explore != -1 and current_dim != dim_to_explore:
                 continue
@@ -296,15 +478,26 @@ def do_latent_traversal_scatter(vae_model, random_img, limit=3, inter=2/3,
                 
             for val in interpolation:
                 z[:, current_dim] = val
-                sample = vae_model.model.decode(z).data
+                
+                if model_type == 'laddervae':
+                    sample = vae_model.model.decode(z, layer_to_explore, **var_dist_params).data
+                
+                if model_type == 'bvae':
+                    sample = vae_model.model.decode(z).data
+                
                 samples.append((z[:, current_dim].cpu().item(),sample))
 
     return samples, ref
 
-def show_traversal_plot(vae_model, anchor_image, limit, interp_step, dim=-1, mode='relative'):
+def show_traversal_plot(vae_model, anchor_image, limit, interp_step, dim=-1, mode='relative',
+                    layer_to_explore='z1', model_type='bvae'):
     
+    assert model_type in ['bvae', 'laddervae']
+    assert layer_to_explore in ['z1', 'z2']
+
     traverse_maps, ref = do_latent_traversal_scatter(vae_model, anchor_image, limit=limit, 
-                                            inter=interp_step, dim_to_explore=dim, mode=mode)                                                  
+                                            inter=interp_step, dim_to_explore=dim, mode=mode,
+                                            layer_to_explore=layer_to_explore, model_type=model_type)                                                  
 
     _ , ax = plt.subplots(figsize=(15,1))
     
@@ -315,6 +508,25 @@ def show_traversal_plot(vae_model, anchor_image, limit, interp_step, dim=-1, mod
                             frameon=False)
         ax.add_artist(ab)
     ax.vlines(ref,0,0.5)
+
+def show_traversal_images(vae_model, anchor_image, limit, interp_step, dim=-1, mode='relative',
+                    layer_to_explore='z1', model_type='bvae',nrow=10):
+    
+    assert model_type in ['bvae', 'laddervae']
+    assert layer_to_explore in ['z1', 'z2']
+
+    traversed_images, ref = do_latent_traversal_scatter(vae_model, anchor_image, limit=limit, 
+                                            inter=interp_step, dim_to_explore=dim, mode=mode,
+                                            layer_to_explore=layer_to_explore, model_type=model_type)
+
+    # every image in traversed_images has shape [1,channels,img_size, img_size] 
+    # .squeeze() removes the first dim and then stack concats the images along a new first dim
+    # to give [num_images,channels,img_size, img_size]
+    traversed_images_stacked = torch.stack([t_img.squeeze(0) for _ , t_img in traversed_images], dim=0)
+    img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=nrow, value_range=(0.0,1.0))
+
+    __show(img_grid)
+
 
 def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_dim , beta, 
                                             checkpoint_path, current_device, 
@@ -355,25 +567,8 @@ def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_
 
     model_for_dset.eval()
 
-    dataset = None
-    if dset_name == 'dsprites_full':
-        dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor())
-    elif dset_name == 'dsprites_correlated':
-        dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor())
-    elif dset_name == 'dsprites_colored':
-        dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor(), 
-        correlated=True, colored=True)
-    elif dset_name == 'dsprites_cond':
-        dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor(), 
-        correlated=False, colored=False, conditioned=True)
+    dataset = get_configured_dataset(dset_name)
 
-    elif dset_name == 'threeshapesnoisy':
-        dataset = ThreeShapesDataset(root="../datasets/threeshapesnoisy/", split="train", transforms=transforms.ToTensor())
-    elif dset_name == 'threeshapes':
-        dataset = ThreeShapesDataset(root="../datasets/threeshapes/", split="train", transforms=transforms.ToTensor())
-    else:
-        raise NotImplementedError
-    
     activations = None
     if activation_type == 'with_labels':
         activations = get_latent_activations_with_labels(dataset, model_for_dset, 
@@ -593,3 +788,87 @@ def sample_latent_pairs_differing_in_k_factors(diff_factor_indices, npz_dataset,
                       l2,img2.squeeze(0)))
     
     return pairs
+
+"""
+START: Notebook + Visualization functions required for LadderVAE
+These funcs have been adapted from their beta-vae variants above 
+and use the prefix 'laddervae_'
+"""
+def laddervae_load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_dim , beta, 
+                                            checkpoint_path, current_device, activation_type='without_labels', 
+                                            seed=123,  batches=None, in_channels=1, activations_for_latent_layer='z1', **kwargs
+    ):
+
+    # TODO: In LadderVAE case z_dim should be a list because latent layers can be of different sizes
+    bvae_model_params = ModelParams(
+        z_dim, 6, 0, in_channels, 64, batch_size, 1.0, beta,
+        False, 0, 0,
+        0, 0, 0, 0, 0,
+        ['SimpleGaussianConv64'],['SimpleConv64'], None, 'LadderVAE'
+    )
+    experiment_config = dict(
+            in_channels=in_channels,
+            image_size=64,
+            LR=1e-4,
+            weight_decay=0.0,       
+            dataset=dset_name,
+            datapath=dset_path,
+            droplast=True,        
+            batch_size=batch_size,
+            num_workers=8,
+            pin_memory=True,
+            seed=seed,
+            evaluation_metrics=None,
+            visdom_on=False,
+            save_dir=None
+    )
+
+    model_for_dset = load_vae_model(
+        algo_name='LadderVAE',
+        algo_type='laddervae', 
+        checkpoint_path=checkpoint_path, 
+        curr_dev=current_device,
+        model_params=bvae_model_params,
+        exp_params=experiment_config
+    )
+
+    model_for_dset.eval()
+
+    dataset = get_configured_dataset(dset_name)   
+    
+    activations = None
+
+    assert activation_type in ['with_labels', 'without_labels', 'for_scatter']
+
+    if activation_type == 'with_labels':
+        activations = get_latent_activations_with_labels(dataset, model_for_dset, 
+                                    current_device,
+                                    batch_size=batch_size,
+                                    batches=batches,
+                                    model_type='laddervae', 
+                                    latent_layer=activations_for_latent_layer)
+        
+    elif activation_type == 'without_labels':
+        activations = get_latent_activations(dataset, 
+                                    model_for_dset,
+                                    current_device,
+                                    batch_size=batch_size,
+                                    batches=batches,
+                                    model_type='laddervae')
+    
+    elif activation_type == 'for_scatter':
+        activations = get_latent_activations_with_labels_for_scatter(dataset, 
+                                    model_for_dset,
+                                    current_device,
+                                    z_dim=z_dim,
+                                    l_dim=kwargs['l_dim'],
+                                    batch_size=batch_size,
+                                    batches=batches,
+                                    model_type='laddervae', 
+                                    latent_layer=activations_for_latent_layer)
+                        
+    return activations, dataset, model_for_dset
+
+"""
+END: Notebook + Visualization functions required for LadderVAE
+"""

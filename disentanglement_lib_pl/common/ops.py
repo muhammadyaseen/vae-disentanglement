@@ -23,6 +23,16 @@ def kl_divergence_mu_var1(mu, logvar, target_mu):
     kld = -0.5 * (1 + logvar - (mu - target_mu) ** 2 - logvar.exp()).sum(1).mean()
     return kld
 
+def kl_divergence_diag_mu_var(mu, logvar, target_mu, target_logvar):
+    
+    #kld = -0.5 * (1 + logvar - (mu - target_mu) ** 2 - logvar.exp()).sum(1).mean()
+    
+    kld = -0.5 * ( 1 - target_logvar + logvar -
+                  ((target_mu - mu) * target_logvar.exp().pow(-1) * (target_mu - mu)) - 
+                    (target_logvar.exp().pow(-1)*logvar.exp())
+            ).sum(1).mean()
+    return kld
+
 
 def kl_divergence_var1(logvar):
     kld = -0.5 * (1 + logvar - logvar.exp()).sum(1).mean()
