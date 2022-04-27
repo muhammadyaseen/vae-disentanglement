@@ -3,6 +3,7 @@ import torch.nn as nn
 from architectures.encoders.base.base_encoder import BaseImageEncoder, BaseEncoder
 from common.utils import init_layers
 from common.ops import Reshape
+from common.special_modules import L0_Dense
 
 class SimpleFCNNDecoder(BaseEncoder):
     def __init__(self, latent_dim, in_dim, h_dims):
@@ -58,3 +59,23 @@ class DeepLinear(BaseImageEncoder):
 
     def forward(self, x):
         return self.main(x)
+
+
+class L0_FCNNDecoder(BaseEncoder):
+    
+    def __init__(self, latent_dim, in_dim, h_dims, regularization_opts):
+
+        super().__init__(latent_dim, in_dim)
+
+        self.sparse_layer = L0_Dense(in_dim, h_dims[0], **regularization_opts)
+        self.lin_layer = nn.Linear(h_dims[0], latent_dim) 
+
+        init_layers(self._modules)
+
+    def forward(self, x):
+
+        x = self.sparse_layer(x)
+        x = nn.Tanh()(x)
+        x = self.lin_layer(x)
+
+        return x

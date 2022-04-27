@@ -26,10 +26,23 @@ class LadderVAE(nn.Module):
         self.w_recon = args.w_recon
         self.w_kld = args.w_kld
         
+        self.l_zero_reg = args.l_zero_reg
+
         # bottom-up path
         self.nn_d_1 = encoders.SimpleConv64(latent_dim=self.z1_dim * 2, num_channels=self.num_channels, image_size=self.image_size)
         self.nn_d_2 = encoders.SimpleFCNNEncoder(latent_dim=self.z2_dim * 2, in_dim=self.z1_dim * 2, h_dims=[self.z2_dim * 2])       
      
+        # TODO: add logic here to switch the nn_z_1 net when L0 reg is being used
+        # regularization_opts = {
+        #     'bias': True,
+        #     'l_zero_weight': 1.0,
+        #     'l_two_weight': 1.0,
+        #     'temperature': 2. / 3.,
+        #     'droprate_init': 0.5,
+        #     'local_rep': False
+        # }
+        # self.nn_z_1 = decoders.L0_FCNNDecoder(self.z1_dim * 2, self.z2_dim, [self.z1_dim * 2], regularization_opts)
+        
         # top-down path
         self.nn_z_1 = decoders.SimpleFCNNDecoder(latent_dim=self.z1_dim * 2, in_dim=self.z2_dim, h_dims=[self.z1_dim * 2])
         self.nn_x = decoders.SimpleConv64(latent_dim=self.z1_dim, num_channels=self.num_channels, image_size=self.image_size)
@@ -78,8 +91,14 @@ class LadderVAE(nn.Module):
         output_losses["kld_z1"] = kld_z1
         output_losses["kld_z2"] = kld_z2
         output_losses[c.KLD_LOSS] = kld_z1 + kld_z2
-        
         output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
+
+        # 3. regularization loss
+        if self.l_zero_reg:
+            if isinstance(self.nn_z_1, decoders.L0_FCNNDecoder):
+                output_losses["reg_l0"] = self.nn_z_1.sparse_layer.regularization()
+                output_losses[c.TOTAL_LOSS] += output_losses["reg_l0"]
+        
         
         # detach all losses except for the full loss
         for loss_type in output_losses.keys():

@@ -29,7 +29,8 @@ class LadderVAEExperiment(pl.LightningModule):
         self.curr_device = None
         self.visdom_on = params['visdom_on']
         self.save_dir = params['save_dir']
-
+        self.l_zero_reg = params['l_zero_reg']
+        
         if self.visdom_on:
             self.visdom_visualiser = VisdomVisualiser(params)
 
@@ -68,18 +69,26 @@ class LadderVAEExperiment(pl.LightningModule):
         torch.set_grad_enabled(False)
         self.model.eval()
 
+        scalar_metrics = dict()
+
         # 1. Save avg loss in this epoch
         avg_loss = torch.stack([tso[c.TOTAL_LOSS] for tso in train_step_outputs]).mean()
         avg_kld_loss = torch.stack([tso[c.KLD_LOSS] for tso in train_step_outputs]).mean()
         avg_kld_z1_loss = torch.stack([tso["kld_z1"] for tso in train_step_outputs]).mean()
         avg_kld_z2_loss = torch.stack([tso["kld_z2"] for tso in train_step_outputs]).mean()
         avg_recon_loss = torch.stack([tso[c.RECON] for tso in train_step_outputs]).mean()
-
+        
+        
         self.logger.experiment.add_scalar("Total Loss (Train)", avg_loss, self.current_epoch)
         self.logger.experiment.add_scalar("Recon Loss (Train)", avg_recon_loss, self.current_epoch)
         self.logger.experiment.add_scalar("KLD Loss (Train)", avg_kld_loss, self.current_epoch)
         self.logger.experiment.add_scalar("KLD Loss z1 (Train)", avg_kld_z1_loss, self.current_epoch)
         self.logger.experiment.add_scalar("KLD Loss z2 (Train)", avg_kld_z2_loss, self.current_epoch)
+
+        if self.l_zero_reg:
+            reg_loss = torch.stack([tso["reg_l0"] for tso in train_step_outputs]).mean()
+            self.logger.experiment.add_scalar("Reg L-0 Loss", reg_loss, self.current_epoch)
+            scalar_metrics["reg_l0"] = reg_loss
 
         # 2. save recon images and generated images, histogram of latent layer activations
         self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(36), self.current_epoch)
@@ -97,7 +106,6 @@ class LadderVAEExperiment(pl.LightningModule):
             if self.visdom_on:
                 self.visdom_visualiser.visualize_disentanglement_metrics(evaluation_results, self.current_epoch)
 
-        scalar_metrics = dict()
         scalar_metrics[c.TOTAL_LOSS] = avg_loss
         scalar_metrics[c.RECON] = avg_recon_loss
         scalar_metrics[c.KLD_LOSS] = avg_kld_loss
@@ -113,6 +121,8 @@ class LadderVAEExperiment(pl.LightningModule):
             #                                "mu_batch" : torch.stack([tso['mu_batch'] for tso in train_step_outputs]),
             #                                "var_batch" : torch.stack([tso['logvar_batch'].exp() for tso in train_step_outputs]),
             #                            }, self.current_epoch)
+        
+        
         torch.set_grad_enabled(True)
         self.model.train()
 

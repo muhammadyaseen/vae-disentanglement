@@ -90,7 +90,8 @@ class VisdomVisualiser:
             'loss': {'title': 'Total Loss', 'legend': None},
             'mu': {'title': 'Posterior Mean', 'legend': None},
             'var': {'title': 'Posterior Variance', 'legend': None},
-            'vae_betatc': {'title': 'Total Corr.', 'legend': None}
+            'vae_betatc': {'title': 'Total Corr.', 'legend': None},
+            'reg_l0': {'title': 'Reg L-0', 'legend': None}
         }
 
         # Update (or create, if non-existent) the scalar windows

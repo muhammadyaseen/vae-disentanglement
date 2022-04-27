@@ -40,7 +40,7 @@ def main(_args):
         image_size=_args.image_size,
         LR=_args.lr_G,
         weight_decay=0.0,
-        
+        l_zero_reg=_args.l_zero_reg,
         dataset=_args.dset_name,
         datapath=_args.dset_dir,
         droplast=True,        
