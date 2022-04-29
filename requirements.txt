@@ -1,0 +1,15 @@
+seaborn
+tensorboardx
+matplotlib
+tensorboard
+jupyter
+pyyaml
+numpy
+visdom
+jsonpath
+jsonpatch
+scikit-image
+ipympl
+pomegranate
+gin-config
+
