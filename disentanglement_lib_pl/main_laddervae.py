@@ -57,7 +57,7 @@ def main(_args):
     print(_args.evaluation_metrics)
     experiment_config['visual_args'] = dict(
         dataset = _args.dset_name,
-        scalar_metrics = ['loss','recon', 'kld_loss', 'kld_z1', 'kld_z2'],
+        scalar_metrics = ['loss','recon', 'kld_loss', 'kld_z1', 'kld_z2'] + ['l_zero_reg'] if _args.l_zero_reg else [],
         disent_metrics = _args.evaluation_metrics,
     )
     experiment_config['visdom_args'] = dict() 

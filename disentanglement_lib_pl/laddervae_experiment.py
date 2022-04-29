@@ -86,9 +86,9 @@ class LadderVAEExperiment(pl.LightningModule):
         self.logger.experiment.add_scalar("KLD Loss z2 (Train)", avg_kld_z2_loss, self.current_epoch)
 
         if self.l_zero_reg:
-            reg_loss = torch.stack([tso["reg_l0"] for tso in train_step_outputs]).mean()
+            reg_loss = torch.stack([tso["l_zero_reg"] for tso in train_step_outputs]).mean()
             self.logger.experiment.add_scalar("Reg L-0 Loss", reg_loss, self.current_epoch)
-            scalar_metrics["reg_l0"] = reg_loss
+            scalar_metrics["l_zero_reg"] = reg_loss
 
         # 2. save recon images and generated images, histogram of latent layer activations
         self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(36), self.current_epoch)

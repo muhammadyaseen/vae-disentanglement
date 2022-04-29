@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from torch import nn
 from torch.nn import init
@@ -59,31 +60,31 @@ class L0_Dense(nn.Module):
     def init_params(self):
 
         init.kaiming_normal(self.weights, mode='fan_out')
-        self.qz_loga.data.normal_(torch.log(1 - self.droprate_init) - torch.log(self.droprate_init), 1e-2)
+        self.qz_loga.data.normal_(np.log(1 - self.droprate_init) - np.log(self.droprate_init), 1e-2)
         if self.use_bias:
             self.bias.data.fill_(0)
 
     def constrain_parameters(self, **kwargs):
-        self.qz_loga.data.clamp_(min=torch.log(1e-2), max=torch.log(1e2))
+        self.qz_loga.data.clamp_(min=np.log(1e-2), max=np.log(1e2))
 
     def cdf_qz(self, x):
         """Implements the CDF of the 'stretched' concrete distribution"""
         xn = (x - LIMIT_A) / (LIMIT_B - LIMIT_A)
-        logits = torch.log(xn) - torch.log(1 - xn)
-        return F.sigmoid(logits * self.temperature - self.qz_loga).clamp(min=EPSILON, max=1 - EPSILON)
+        logits = np.log(xn) - np.log(1 - xn)
+        return torch.sigmoid(logits * self.temperature - self.qz_loga).clamp(min=EPSILON, max=1 - EPSILON)
 
     def quantile_concrete(self, x):
         """Implements the quantile, aka inverse CDF, of the 'stretched' concrete distribution"""
-        y = F.sigmoid((torch.log(x) - torch.log(1 - x) + self.qz_loga) / self.temperature)
+        y = torch.sigmoid((torch.log(x) - torch.log(1 - x) + self.qz_loga) / self.temperature)
         return y * (LIMIT_B - LIMIT_A) + LIMIT_A
 
     def _l0_l2_reg(self):
         
         """Expected L0 norm under the stochastic gates, takes into account and re-weights also a potential L2 penalty"""
         
-        logpw_col = torch.sum(- (.5 * self.l_two_weight * self.weights.pow(2)) - self.l_zero_weight, 1)
-        logpw = torch.sum((1 - self.cdf_qz(0)) * logpw_col)
-        logpb = 0 if not self.use_bias else - torch.sum(.5 * self.l_two_weight * self.bias.pow(2))
+        logpw_col = 0.5 * self.l_two_weight * torch.sum(self.weights.pow(2), 1)
+        logpw = torch.sum((1 - self.cdf_qz(0)) * logpw_col) * self.l_zero_weight
+        logpb = 0 if not self.use_bias else torch.sum(.5 * self.l_two_weight * self.bias.pow(2))
         return logpw + logpb
 
     def regularization(self):
@@ -101,7 +102,7 @@ class L0_Dense(nn.Module):
             z = self.quantile_concrete(eps)
             return F.hardtanh(z, min_val=0, max_val=1)
         else:  # mode
-            pi = F.sigmoid(self.qz_loga).view(1, self.in_features).expand(batch_size, self.in_features)
+            pi = torch.sigmoid(self.qz_loga).view(1, self.in_features).expand(batch_size, self.in_features)
             return F.hardtanh(pi * (LIMIT_B - LIMIT_A) + LIMIT_A, min_val=0, max_val=1)
 
     def sample_weights(self):
@@ -112,7 +113,7 @@ class L0_Dense(nn.Module):
     def __repr__(self):
         
         s = ('{name}({in_features} -> {out_features}, droprate_init={droprate_init}, '
-             'lamba={lamba}, temperature={temperature}, weight_decay={prior_prec}, '
+             'l_zero_weight={l_zero_weight}, temperature={temperature}, l_two_weight={l_two_weight}, '
              'local_rep={local_rep}')
         
         if not self.use_bias:

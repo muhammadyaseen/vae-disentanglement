@@ -33,18 +33,20 @@ class LadderVAE(nn.Module):
         self.nn_d_2 = encoders.SimpleFCNNEncoder(latent_dim=self.z2_dim * 2, in_dim=self.z1_dim * 2, h_dims=[self.z2_dim * 2])       
      
         # TODO: add logic here to switch the nn_z_1 net when L0 reg is being used
-        # regularization_opts = {
-        #     'bias': True,
-        #     'l_zero_weight': 1.0,
-        #     'l_two_weight': 1.0,
-        #     'temperature': 2. / 3.,
-        #     'droprate_init': 0.5,
-        #     'local_rep': False
-        # }
-        # self.nn_z_1 = decoders.L0_FCNNDecoder(self.z1_dim * 2, self.z2_dim, [self.z1_dim * 2], regularization_opts)
-        
+        regularization_opts = {
+            'bias': True,
+            'l_zero_weight': 0.5,
+            'l_two_weight': 0.1,
+            'temperature': 2. / 3.,
+            'droprate_init': 0.5,
+            'local_rep': False
+        }
         # top-down path
-        self.nn_z_1 = decoders.SimpleFCNNDecoder(latent_dim=self.z1_dim * 2, in_dim=self.z2_dim, h_dims=[self.z1_dim * 2])
+        if self.l_zero_reg:
+            self.nn_z_1 = decoders.L0_FCNNDecoder(self.z1_dim * 2, self.z2_dim, [self.z1_dim * 2], regularization_opts)
+        else:
+            self.nn_z_1 = decoders.SimpleFCNNDecoder(latent_dim=self.z1_dim * 2, in_dim=self.z2_dim, h_dims=[self.z1_dim * 2])
+        
         self.nn_x = decoders.SimpleConv64(latent_dim=self.z1_dim, num_channels=self.num_channels, image_size=self.image_size)
 
     def _ladder_kld_loss_fn(self, mu_q_z1, logvar_q_z1, 
@@ -96,8 +98,8 @@ class LadderVAE(nn.Module):
         # 3. regularization loss
         if self.l_zero_reg:
             if isinstance(self.nn_z_1, decoders.L0_FCNNDecoder):
-                output_losses["reg_l0"] = self.nn_z_1.sparse_layer.regularization()
-                output_losses[c.TOTAL_LOSS] += output_losses["reg_l0"]
+                output_losses["l_zero_reg"] = self.nn_z_1.sparse_layer.regularization()
+                output_losses[c.TOTAL_LOSS] += output_losses["l_zero_reg"]
         
         
         # detach all losses except for the full loss

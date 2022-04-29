@@ -20,7 +20,7 @@ ModelParams = namedtuple('ModelParams', ["z_dim", "l_dim", "num_labels" , "in_ch
                                         "image_size", "batch_size", "w_recon", "w_kld", 
                                          "controlled_capacity_increase", "max_c", "iterations_c",
                                         "w_tc", "w_infovae", "w_dipvae", "lambda_od", "lambda_d_factor",
-                                        "encoder", "decoder", "loss_terms", "alg"])
+                                        "encoder", "decoder", "loss_terms", "alg", "l_zero_reg"])
 
 """
 Start: dsprites notebook functions
@@ -804,7 +804,7 @@ def laddervae_load_model_and_data_and_get_activations(dset_name, dset_path, batc
         z_dim, 6, 0, in_channels, 64, batch_size, 1.0, beta,
         False, 0, 0,
         0, 0, 0, 0, 0,
-        ['SimpleGaussianConv64'],['SimpleConv64'], None, 'LadderVAE'
+        ['SimpleGaussianConv64'],['SimpleConv64'], None, 'LadderVAE', kwargs['l_zero_reg']
     )
     experiment_config = dict(
             in_channels=in_channels,
@@ -820,7 +820,8 @@ def laddervae_load_model_and_data_and_get_activations(dset_name, dset_path, batc
             seed=seed,
             evaluation_metrics=None,
             visdom_on=False,
-            save_dir=None
+            save_dir=None,
+            l_zero_reg=kwargs['l_zero_reg']
     )
 
     model_for_dset = load_vae_model(
