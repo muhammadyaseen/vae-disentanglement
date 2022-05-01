@@ -1,5 +1,6 @@
 datasets/
 onekonny/
+train-logs/
 pl-dt-test/
 disentanglement_lib_pytorch/
 disentanglement_lib_pl/eval_results
