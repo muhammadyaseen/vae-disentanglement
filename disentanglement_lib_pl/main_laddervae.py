@@ -60,7 +60,9 @@ def main(_args):
         scalar_metrics = ['loss','recon', 'kld_loss', 'kld_z1', 'kld_z2'] + ['l_zero_reg'] if _args.l_zero_reg else [],
         disent_metrics = _args.evaluation_metrics,
     )
-    experiment_config['visdom_args'] = dict() 
+    experiment_config['visdom_args'] = dict(
+        save_every_epoch=_args.save_every_epoch
+    ) 
 
     experiment = LadderVAEExperiment(model, experiment_config)
 

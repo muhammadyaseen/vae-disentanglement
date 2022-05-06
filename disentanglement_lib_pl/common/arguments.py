@@ -120,7 +120,8 @@ def get_args(sys_args):
     parser.add_argument('--verbose', default=20, type=int, help='verbosity level')
     parser.add_argument('--visdom_port', default=8097, type=int, help='Visdom port to start server on')
     parser.add_argument('--visdom_on', default=False, type=str2bool, help='Use Visdom or not')
-
+    parser.add_argument('--save_every_epoch', default=False, type=str2bool, help='Save visdom environment every epoch or not (Default: save on last epoch only)')
+    
     # Save/Load checkpoint
     parser.add_argument('--ckpt_dir', default='checkpoints', type=str, help='checkpoint directory')
     parser.add_argument('--ckpt_load', default=None, type=str, help='checkpoint name to load')

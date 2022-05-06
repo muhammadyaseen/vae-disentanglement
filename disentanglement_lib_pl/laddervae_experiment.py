@@ -122,21 +122,17 @@ class LadderVAEExperiment(pl.LightningModule):
             #                                "var_batch" : torch.stack([tso['logvar_batch'].exp() for tso in train_step_outputs]),
             #                            }, self.current_epoch)
         
-        
+        # save visdom visualization data
+        if self.visdom_visualiser.save_every_epoch:
+            self._save_visdom_environment()
+
         torch.set_grad_enabled(True)
         self.model.train()
 
     def on_train_end(self):
 
         print("Training finished.")
-        if self.visdom_on:
-            print("Saving visdom environments to logs folder: (%s)" % self.save_dir)
-            print("Available: ")
-            for i, env_name in enumerate(self.visdom_visualiser.visdom_instance.get_env_list()):
-                print(f"[{i}] - {env_name}")
-                if env_name in self.visdom_visualiser.environmets:
-                    self.visdom_visualiser.visdom_instance.save([env_name])
-                    print("saved...")
+        self._save_visdom_environment()
 
     def validation_step(self, batch, batch_idx, optimizer_idx = 0):
 
@@ -266,3 +262,13 @@ class LadderVAEExperiment(pl.LightningModule):
         return {'mu': activations_mu, 'logvar': activations_logvar}
         
 
+    def _save_visdom_environment(self):
+        
+        if self.visdom_on:
+            print("Saving visdom environments to logs folder: (%s)" % self.save_dir)
+            print("Available: ")
+            for i, env_name in enumerate(self.visdom_visualiser.visdom_instance.get_env_list()):
+                print(f"[{i}] - {env_name}")
+                if env_name in self.visdom_visualiser.environmets:
+                    self.visdom_visualiser.visdom_instance.save([env_name])
+                    print("saved...")

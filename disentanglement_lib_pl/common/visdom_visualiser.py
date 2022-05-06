@@ -15,6 +15,7 @@ class VisdomVisualiser:
         self.logfile = visdom_args['logfile'] if "logfile" in visdom_args.keys() else None
         self.name = params['name'] #"visdom_{}".format(visual_args['dataset'])
         self.environmets = [ self.name + '_lines', self.name + '_disent_eval', self.name + '_reconstruction']
+        self.save_every_epoch = visdom_args['save_every_epoch']
 
         self.visdom_instance = visdom.Visdom(port=self.port, log_to_filename=self.logfile)
         
