@@ -11,3 +11,4 @@ disent-vaes/logs
 *.pyx
 *.pyc
 *.yaml
+scripts/
