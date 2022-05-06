@@ -178,53 +178,6 @@ class DisentanglementLibDataset(Dataset):
         # Convert output to CHW from HWC
         return torch.from_numpy(np.moveaxis(output, 2, 0), ).type(torch.FloatTensor), 0
 
-class DisentanglementLibDataset(Dataset):
-    """
-    Data-loading from Disentanglement Library
-
-    Note:
-        Unlike a traditional Pytorch dataset, indexing with _any_ index fetches a random batch.
-        What this means is dataset[0] != dataset[0]. Also, you'll need to specify the size
-        of the dataset, which defines the length of one training epoch.
-
-        This is done to ensure compatibility with disentanglement_lib.
-    """
-
-    def __init__(self, name, seed=0):
-        """
-        Parameters
-        ----------
-        name : str
-            Name of the dataset use. You may use `get_dataset_name`.
-        seed : int
-            Random seed.
-        iterator_len : int
-            Length of the dataset. This defines the length of one training epoch.
-        """
-        from disentanglement_lib.data.ground_truth.named_data import get_named_ground_truth_data
-        self.name = name
-        self.seed = seed
-        self.random_state = np.random.RandomState(seed)
-        self.dataset = get_named_ground_truth_data(self.name)
-        self.iterator_len = self.dataset.images.shape[0]
-
-    @staticmethod
-    def has_labels():
-        return False
-
-
-    def num_channels(self):
-        return self.dataset.observation_shape[2]
-
-    def __len__(self):
-        return self.iterator_len
-
-    def __getitem__(self, item):
-        assert item < self.iterator_len
-        output = self.dataset.sample_observations(1, random_state=self.random_state)[0]
-        # Convert output to CHW from HWC
-        return torch.from_numpy(np.moveaxis(output, 2, 0), ).type(torch.FloatTensor), 0
-
 
 def _get_transforms_for_dataset(dataset_name, image_size):
 

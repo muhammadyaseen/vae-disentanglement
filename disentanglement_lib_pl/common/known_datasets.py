@@ -387,7 +387,7 @@ class DSpritesDataset(Dataset):
             print("Loading conditioned dataset")
             file_to_load = self.COND_FILE_NAME
         
-        dataset_zip = np.load(os.path.join(root, file_to_load),
+        dataset_zip = np.load(os.path.join(self.root_dir, file_to_load),
                               allow_pickle=True, encoding='latin1')
 
         self.images = dataset_zip['imgs']
@@ -460,7 +460,7 @@ class CorrelatedDSpritesDataset(Dataset):
         self.name = 'dsprites_correlated'
         self.seed = seed
         self.random_state = np.random.RandomState(seed)
-        self.dataset = named_data.get_named_ground_truth_data('dsprites')
+        self.dataset = named_data.get_named_ground_truth_data('dsprites_full')
         self.iterator_len = self.dataset.images.shape[0]
         self.correlation_strength = correlation_strength
 
@@ -468,7 +468,7 @@ class CorrelatedDSpritesDataset(Dataset):
         gin.bind_parameter("correlation_hyperparameter.line_width", self.correlation_strength)
         correlated_state_space = gt_utils.CorrelatedSplitDiscreteStateSpace(
                                             factor_sizes=self.dataset.factor_sizes,
-                                            latent_factor_indices=self.latent_factor_indices, 
+                                            latent_factor_indices=self.dataset.latent_factor_indices, 
                                             corr_indices=[3, 4], # orientation, posX
                                             corr_type='line'
                                         )
@@ -487,7 +487,12 @@ class CorrelatedDSpritesDataset(Dataset):
 
     def __getitem__(self, item):
         assert item < self.iterator_len
-        factors, observations = self.dataset.sample(1, random_state=self.random_state)[0]
+        factors, observations = self.dataset.sample(1, random_state=self.random_state)
+        #print(factors.size, observations.size)
+        #print(factors[0].shape, observations[0].shape)
         # Convert output to CHW from HWC
-        return torch.from_numpy(np.moveaxis(observations, 2, 0), ).type(torch.FloatTensor), factors
+        
+        # `sample` function returns data with an extra `batch` axis on some reason so 
+        # we have to index into it as with [0] to return just one example
+        return torch.from_numpy(np.moveaxis(observations[0], 2, 0), ).type(torch.FloatTensor), factors[0]
     

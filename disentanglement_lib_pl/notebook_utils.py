@@ -14,7 +14,8 @@ from torch.utils.data import DataLoader
 
 from vae_experiment import VAEExperiment
 from laddervae_experiment import LadderVAEExperiment
-from common.data_loader import DSpritesDataset, ThreeShapesDataset, ContinumDataset, CustomImageFolder
+from common.data_loader import CustomImageFolder
+from common.known_datasets import DSpritesDataset, ThreeShapesDataset, ContinumDataset 
 
 ModelParams = namedtuple('ModelParams', ["z_dim", "l_dim", "num_labels" , "in_channels", 
                                         "image_size", "batch_size", "w_recon", "w_kld", 
