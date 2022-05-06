@@ -178,6 +178,53 @@ class DisentanglementLibDataset(Dataset):
         # Convert output to CHW from HWC
         return torch.from_numpy(np.moveaxis(output, 2, 0), ).type(torch.FloatTensor), 0
 
+class DisentanglementLibDataset(Dataset):
+    """
+    Data-loading from Disentanglement Library
+
+    Note:
+        Unlike a traditional Pytorch dataset, indexing with _any_ index fetches a random batch.
+        What this means is dataset[0] != dataset[0]. Also, you'll need to specify the size
+        of the dataset, which defines the length of one training epoch.
+
+        This is done to ensure compatibility with disentanglement_lib.
+    """
+
+    def __init__(self, name, seed=0):
+        """
+        Parameters
+        ----------
+        name : str
+            Name of the dataset use. You may use `get_dataset_name`.
+        seed : int
+            Random seed.
+        iterator_len : int
+            Length of the dataset. This defines the length of one training epoch.
+        """
+        from disentanglement_lib.data.ground_truth.named_data import get_named_ground_truth_data
+        self.name = name
+        self.seed = seed
+        self.random_state = np.random.RandomState(seed)
+        self.dataset = get_named_ground_truth_data(self.name)
+        self.iterator_len = self.dataset.images.shape[0]
+
+    @staticmethod
+    def has_labels():
+        return False
+
+
+    def num_channels(self):
+        return self.dataset.observation_shape[2]
+
+    def __len__(self):
+        return self.iterator_len
+
+    def __getitem__(self, item):
+        assert item < self.iterator_len
+        output = self.dataset.sample_observations(1, random_state=self.random_state)[0]
+        # Convert output to CHW from HWC
+        return torch.from_numpy(np.moveaxis(output, 2, 0), ).type(torch.FloatTensor), 0
+
 
 def _get_transforms_for_dataset(dataset_name, image_size):
 
@@ -262,7 +309,7 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
     
         dset = CustomImageFolder
     
-    elif dataset_name in ['dsprites_full', 'dsprites_correlated', 'dsprites_colored', 'dsprites_cond']:
+    elif dataset_name in ['dsprites_full', 'dsprites_colored', 'dsprites_cond']:
         
         root = os.path.join(dset_dir, 'dsprites')
 
@@ -370,19 +417,36 @@ def _get_dataloader(name, batch_size, seed, num_workers, pin_memory, shuffle, dr
                         num_workers=num_workers,)
     return loader
 
+def _get_dataloader_disentlib(name, batch_size, seed, num_workers, pin_memory, shuffle, droplast):
+    """
+    Special case of `_get_dataloader` for correlated datasets so that we can pass additional params
+    Makes a dataset using the disentanglement_lib.data.ground_truth functions, and returns a PyTorch dataloader.
+    Image sizes are fixed to 64x64 in the disentanglement_lib.
+    :param name: Name of the dataset use. Should match those of disentanglement_lib
+    :return: DataLoader
+    """
+
+
+    dataset = DisentanglementLibDataset(name, seed=seed)
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, drop_last=droplast, pin_memory=pin_memory,
+                        num_workers=num_workers,)
+    return loader
 
 def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_size, include_labels, pin_memory,
                    shuffle, droplast, split="train", train_pct=0.90):
     
-    locally_supported_datasets = c.DATASETS[0:10]
+    #locally_supported_datasets = c.DATASETS[0:10]
 
     logging.info(f'Datasets root: {dset_dir}')
     logging.info(f'Dataset: {dset_name}')
-    logging.info("Locally supported: " + ','.join(locally_supported_datasets))
+    logging.info("Locally supported: " + ','.join(c.KNOWN_DATASETS))
+    logging.info("Locally supported disentlib: " + ','.join(c.KNOWN_DISENTLIB_DATASETS))
 
-    if dset_name in locally_supported_datasets:
+    if dset_name in c.KNOWN_DATASETS:
         return _get_dataloader_with_labels(dset_name, dset_dir, batch_size, seed, num_workers, image_size,
                                            include_labels, pin_memory, shuffle, droplast, split, train_pct)
+    elif dset_name in c.KNOWN_DISENTLIB_DATASETS:
+        return _get_dataloader_disentlib(dset_name, batch_size, seed, num_workers, pin_memory, shuffle, droplast)
     else:
         # use the dataloader of Google's disentanglement_lib
         return _get_dataloader(dset_name, batch_size, seed, num_workers, pin_memory, shuffle, droplast)

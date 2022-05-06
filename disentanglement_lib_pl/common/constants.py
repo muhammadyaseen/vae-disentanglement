@@ -31,12 +31,19 @@ ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE', 'LadderVAE')
 LOSS_TERMS = (FACTORVAE, DIPVAE_I, DIPVAE_II, BetaTCVAE, INFOVAE)
 
 # Datasets
-DATASETS = ('celeba', 'dsprites_full', 
-            'onedim','threeshapes','threeshapesnoisy', 'continum', 'dsprites_correlated', 'dsprites_colored',
-            'dsprites_cond', 'polynomial',
+DATASETS = ('dsprites_cond', 'polynomial',
             'dsprites_noshape', 'color_dsprites', 'noisy_dsprites', 'scream_dsprites',
             'smallnorb', 'cars3d', 'shapes3d',
             'mpi3d_toy', 'mpi3d_realistic', 'mpi3d_real')
+
+# Datasets for which we have loaders in common.known_datasets and that aren't DisentLibDatasets
+KNOWN_DATASETS = (
+    'celeba', 'dsprites_full', 'onedim','threeshapes','threeshapesnoisy', 
+    'continum', 'dsprites_colored', 'dsprites_cond', 'polynomial'
+)
+# Datasets for which we have loaders in common.known_datasets and that ARE DisentLibDatasets
+KNOWN_DISENTLIB_DATASETS = ('dsprites_correlated',)
+
 DEFAULT_DATASET = DATASETS[-2]  # mpi3d_realistic
 TEST_DATASETS = DATASETS[0:2]  # celebA, dsprites_full
 

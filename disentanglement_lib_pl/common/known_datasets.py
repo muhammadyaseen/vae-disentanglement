@@ -1,12 +1,14 @@
 import os
 import numpy as np
 import glob
+import gin.tf
 
 import torch
 from PIL import Image, ImageDraw
 from torch.utils.data import Dataset
 from torch.distributions import normal
 from common import constants as c
+
 
 class OneDimLatentDataset(Dataset):
 
@@ -445,4 +447,47 @@ class DSpritesDataset(Dataset):
 
 class CorrelatedDSpritesDataset(Dataset):
 
+    def __init__(self, correlation_strength, seed=0):
+        """
+        Parameters
+        ----------
+        seed : int
+            Random seed
+        """
+        from disentanglement_lib.data.ground_truth import util as gt_utils
+        from disentanglement_lib.data.ground_truth import named_data
+        
+        self.name = 'dsprites_correlated'
+        self.seed = seed
+        self.random_state = np.random.RandomState(seed)
+        self.dataset = named_data.get_named_ground_truth_data('dsprites')
+        self.iterator_len = self.dataset.images.shape[0]
+        self.correlation_strength = correlation_strength
+
+        # get correlated space and update the space of normal dsprites dataset
+        gin.bind_parameter("correlation_hyperparameter.line_width", self.correlation_strength)
+        correlated_state_space = gt_utils.CorrelatedSplitDiscreteStateSpace(
+                                            factor_sizes=self.dataset.factor_sizes,
+                                            latent_factor_indices=self.latent_factor_indices, 
+                                            corr_indices=[3, 4], # orientation, posX
+                                            corr_type='line'
+                                        )
+        
+        self.dataset.state_space = correlated_state_space
+
+    @staticmethod
+    def has_labels():
+        return False
+
+    def num_channels(self):
+        return self.dataset.observation_shape[2]
+
+    def __len__(self):
+        return self.iterator_len
+
+    def __getitem__(self, item):
+        assert item < self.iterator_len
+        factors, observations = self.dataset.sample(1, random_state=self.random_state)[0]
+        # Convert output to CHW from HWC
+        return torch.from_numpy(np.moveaxis(observations, 2, 0), ).type(torch.FloatTensor), factors
     
