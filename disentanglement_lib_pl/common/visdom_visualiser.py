@@ -92,11 +92,13 @@ class VisdomVisualiser:
             'mu': {'title': 'Posterior Mean', 'legend': None},
             'var': {'title': 'Posterior Variance', 'legend': None},
             'vae_betatc': {'title': 'Total Corr.', 'legend': None},
-            'l_zero_reg': {'title': 'Reg L-0', 'legend': None}
+            'l_zero_reg': {'title': 'Reg L-0', 'legend': None},
+            'C': {'title': 'Current C', 'legend': None}
         }
 
         # Update (or create, if non-existent) the scalar windows
-        for win in self.scalar_window_names:
+        for win in self.new_scalar_metric_values.keys():
+        #for win in self.scalar_window_names:
 
             if self.scalar_windows[win] is None:
                 self.scalar_windows[win] = self.visdom_instance.line(

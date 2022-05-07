@@ -68,7 +68,6 @@ class LadderVAEExperiment(pl.LightningModule):
         
         torch.set_grad_enabled(False)
         self.model.eval()
-
         scalar_metrics = dict()
 
         # 1. Save avg loss in this epoch

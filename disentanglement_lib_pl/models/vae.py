@@ -39,6 +39,7 @@ class VAE(nn.Module):
         self.controlled_capacity_increase = args.controlled_capacity_increase
         self.max_c = torch.tensor(args.max_c, dtype=torch.float)
         self.iterations_c = torch.tensor(args.iterations_c, dtype=torch.float)
+        self.current_c = torch.tensor(0.0)
 
         # As a little joke
         assert self.w_kld == 1.0 or self.alg != 'VAE', 'in vanilla VAE, w_kld should be 1.0. ' \
@@ -76,7 +77,7 @@ class VAE(nn.Module):
         #     self.PermD, self.optim_PermD = factorvae_init(args.discriminator[0], self.z_dim, self.num_layer_disc,
         #                                                   self.size_layer_disc, self.lr_D, self.beta1, self.beta2)
 
-    def _kld_loss_fn(self, mu, logvar):
+    def _kld_loss_fn(self, mu, logvar, **kwargs):
         if not self.controlled_capacity_increase:
             kld_loss = kl_divergence_mu0_var1(mu, logvar) * self.w_kld
         else:
@@ -84,7 +85,11 @@ class VAE(nn.Module):
             Based on: Understanding disentangling in β-VAE
             https://arxiv.org/pdf/1804.03599.pdf
             """
-            capacity = torch.min(self.max_c, self.max_c * torch.tensor(self.iter) / self.iterations_c)
+            # TODO: change `self.iter` to instead use `pl.LightningModule.{global_step | current_epoch}`
+            # Dunno if doing that is ok for multi-gpu etc
+            global_iter = kwargs['global_step']
+            capacity = torch.min(self.max_c, self.max_c * torch.tensor(global_iter) / self.iterations_c)
+            self.current_c = capacity.detach()
             kld_loss = (kl_divergence_mu0_var1(mu, logvar) - capacity).abs() * self.w_kld
         return kld_loss
 
@@ -92,7 +97,7 @@ class VAE(nn.Module):
         
         x_recon, x_true = kwargs['x_recon'], kwargs['x_true']
         mu, logvar = kwargs['mu'], kwargs['logvar']
-
+        global_step = kwargs['global_step']
         bs = self.batch_size
         output_losses = dict()
         
@@ -107,7 +112,7 @@ class VAE(nn.Module):
 
         output_losses[c.TOTAL_LOSS] += output_losses[c.RECON]
 
-        output_losses[c.KLD_LOSS] = self._kld_loss_fn(mu, logvar)
+        output_losses[c.KLD_LOSS] = self._kld_loss_fn(mu, logvar, global_step=global_step)
         output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
 
         if c.FACTORVAE in self.loss_terms:
