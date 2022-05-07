@@ -97,7 +97,7 @@ class VisdomVisualiser:
         }
 
         # Update (or create, if non-existent) the scalar windows
-        for win in self.new_scalar_metric_values.keys():
+        for win in new_scalar_metric_values.keys():
         #for win in self.scalar_window_names:
 
             if self.scalar_windows[win] is None:

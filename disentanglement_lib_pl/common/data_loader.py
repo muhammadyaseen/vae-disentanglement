@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 from common import constants as c
-
+from common.known_datasets import CorrelatedDSpritesDataset, ThreeShapesDataset, OneDimLatentDataset, ContinumDataset
 
 class LabelHandler(object):
     def __init__(self, labels, label_weights, class_values):
@@ -380,7 +380,7 @@ def _get_dataloader_disentlib(name, batch_size, seed, num_workers, pin_memory, s
     """
 
 
-    dataset = DisentanglementLibDataset(name, seed=seed)
+    dataset = CorrelatedDSpritesDataset(correlation_strength=0.3, seed=seed)
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, drop_last=droplast, pin_memory=pin_memory,
                         num_workers=num_workers,)
     return loader

@@ -24,7 +24,7 @@ class VAE(nn.Module):
         self.loss_terms = args.loss_terms
 
         # Misc params related to data
-        self.z_dim = args.z_dim
+        self.z_dim = args.z_dim[0]
         self.l_dim = args.l_dim
         self.num_labels = args.num_labels
         self.num_channels = args.in_channels

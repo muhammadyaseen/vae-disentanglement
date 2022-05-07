@@ -22,6 +22,8 @@ def main(_args):
         name = _args.expr_name
     )
 
+    print(_args)
+
     # load the model associated with args.alg
     model_cl = getattr(models, _args.alg)
     model = model_cl(_args)
@@ -59,8 +61,10 @@ def main(_args):
         scalar_metrics = ['loss','recon', 'kld_loss', 'C'],
         disent_metrics = _args.evaluation_metrics,
     )
-    experiment_config['visdom_args'] = dict() 
-
+    
+    experiment_config['visdom_args'] = dict(
+        save_every_epoch=_args.save_every_epoch
+    )
     experiment = VAEExperiment(model, experiment_config)
 
     trainer_config = dict(

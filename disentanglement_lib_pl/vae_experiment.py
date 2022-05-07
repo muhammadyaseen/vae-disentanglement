@@ -162,7 +162,8 @@ class VAEExperiment(pl.LightningModule):
                             logvar=logvar, 
                             z=z,
                             optimizer_idx=optimizer_idx,
-                            batch_idx = batch_idx)
+                            batch_idx = batch_idx,
+                            global_step=self.global_step)
         
         val_losses = self.model.loss_function(loss_type='cross_ent', **loss_fn_args)
         
