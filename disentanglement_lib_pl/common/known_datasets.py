@@ -447,7 +447,7 @@ class DSpritesDataset(Dataset):
 
 class CorrelatedDSpritesDataset(Dataset):
 
-    def __init__(self, correlation_strength, seed=0):
+    def __init__(self, correlation_strength, seed=0, **kwargs):
         """
         Parameters
         ----------
@@ -463,7 +463,14 @@ class CorrelatedDSpritesDataset(Dataset):
         self.dataset = named_data.get_named_ground_truth_data('dsprites_full')
         self.iterator_len = self.dataset.images.shape[0]
         self.correlation_strength = correlation_strength
+        self.split = kwargs['split']
 
+        if self.split == 'test':
+            # we only want a subset when loading in test/validation mode 
+            # this gives ~3.5% of data
+            self.dataset.factor_sizes = [1, 3, 6, 15, 10, 10]
+            self.iterator_len = np.prod(self.dataset.factor_sizes)
+        
         # get correlated space and update the space of normal dsprites dataset
         gin.bind_parameter("correlation_hyperparameter.line_width", self.correlation_strength)
         correlated_state_space = gt_utils.CorrelatedSplitDiscreteStateSpace(
@@ -474,6 +481,8 @@ class CorrelatedDSpritesDataset(Dataset):
                                         )
         
         self.dataset.state_space = correlated_state_space
+
+        print(f"Initialize [CorrelatedDSpritesDataset] with %d examples. Shape %s." % (self.iterator_len,self.dataset.images.shape))
 
     @staticmethod
     def has_labels():

@@ -52,7 +52,9 @@ def main(_args):
         seed=_args.seed,
         evaluation_metrics=_args.evaluation_metrics,
         visdom_on=_args.visdom_on,
-        save_dir=os.path.join(_args.ckpt_dir, _args.expr_name)
+        save_dir=os.path.join(_args.ckpt_dir, _args.expr_name),
+
+        max_c=_args.max_c
     )
     
     print(_args.evaluation_metrics)

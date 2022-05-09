@@ -165,6 +165,7 @@ class VisdomVisualiser:
     def visualize_experiment_metadata(self, expr_config):
         
         metadata = ""
+        print(expr_config)
         for param, value in expr_config.items():
             if not type(value) in [dict, list]:
                 metadata += f"<b> {param} </b> = {str(value)} <br /> "

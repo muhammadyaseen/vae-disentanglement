@@ -370,7 +370,7 @@ def _get_dataloader(name, batch_size, seed, num_workers, pin_memory, shuffle, dr
                         num_workers=num_workers,)
     return loader
 
-def _get_dataloader_disentlib(name, batch_size, seed, num_workers, pin_memory, shuffle, droplast):
+def _get_dataloader_disentlib(name, batch_size, seed, num_workers, pin_memory, shuffle, droplast, **kwargs):
     """
     Special case of `_get_dataloader` for correlated datasets so that we can pass additional params
     Makes a dataset using the disentanglement_lib.data.ground_truth functions, and returns a PyTorch dataloader.
@@ -380,7 +380,7 @@ def _get_dataloader_disentlib(name, batch_size, seed, num_workers, pin_memory, s
     """
 
 
-    dataset = CorrelatedDSpritesDataset(correlation_strength=0.3, seed=seed)
+    dataset = CorrelatedDSpritesDataset(correlation_strength=0.3, seed=seed, **kwargs)
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, drop_last=droplast, pin_memory=pin_memory,
                         num_workers=num_workers,)
     return loader
@@ -399,7 +399,7 @@ def get_dataloader(dset_name, dset_dir, batch_size, seed, num_workers, image_siz
         return _get_dataloader_with_labels(dset_name, dset_dir, batch_size, seed, num_workers, image_size,
                                            include_labels, pin_memory, shuffle, droplast, split, train_pct)
     elif dset_name in c.KNOWN_DISENTLIB_DATASETS:
-        return _get_dataloader_disentlib(dset_name, batch_size, seed, num_workers, pin_memory, shuffle, droplast)
+        return _get_dataloader_disentlib(dset_name, batch_size, seed, num_workers, pin_memory, shuffle, droplast, split=split)
     else:
         # use the dataloader of Google's disentanglement_lib
         return _get_dataloader(dset_name, batch_size, seed, num_workers, pin_memory, shuffle, droplast)
