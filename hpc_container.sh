@@ -39,6 +39,19 @@ srun -N1 --partition=develbooster --account=hai_vae_cs --pty apptainer shell --n
     --network-args "portmap=8080:8080" \
     --nv ../container-file/vae-disentanglement_latest.sif 
 
+srun -N1 --partition=develbooster --account=hai_vae_cs --pty  \
+    apptainer exec --bind ./vae-disentanglement:/vae-disentanglement \
+    ./container-file/vae-disentanglement_latest.sif python /vae-disentanglement/disentanglement_lib_pl/visdomtest.py --visdom_port 8097 --visdom_host localhost 
+
+srun -N1 --partition=develbooster --account=hai_vae_cs --pty  \
+    apptainer exec --bind ./vae-disentanglement:/vae-disentanglement \
+    ./container-file/vae-disentanglement_latest.sif bash /vae-disentanglement/disentanglement_lib_pl/run_visdom_test.sh
+
+
+srun -N1 --partition=develbooster --account=hai_vae_cs --pty  \
+    apptainer shell --nv --bind ./vae-disentanglement:/vae-disentanglement \
+    ./container-file/vae-disentanglement_latest.sif
+    
 # https://apptainer.org/docs/user/main/cli/apptainer_shell.html
 
 #get correlated data set up to load
@@ -46,3 +59,9 @@ srun -N1 --partition=develbooster --account=hai_vae_cs --pty apptainer shell --n
 #figure out how to use gpus in the container env
 #figure out the slurm dir structure for placing code and putting results.
 
+# Running visdom
+module load Python
+~/.local/bin/visdom
+
+# Running on my laptop
+docker run --rm -it -p 8097:8097 -v thesis_code:/thesis_code myaseende/vae-disentanglement:v1.1-visdom /bin/bash

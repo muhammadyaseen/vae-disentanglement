@@ -13,6 +13,12 @@ RUN git clone https://github.com/muhammadyaseen/disentanglement_lib
 WORKDIR ./disentanglement_lib
 RUN pip install .[tf_gpu]
 
+# Patched Visdom 
+WORKDIR /tmp
+RUN git clone https://github.com/muhammadyaseen/visdom.git
+WORKDIR ./visdom
+RUN pip install --no-cache-dir -e .
+
 # Default folder
 WORKDIR /workspace
 

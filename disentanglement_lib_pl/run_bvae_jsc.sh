@@ -28,7 +28,12 @@ fi
 # start visdom server
 echo "Creating Visdom env dir at: $VISDOM_ENV"
 mkdir -p $VISDOM_ENV
-visdom -env_path $VISDOM_ENV -logging_level WARN > $PROJECT/visdom.log &
+visdom -env_path $VISDOM_ENV -logging_level WARN &
+
+
+# --max_c=25 \
+# --iterations_c=100000 \
+# --controlled_capacity_increase=True
 
 python main_bvae.py \
 --name=$NAME \
@@ -40,16 +45,13 @@ python main_bvae.py \
 --encoder=SimpleGaussianConv64 \
 --decoder=SimpleConv64 \
 --z_dim=10 \
---w_kld=1000 \
+--w_kld=2 \
 --num_workers=8 \
 --batch_size=64 \
 --max_epoch=100 \
 --in_channels=1 \
---gpus="5" \
+--gpus  \
 --visdom_on=True \
 --lr_G=0.0001 \
 --save_every_epoch=True \
 --visdom_port=$VISDOM_PORT
---max_c=25 \
---iterations_c=100000 \
---controlled_capacity_increase=True

@@ -5,7 +5,7 @@ tensorboard
 jupyter
 pyyaml
 numpy
-visdom
+# visdom - we used the patched visdom 
 jsonpath
 jsonpatch
 scikit-image
