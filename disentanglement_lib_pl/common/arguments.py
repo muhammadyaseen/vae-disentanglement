@@ -43,7 +43,7 @@ def get_args(sys_args):
     parser.add_argument('--max_epoch', default=3e7, type=float, help='maximum training epochs')
     parser.add_argument('--batch_size', default=64, type=int, help='batch size')
     parser.add_argument('--num_disc_layers', default=5, type=int, help='number of fc layers in discriminators')
-    parser.add_argument('--gpus', default=[1], nargs="*", type=int, help='list of IDs or number of GPUs to use')
+    parser.add_argument('--gpus', default=[0], nargs="*", type=int, help='list of IDs or number of GPUs to use')
     parser.add_argument('--in_channels', default=1, type=int, help='number of input channels')
     parser.add_argument('--h_dims', default=[10], nargs="*", help='list hidden layers dims')
     parser.add_argument('--in_dim', default=4, type=int, help='Number of polynomial terms')

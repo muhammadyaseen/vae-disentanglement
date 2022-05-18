@@ -65,7 +65,7 @@ class VAEExperiment(pl.LightningModule):
         scalar_metrics = dict()
         
         if isinstance(self.model, VAE) and self.model.controlled_capacity_increase:
-            #self.logger.experiment.add_scalar("C", self.model.c_current, self.model.num_iter)
+            #self.logger.experiment.add_scalar("C", self.model.c_current, self.global_step)
             scalar_metrics['C'] = self.model.current_c.cpu()
 
         if self.visdom_on:
@@ -81,30 +81,25 @@ class VAEExperiment(pl.LightningModule):
         self.model.eval()
         scalar_metrics = dict()
         
-        #print(train_step_outputs.keys())
-        #mu_batch_recs = [tso['mu_batch'] for tso in train_step_outputs]
-        #print(mu_batch_recs)
-        #print(len(mu_batch_recs))
-
         # 1. Save avg loss in this epoch
         avg_loss = torch.stack([tso[c.TOTAL_LOSS] for tso in train_step_outputs]).mean()
         avg_kld_loss = torch.stack([tso[c.KLD_LOSS] for tso in train_step_outputs]).mean()
         avg_recon_loss = torch.stack([tso[c.RECON] for tso in train_step_outputs]).mean()
 
-        #self.logger.experiment.add_scalar("Total Loss (Train)", avg_loss, self.current_epoch)
-        #self.logger.experiment.add_scalar("Recon Loss (Train)", avg_recon_loss, self.current_epoch)
-        #self.logger.experiment.add_scalar("KLD Loss (Train)", avg_kld_loss, self.current_epoch)
+        self.logger.experiment.add_scalar("Total Loss (Train)", avg_loss, self.current_epoch)
+        self.logger.experiment.add_scalar("Recon Loss (Train)", avg_recon_loss, self.current_epoch)
+        self.logger.experiment.add_scalar("KLD Loss (Train)", avg_kld_loss, self.current_epoch)
 
 
-        #if isinstance(self.model, VAE) and self.model.controlled_capacity_increase:
-        #    self.logger.experiment.add_scalar("C", self.model.c_current, self.model.num_iter)
+        if isinstance(self.model, VAE) and self.model.controlled_capacity_increase:
+            self.logger.experiment.add_scalar("C", self.model.c_current, self.global_step)
         #    scalar_metrics['C'] = self.model.c_current
 
         # 2. save recon images and generated images, histogram of latent layer activations
-        #self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(36), self.current_epoch)
+        self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(36), self.current_epoch)
         #self.logger.experiment.add_histogram("Latent Activations", self._get_latent_layer_activations()['mu'], self.current_epoch)       
         recon_grid, x_recons, x_inputs = self._get_reconstructed_images()
-        #self.logger.experiment.add_image("Reconstructed Images", recon_grid, self.current_epoch)
+        self.logger.experiment.add_image("Reconstructed Images", recon_grid, self.current_epoch)
         
         # 3. Evaluate disent metrics
         if self.params["evaluation_metrics"]:
@@ -116,6 +111,7 @@ class VAEExperiment(pl.LightningModule):
             if self.visdom_on:
                 self.visdom_visualiser.visualize_disentanglement_metrics(evaluation_results, self.current_epoch)
 
+            # TODO: Use Tensorboard to visualize disent metrics
         
         scalar_metrics[c.TOTAL_LOSS] = avg_loss
         scalar_metrics[c.RECON] = avg_recon_loss
@@ -136,7 +132,7 @@ class VAEExperiment(pl.LightningModule):
                                         }, self.current_epoch)
         
         # save visdom visualization data
-        if self.visdom_visualiser.save_every_epoch:
+        if self.visdom_on and self.visdom_visualiser.save_every_epoch:
             self._save_visdom_environment()
         
         torch.set_grad_enabled(True)
@@ -145,7 +141,8 @@ class VAEExperiment(pl.LightningModule):
     def on_train_end(self):
 
         print("Training finished.")
-        self._save_visdom_environment()
+        if self.visdom_on:
+            self._save_visdom_environment()
 
     def validation_step(self, batch, batch_idx, optimizer_idx = 0):
 

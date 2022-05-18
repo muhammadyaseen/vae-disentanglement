@@ -105,6 +105,8 @@ class LadderVAEExperiment(pl.LightningModule):
             if self.visdom_on:
                 self.visdom_visualiser.visualize_disentanglement_metrics(evaluation_results, self.current_epoch)
 
+            # TODO: Use Tensorboard to visualize disent metrics
+        
         scalar_metrics[c.TOTAL_LOSS] = avg_loss
         scalar_metrics[c.RECON] = avg_recon_loss
         scalar_metrics[c.KLD_LOSS] = avg_kld_loss
@@ -122,7 +124,7 @@ class LadderVAEExperiment(pl.LightningModule):
             #                            }, self.current_epoch)
         
         # save visdom visualization data
-        if self.visdom_visualiser.save_every_epoch:
+        if self.visdom_on and self.visdom_visualiser.save_every_epoch:
             self._save_visdom_environment()
 
         torch.set_grad_enabled(True)
@@ -131,7 +133,8 @@ class LadderVAEExperiment(pl.LightningModule):
     def on_train_end(self):
 
         print("Training finished.")
-        self._save_visdom_environment()
+        if self.visdom_on:
+            self._save_visdom_environment()
 
     def validation_step(self, batch, batch_idx, optimizer_idx = 0):
 

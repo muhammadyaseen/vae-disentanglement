@@ -24,6 +24,7 @@ apptainer remote login projects.cispa.saarland:5005
 skopeo copy docker://projects.cispa.saarland:5005/c01muya/vae-disentanglement:latest docker://docker.io/myaseende/vae-disentanglement:latest
 # pull image from Docker Hub
 apptainer pull <container_name>.sif docker://docker.io/myaseende/vae-disentanglement:latest
+apptainer pull vae-disent-v1.1-visdom.sif docker://docker.io/myaseende/vae-disentanglement:v1.1-visdom
 # e.g apptainer pull file-out.sif docker://alpine:latest
 
 srun -N1 --partition=develbooster --account=hai_vae_cs --gres=gpu:1 --pty apptainer shell --nv $SCRATCH/container/vae-disent.oci
@@ -62,6 +63,10 @@ srun -N1 --partition=develbooster --account=hai_vae_cs --pty  \
 # Running visdom
 module load Python
 ~/.local/bin/visdom
+~/.local/bin/tensorboard --logdir dir --port 6006
 
 # Running on my laptop
-docker run --rm -it -p 8097:8097 -v thesis_code:/thesis_code myaseende/vae-disentanglement:v1.1-visdom /bin/bash
+docker run --rm -it -p 6006:6006 -v thesis_code:/thesis_code myaseende/vae-disentanglement:v1.1-visdom /bin/bash
+# Pushing on my laptop
+docker image push myaseende/vae-disentanglement:v1.1-visdom
+
