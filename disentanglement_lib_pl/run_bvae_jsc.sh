@@ -5,7 +5,7 @@ FILENAME="${FILENAME%.*}"
 NAME="AnnealedVAE_dsprites_corr"
 echo "name=$NAME"
 
-PROJECT_ROOT=$PROJECT/vae-disentanglement
+PROJECT_ROOT=/vae-disentanglement
 
 export DISENTANGLEMENT_LIB_DATA=$PROJECT_ROOT/datasets/
 DATASET_NAME=dsprites_correlated
@@ -43,7 +43,7 @@ python $PROJECT_ROOT/disentanglement_lib_pl/main_bvae.py \
 --ckpt_dir=$PROJECT/train-logs \
 --expr_name=$NAME \
 --alg=BetaVAE \
---dset_dir=../datasets  \
+--dset_dir=$DISENTANGLEMENT_LIB_DATA  \
 --dset_name=$DATASET_NAME \
 --encoder=SimpleGaussianConv64 \
 --decoder=SimpleConv64 \

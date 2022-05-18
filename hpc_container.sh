@@ -52,7 +52,13 @@ srun -N1 --partition=develbooster --account=hai_vae_cs --pty  \
 srun -N1 --partition=develbooster --account=hai_vae_cs --pty  \
     apptainer shell --nv --bind ./vae-disentanglement:/vae-disentanglement \
     ./container-file/vae-disentanglement_latest.sif
-    
+
+srun --nodes=1 --partition=develbooster --account=hai_vae_cs \
+    apptainer exec --bind ./vae-disentanglement:/vae-disentanglement \
+    ./container-file/vae-disent-v1.1-visdom.sif bash /vae-disentanglement/disentanglement_lib_pl/run_bvae_jsc.sh
+
+
+#sbatch    
 # https://apptainer.org/docs/user/main/cli/apptainer_shell.html
 
 #get correlated data set up to load
