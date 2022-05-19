@@ -10,8 +10,8 @@ from torchvision import transforms
 from models.vae import VAE
 from common import constants as c
 from common import data_loader
-from common.visdom_visualiser import VisdomVisualiser
 from evaluation import evaluation_utils
+import pdb
 
 class VAEExperiment(pl.LightningModule):
 
@@ -31,6 +31,7 @@ class VAEExperiment(pl.LightningModule):
         self.save_dir = params['save_dir']
 
         if self.visdom_on:
+            from common.visdom_visualiser import VisdomVisualiser
             self.visdom_visualiser = VisdomVisualiser(params)
 
     def forward(self, x_input, **kwargs):
@@ -55,17 +56,25 @@ class VAEExperiment(pl.LightningModule):
         
         losses = self.model.loss_function(loss_type='cross_ent', **loss_fn_args)
 
-        losses['mu_batch'] = mu.detach().cpu()
-        losses['logvar_batch'] = logvar.detach().cpu()
+        losses['mu_batch'] = mu.detach()
+        losses['logvar_batch'] = logvar.detach()
 
+        #print(losses)
         return losses
 
     def training_step_end(self, train_step_output):
         
-        scalar_metrics = dict()
+        #print(train_step_output)
         
+        # This aggregation is required when we use multiple GPUs
+        train_step_output[c.TOTAL_LOSS] = train_step_output[c.TOTAL_LOSS].mean()
+        train_step_output[c.RECON] = train_step_output[c.RECON].mean()
+        train_step_output[c.KLD_LOSS] = train_step_output[c.KLD_LOSS].mean()
+
+        scalar_metrics = dict()
+            
         if isinstance(self.model, VAE) and self.model.controlled_capacity_increase:
-            #self.logger.experiment.add_scalar("C", self.model.c_current, self.global_step)
+            self.logger.experiment.add_scalar("C", self.model.c_current, self.global_step)
             scalar_metrics['C'] = self.model.current_c.cpu()
 
         if self.visdom_on:
@@ -166,6 +175,15 @@ class VAEExperiment(pl.LightningModule):
         
         return val_losses
 
+    def validation_step_end(self, val_step_output):
+        
+        #print(train_step_output)
+        
+        # This aggregation is required when we use multiple GPUs
+        val_step_output[c.TOTAL_LOSS] = val_step_output[c.TOTAL_LOSS].mean()
+        val_step_output[c.RECON] = val_step_output[c.RECON].mean()
+        val_step_output[c.KLD_LOSS] = val_step_output[c.KLD_LOSS].mean()
+
     def validation_end(self, outputs):
 
         avg_loss = torch.stack([x['loss'] for x in outputs]).mean()
@@ -250,8 +268,9 @@ class VAEExperiment(pl.LightningModule):
         return self.sample_loader
 
     def _get_sampled_images(self, how_many: int):
-
-        sampled_images = self.model.sample(how_many, self.curr_device).cpu().data
+        #pdb.set_trace()
+        curr_device = next(self.model.parameters()).device
+        sampled_images = self.model.sample(how_many, curr_device)#.cpu().data
         grid_of_samples = vutils.make_grid(sampled_images, normalize=True, nrow=12, value_range=(0.0,1.0))
         return grid_of_samples
 
@@ -259,13 +278,14 @@ class VAEExperiment(pl.LightningModule):
 
         # Get sample reconstruction image
         test_input, test_label = next(iter(self.sample_loader))
-        test_input = test_input.to(self.curr_device)
+        curr_device = next(self.model.parameters()).device
+        test_input = test_input.to(curr_device)
 
         recons, _, _, _ = self.model.forward(test_input, labels = test_label)
-        recons = recons.cpu().data
+        #recons = recons.cpu().data
         recons_grid = vutils.make_grid(recons, normalize=True, nrow=12, value_range=(0.0,1.0))
-        
-        return recons_grid, test_input.cpu().data, recons
+
+        return recons_grid, recons, test_input.cpu() 
         
     def _get_latent_layer_activations(self):
 

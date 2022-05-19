@@ -9,7 +9,7 @@ PROJECT_ROOT=/vae-disentanglement
 
 export DISENTANGLEMENT_LIB_DATA=$PROJECT_ROOT/datasets/
 DATASET_NAME=dsprites_correlated
-LOGS_DIR=$PROJECT_ROOT/train-logs/$NAME
+LOGS_DIR=$PROJECT_ROOT/train-logs
 
 # VISDOM_PORT=8097
 # VISDOM_ENV=$LOGS_DIR/visdom
@@ -40,7 +40,7 @@ LOGS_DIR=$PROJECT_ROOT/train-logs/$NAME
 
 python $PROJECT_ROOT/disentanglement_lib_pl/main_bvae.py \
 --name=$NAME \
---ckpt_dir=$PROJECT/train-logs \
+--ckpt_dir=$LOGS_DIR \
 --expr_name=$NAME \
 --alg=BetaVAE \
 --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
@@ -54,5 +54,5 @@ python $PROJECT_ROOT/disentanglement_lib_pl/main_bvae.py \
 --max_epoch=100 \
 --in_channels=1 \
 --gpus 0,1  \
---visdom_on=True \
+--visdom_on=False \
 --lr_G=0.0001

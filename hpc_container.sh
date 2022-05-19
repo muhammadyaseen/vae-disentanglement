@@ -24,7 +24,7 @@ apptainer remote login projects.cispa.saarland:5005
 skopeo copy docker://projects.cispa.saarland:5005/c01muya/vae-disentanglement:latest docker://docker.io/myaseende/vae-disentanglement:latest
 # pull image from Docker Hub
 apptainer pull <container_name>.sif docker://docker.io/myaseende/vae-disentanglement:latest
-apptainer pull vae-disent-v1.1-visdom.sif docker://docker.io/myaseende/vae-disentanglement:v1.1-visdom
+apptainer pull vae-disent-v1.1-tensorboard.sif docker://docker.io/myaseende/vae-disentanglement:v1.1-tensorboard
 # e.g apptainer pull file-out.sif docker://alpine:latest
 
 srun -N1 --partition=develbooster --account=hai_cs_vaes --gres=gpu:1 --pty apptainer shell --nv $SCRATCH/container/vae-disent.oci
@@ -34,29 +34,29 @@ srun -N1 --partition=develbooster --account=hai_cs_vaes --gres=gpu:1 $SCRATCH/co
 salloc --partition=develbooster --gres=gpu:1 --account=hai_cs_vaes --time=00:30:00
 srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --nv $SCRATCH/container/vae-disent.oci
 
-srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --network-args "portmap=8080:8080/tcp" --nv ../container-file/vae-disentanglement_latest.sif 
-srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --nv ../container-file/vae-disentanglement_latest.sif 
+srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --network-args "portmap=8080:8080/tcp" --nv ../container-file/vae-disent-v1.1-tensorboard.sif 
+srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --nv ../container-file/vae-disent-v1.1-tensorboard.sif 
 srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --network none \
     --network-args "portmap=8080:8080" \
-    --nv ../container-file/vae-disentanglement_latest.sif 
+    --nv ../container-file/vae-disent-v1.1-tensorboard.sif 
 
 srun -N1 --partition=develbooster --account=hai_cs_vaes --pty  \
     apptainer exec --bind ./vae-disentanglement:/vae-disentanglement \
-    ./container-file/vae-disentanglement_latest.sif python /vae-disentanglement/disentanglement_lib_pl/visdomtest.py --visdom_port 8097 --visdom_host localhost 
+    ./container-file/vae-disent-v1.1-tensorboard.sif python /vae-disentanglement/disentanglement_lib_pl/visdomtest.py --visdom_port 8097 --visdom_host localhost 
 
 srun -N1 --partition=develbooster --account=hai_cs_vaes --pty  \
     apptainer exec --bind ./vae-disentanglement:/vae-disentanglement \
-    ./container-file/vae-disentanglement_latest.sif bash /vae-disentanglement/disentanglement_lib_pl/run_visdom_test.sh
+    ./container-file/vae-disent-v1.1-tensorboard.sif bash /vae-disentanglement/disentanglement_lib_pl/run_visdom_test.sh
 
 
 srun -N1 --partition=develbooster --account=hai_cs_vaes --pty  \
     apptainer shell --nv --bind ./vae-disentanglement:/vae-disentanglement \
-    ./container-file/vae-disentanglement_latest.sif
+    ./container-file/vae-disent-v1.1-tensorboard.sif
 
 # when running from within vae_disentanglement dir
 srun --nodes=1 --gres=gpu:2 --partition=develbooster --account=hai_cs_vaes \
     apptainer exec --nv --bind ./:/vae-disentanglement \
-    ../container-file/vae-disent-v1.1-visdom.sif bash /vae-disentanglement/disentanglement_lib_pl/run_bvae_jsc.sh
+    ../container-file/vae-disent-v1.1-tensorboard.sif bash /vae-disentanglement/disentanglement_lib_pl/run_bvae_jsc.sh
 
 
 #sbatch    
@@ -70,12 +70,11 @@ srun --nodes=1 --gres=gpu:2 --partition=develbooster --account=hai_cs_vaes \
 # Running visdom
 module load Python
 ~/.local/bin/visdom
-~/.local/bin/tensorboard --logdir dir --port 6006
+~/.local/bin/tensorboard --logdir vae-disentanglement/train-logs/AnnealedVAE_dsprites_corr/AnnealedVAE_dsprites_corr --port 6006
 
 # building 
-docker build -t myaseende/vae-disentanglement:v1.1-visdom .
+docker build -t myaseende/vae-disentanglement:v1.1-tensorboard .
 # Running on my laptop
-docker run --rm -it -p 6006:6006 -v thesis_code:/thesis_code myaseende/vae-disentanglement:v1.1-visdom /bin/bash
+docker run --rm -it -p 6006:6006 -v thesis_code:/thesis_code myaseende/vae-disentanglement:v1.1-tensorboard /bin/bash
 # Pushing on my laptop
-docker image push myaseende/vae-disentanglement:v1.1-visdom
-
+docker image push myaseende/vae-disentanglement:v1.1-tensorboard

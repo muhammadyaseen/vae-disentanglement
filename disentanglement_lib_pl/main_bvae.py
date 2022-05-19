@@ -77,12 +77,11 @@ def main(_args):
     pl_trainer = Trainer(default_root_dir=f"{tb_logger.save_dir}",
                      min_epochs=1,
                      logger=tb_logger,
-                     flush_logs_every_n_steps=50,
                      limit_train_batches=1.,
                      limit_val_batches=1.,
                      num_sanity_val_steps=2,
                      callbacks = None,
-                     accelerator='dp',
+                     strategy='dp',
                      **trainer_config)
 
     pl_trainer.fit(experiment)
