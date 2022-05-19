@@ -1,3 +1,4 @@
+pytorch-lightning
 seaborn
 tensorboardx
 matplotlib
@@ -9,7 +10,8 @@ numpy
 jsonpath
 jsonpatch
 scikit-image
+opencv-python-headless
 ipympl
 pomegranate
-gin-config
+gin-config==0.4.0
 

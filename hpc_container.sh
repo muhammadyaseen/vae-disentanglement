@@ -27,35 +27,36 @@ apptainer pull <container_name>.sif docker://docker.io/myaseende/vae-disentangle
 apptainer pull vae-disent-v1.1-visdom.sif docker://docker.io/myaseende/vae-disentanglement:v1.1-visdom
 # e.g apptainer pull file-out.sif docker://alpine:latest
 
-srun -N1 --partition=develbooster --account=hai_vae_cs --gres=gpu:1 --pty apptainer shell --nv $SCRATCH/container/vae-disent.oci
-srun -N1 --partition=develbooster --account=hai_vae_cs --gres=gpu:1 $SCRATCH/container/vae-disent.oci --pty bash
+srun -N1 --partition=develbooster --account=hai_cs_vaes --gres=gpu:1 --pty apptainer shell --nv $SCRATCH/container/vae-disent.oci
+srun -N1 --partition=develbooster --account=hai_cs_vaes --gres=gpu:1 $SCRATCH/container/vae-disent.oci --pty bash
 
 # For interactive jobs, first we allocate nodes/resources and then we can run a container
 salloc --partition=develbooster --gres=gpu:1 --account=hai_cs_vaes --time=00:30:00
-srun -N1 --partition=develbooster --account=hai_vae_cs --pty apptainer shell --nv $SCRATCH/container/vae-disent.oci
+srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --nv $SCRATCH/container/vae-disent.oci
 
-srun -N1 --partition=develbooster --account=hai_vae_cs --pty apptainer shell --network-args "portmap=8080:8080/tcp" --nv ../container-file/vae-disentanglement_latest.sif 
-srun -N1 --partition=develbooster --account=hai_vae_cs --pty apptainer shell --nv ../container-file/vae-disentanglement_latest.sif 
-srun -N1 --partition=develbooster --account=hai_vae_cs --pty apptainer shell --network none \
+srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --network-args "portmap=8080:8080/tcp" --nv ../container-file/vae-disentanglement_latest.sif 
+srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --nv ../container-file/vae-disentanglement_latest.sif 
+srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --network none \
     --network-args "portmap=8080:8080" \
     --nv ../container-file/vae-disentanglement_latest.sif 
 
-srun -N1 --partition=develbooster --account=hai_vae_cs --pty  \
+srun -N1 --partition=develbooster --account=hai_cs_vaes --pty  \
     apptainer exec --bind ./vae-disentanglement:/vae-disentanglement \
     ./container-file/vae-disentanglement_latest.sif python /vae-disentanglement/disentanglement_lib_pl/visdomtest.py --visdom_port 8097 --visdom_host localhost 
 
-srun -N1 --partition=develbooster --account=hai_vae_cs --pty  \
+srun -N1 --partition=develbooster --account=hai_cs_vaes --pty  \
     apptainer exec --bind ./vae-disentanglement:/vae-disentanglement \
     ./container-file/vae-disentanglement_latest.sif bash /vae-disentanglement/disentanglement_lib_pl/run_visdom_test.sh
 
 
-srun -N1 --partition=develbooster --account=hai_vae_cs --pty  \
+srun -N1 --partition=develbooster --account=hai_cs_vaes --pty  \
     apptainer shell --nv --bind ./vae-disentanglement:/vae-disentanglement \
     ./container-file/vae-disentanglement_latest.sif
 
-srun --nodes=1 --partition=develbooster --account=hai_vae_cs \
-    apptainer exec --bind ./vae-disentanglement:/vae-disentanglement \
-    ./container-file/vae-disent-v1.1-visdom.sif bash /vae-disentanglement/disentanglement_lib_pl/run_bvae_jsc.sh
+# when running from within vae_disentanglement dir
+srun --nodes=1 --gres=gpu:2 --partition=develbooster --account=hai_cs_vaes \
+    apptainer exec --nv --bind ./:/vae-disentanglement \
+    ../container-file/vae-disent-v1.1-visdom.sif bash /vae-disentanglement/disentanglement_lib_pl/run_bvae_jsc.sh
 
 
 #sbatch    
@@ -71,6 +72,8 @@ module load Python
 ~/.local/bin/visdom
 ~/.local/bin/tensorboard --logdir dir --port 6006
 
+# building 
+docker build -t myaseende/vae-disentanglement:v1.1-visdom .
 # Running on my laptop
 docker run --rm -it -p 6006:6006 -v thesis_code:/thesis_code myaseende/vae-disentanglement:v1.1-visdom /bin/bash
 # Pushing on my laptop
