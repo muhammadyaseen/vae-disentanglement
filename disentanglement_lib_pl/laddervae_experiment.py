@@ -92,7 +92,7 @@ class LadderVAEExperiment(pl.LightningModule):
         # 2. save recon images and generated images, histogram of latent layer activations
         self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(36), self.current_epoch)
         #self.logger.experiment.add_histogram("Latent Activations", self._get_latent_layer_activations()['mu'], self.current_epoch)       
-        recon_grid, x_recons, x_inputs = self._get_reconstructed_images()
+        recon_grid = self._get_reconstructed_images()
         self.logger.experiment.add_image("Reconstructed Images", recon_grid, self.current_epoch)
         
         # 3. Evaluate disent metrics
@@ -102,8 +102,6 @@ class LadderVAEExperiment(pl.LightningModule):
                                                 metric_names=self.params["evaluation_metrics"],
                                                 dataset_name=self.params['dataset']
                             )
-            if self.visdom_on:
-                self.visdom_visualiser.visualize_disentanglement_metrics(evaluation_results, self.current_epoch)
 
             # TODO: Use Tensorboard to visualize disent metrics
         
@@ -112,20 +110,6 @@ class LadderVAEExperiment(pl.LightningModule):
         scalar_metrics[c.KLD_LOSS] = avg_kld_loss
         scalar_metrics['kld_z1'] = avg_kld_z1_loss
         scalar_metrics['kld_z2'] = avg_kld_z2_loss
-
-        if self.visdom_on:
-            self.visdom_visualiser.visualize_reconstruction(x_inputs,x_recons, self.current_epoch)
-            self.visdom_visualiser.visualize_scalar_metrics(scalar_metrics, self.current_epoch)
-            
-            # TODO: find out a way to cleanly visualize mu and logvar of multiple layers
-            #self.visdom_visualiser.visualize_multidim_metrics( {
-            #                                "mu_batch" : torch.stack([tso['mu_batch'] for tso in train_step_outputs]),
-            #                                "var_batch" : torch.stack([tso['logvar_batch'].exp() for tso in train_step_outputs]),
-            #                            }, self.current_epoch)
-        
-        # save visdom visualization data
-        if self.visdom_on and self.visdom_visualiser.save_every_epoch:
-            self._save_visdom_environment()
 
         torch.set_grad_enabled(True)
         self.model.train()
@@ -236,21 +220,24 @@ class LadderVAEExperiment(pl.LightningModule):
 
     def _get_sampled_images(self, how_many: int):
 
-        sampled_images = self.model.sample(how_many, self.curr_device).cpu().data
+        curr_device = next(self.model.parameters()).device
+        sampled_images = self.model.sample(how_many, curr_device)#.cpu().data
         grid_of_samples = vutils.make_grid(sampled_images, normalize=True, nrow=12, value_range=(0.0,1.0))
         return grid_of_samples
 
     def _get_reconstructed_images(self):
 
         # Get sample reconstruction image
+        curr_device = next(self.model.parameters()).device
         test_input, test_label = next(iter(self.sample_loader))
-        test_input = test_input.to(self.curr_device)
-
-        fwd_pass_results = self.model.forward(test_input, labels = test_label)
-        recons = fwd_pass_results['x_recon'].cpu().data
-        recons_grid = vutils.make_grid(recons, normalize=True, nrow=12, value_range=(0.0,1.0))
+        test_input = test_input.to(curr_device)
         
-        return recons_grid, test_input.cpu().data, recons
+        fwd_pass_results = self.model.forward(test_input, labels = test_label)
+        recons = fwd_pass_results['x_recon']
+        inputs_and_reconds_side_by_side = torch.cat([test_input, recons], dim = 3)
+        img_input_vs_recon = vutils.make_grid(inputs_and_reconds_side_by_side, normalize=True, value_range=(0.0,1.0))
+        
+        return img_input_vs_recon
         
     def _get_latent_layer_activations(self):
 

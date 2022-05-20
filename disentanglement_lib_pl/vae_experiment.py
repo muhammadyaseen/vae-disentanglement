@@ -10,8 +10,8 @@ from torchvision import transforms
 from models.vae import VAE
 from common import constants as c
 from common import data_loader
+from common.visdom_visualiser import VisdomVisualiser
 from evaluation import evaluation_utils
-import pdb
 
 class VAEExperiment(pl.LightningModule):
 
@@ -29,6 +29,9 @@ class VAEExperiment(pl.LightningModule):
         self.curr_device = None
         self.visdom_on = params['visdom_on']
         self.save_dir = params['save_dir']
+
+        if self.visdom_on:
+            self.visdom_visualiser = VisdomVisualiser(params)
 
     def forward(self, x_input, **kwargs):
         
@@ -243,7 +246,7 @@ class VAEExperiment(pl.LightningModule):
         #recons = recons.cpu().data
         #recons_grid = vutils.make_grid(recons, normalize=True, nrow=12, value_range=(0.0,1.0))
 
-        return img_input_vs_recon #, recons, test_input.cpu() 
+        return img_input_vs_recon
         
     def _get_latent_layer_activations(self):
 
