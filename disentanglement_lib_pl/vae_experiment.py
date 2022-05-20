@@ -30,10 +30,6 @@ class VAEExperiment(pl.LightningModule):
         self.visdom_on = params['visdom_on']
         self.save_dir = params['save_dir']
 
-        if self.visdom_on:
-            from common.visdom_visualiser import VisdomVisualiser
-            self.visdom_visualiser = VisdomVisualiser(params)
-
     def forward(self, x_input, **kwargs):
         
         return self.model.forward(x_input, **kwargs)
@@ -41,7 +37,6 @@ class VAEExperiment(pl.LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
         x_true1, label1 = batch
-        #print(x_true1.shape)
         self.curr_device = x_true1.device
         x_recon, mu, z, logvar = self.forward(x_true1, label=label1)
 
@@ -59,26 +54,17 @@ class VAEExperiment(pl.LightningModule):
         losses['mu_batch'] = mu.detach()
         losses['logvar_batch'] = logvar.detach()
 
-        #print(losses)
         return losses
 
     def training_step_end(self, train_step_output):
-        
-        #print(train_step_output)
-        
+             
         # This aggregation is required when we use multiple GPUs
         train_step_output[c.TOTAL_LOSS] = train_step_output[c.TOTAL_LOSS].mean()
         train_step_output[c.RECON] = train_step_output[c.RECON].mean()
         train_step_output[c.KLD_LOSS] = train_step_output[c.KLD_LOSS].mean()
-
-        scalar_metrics = dict()
             
         if isinstance(self.model, VAE) and self.model.controlled_capacity_increase:
             self.logger.experiment.add_scalar("C", self.model.c_current, self.global_step)
-            scalar_metrics['C'] = self.model.current_c.cpu()
-
-        if self.visdom_on:
-            self.visdom_visualiser.visualize_scalar_metrics(scalar_metrics, self.global_step)
 
     
     def training_epoch_end(self, train_step_outputs):
@@ -88,7 +74,6 @@ class VAEExperiment(pl.LightningModule):
         
         torch.set_grad_enabled(False)
         self.model.eval()
-        scalar_metrics = dict()
         
         # 1. Save avg loss in this epoch
         avg_loss = torch.stack([tso[c.TOTAL_LOSS] for tso in train_step_outputs]).mean()
@@ -102,12 +87,11 @@ class VAEExperiment(pl.LightningModule):
 
         if isinstance(self.model, VAE) and self.model.controlled_capacity_increase:
             self.logger.experiment.add_scalar("C", self.model.c_current, self.global_step)
-        #    scalar_metrics['C'] = self.model.c_current
 
         # 2. save recon images and generated images, histogram of latent layer activations
         self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(36), self.current_epoch)
         #self.logger.experiment.add_histogram("Latent Activations", self._get_latent_layer_activations()['mu'], self.current_epoch)       
-        recon_grid, x_recons, x_inputs = self._get_reconstructed_images()
+        recon_grid = self._get_reconstructed_images()
         self.logger.experiment.add_image("Reconstructed Images", recon_grid, self.current_epoch)
         
         # 3. Evaluate disent metrics
@@ -117,32 +101,11 @@ class VAEExperiment(pl.LightningModule):
                                                 metric_names=self.params["evaluation_metrics"],
                                                 dataset_name=self.params['dataset']
                             )
-            if self.visdom_on:
-                self.visdom_visualiser.visualize_disentanglement_metrics(evaluation_results, self.current_epoch)
-
             # TODO: Use Tensorboard to visualize disent metrics
         
-        scalar_metrics[c.TOTAL_LOSS] = avg_loss
-        scalar_metrics[c.RECON] = avg_recon_loss
-        scalar_metrics[c.KLD_LOSS] = avg_kld_loss
-
         if 'BetaTCVAE' in self.model.loss_terms:
             avg_tc_loss = torch.stack([tso['vae_betatc'] for tso in train_step_outputs]).mean()
             self.logger.experiment.add_scalar("TC Loss (Train)", avg_tc_loss, self.current_epoch)
-            scalar_metrics['vae_betatc'] = avg_tc_loss
-
-
-        if self.visdom_on:
-            self.visdom_visualiser.visualize_reconstruction(x_inputs,x_recons, self.current_epoch)
-            self.visdom_visualiser.visualize_scalar_metrics(scalar_metrics, self.current_epoch)
-            self.visdom_visualiser.visualize_multidim_metrics( {
-                                            "mu_batch" : torch.stack([tso['mu_batch'] for tso in train_step_outputs]),
-                                            "var_batch" : torch.stack([tso['logvar_batch'].exp() for tso in train_step_outputs]),
-                                        }, self.current_epoch)
-        
-        # save visdom visualization data
-        if self.visdom_on and self.visdom_visualiser.save_every_epoch:
-            self._save_visdom_environment()
         
         torch.set_grad_enabled(True)
         self.model.train()
@@ -150,17 +113,12 @@ class VAEExperiment(pl.LightningModule):
     def on_train_end(self):
 
         print("Training finished.")
-        if self.visdom_on:
-            self._save_visdom_environment()
-
+        
     def validation_step(self, batch, batch_idx, optimizer_idx = 0):
 
         x_true, labels = batch
-        #print(x_true.shape)
         self.curr_device = x_true.device
-        #print("before val fwd")
         x_recon, mu, z, logvar  = self.forward(x_true, labels = labels)
-        #print("after val fwd")
 
         loss_fn_args = dict(x_recon=x_recon, 
                             x_true=x_true, 
@@ -176,9 +134,7 @@ class VAEExperiment(pl.LightningModule):
         return val_losses
 
     def validation_step_end(self, val_step_output):
-        
-        #print(train_step_output)
-        
+                
         # This aggregation is required when we use multiple GPUs
         val_step_output[c.TOTAL_LOSS] = val_step_output[c.TOTAL_LOSS].mean()
         val_step_output[c.RECON] = val_step_output[c.RECON].mean()
@@ -268,7 +224,7 @@ class VAEExperiment(pl.LightningModule):
         return self.sample_loader
 
     def _get_sampled_images(self, how_many: int):
-        #pdb.set_trace()
+
         curr_device = next(self.model.parameters()).device
         sampled_images = self.model.sample(how_many, curr_device)#.cpu().data
         grid_of_samples = vutils.make_grid(sampled_images, normalize=True, nrow=12, value_range=(0.0,1.0))
@@ -282,10 +238,12 @@ class VAEExperiment(pl.LightningModule):
         test_input = test_input.to(curr_device)
 
         recons, _, _, _ = self.model.forward(test_input, labels = test_label)
+        inputs_and_reconds_side_by_side = torch.cat([test_input, recons], dim = 3)
+        img_input_vs_recon = vutils.make_grid(inputs_and_reconds_side_by_side, normalize=True, value_range=(0.0,1.0))
         #recons = recons.cpu().data
-        recons_grid = vutils.make_grid(recons, normalize=True, nrow=12, value_range=(0.0,1.0))
+        #recons_grid = vutils.make_grid(recons, normalize=True, nrow=12, value_range=(0.0,1.0))
 
-        return recons_grid, recons, test_input.cpu() 
+        return img_input_vs_recon #, recons, test_input.cpu() 
         
     def _get_latent_layer_activations(self):
 
