@@ -55,3 +55,13 @@ def get_layer_mask(parents, children, adj_mat):
                 mask[i, j] = 1.0
     
     return mask
+
+def get_mask_for_intermediate_to_output(input_dim, interm_unit_dim, output_dim):
+    
+    M=np.zeros((input_dim * interm_unit_dim, output_dim))
+    R = np.array_split(range(input_dim * interm_unit_dim), input_dim) 
+    C = range(output_dim)
+    
+    M[R,C] = 1.0
+    
+    return M

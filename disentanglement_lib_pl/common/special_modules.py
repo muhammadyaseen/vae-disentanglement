@@ -142,6 +142,9 @@ class DAGInteractionLayer(nn.Module):
         self.use_bias = bias
         self.adjacency_matrix = adjacency_matrix
 
+        # ---------------------#
+        # Learnable Parameters #
+        # -------------------- #
         self.W_input_to_interm = nn.Parameter(torch.Tensor(self.in_features, self.out_features))
         self.W_interm_to_output = nn.Parameter(torch.Tensor(interm_unit_dim * self.out_features, self.out_features))
         
@@ -149,11 +152,17 @@ class DAGInteractionLayer(nn.Module):
             # we will need mask on bias as well 
             self.B_input_to_interm = nn.Parameter(torch.Tensor(interm_unit_dim * self.out_features))
             self.B_interm_to_output = nn.Parameter(torch.Tensor(self.out_features))
+        # -------------------------#
+        # End Learnable Parameters #
+        # ------------------------ #
 
-        self.mask = self._get_mask(self._parents, self._children)
-
+        self.mask_input_to_interm = self._get_mask_input_to_interm()
+        self.mask_interm_to_output = self._get_mask_interm_to_output()
+        
         self._init_params()
 
+        # TODO: here we can probably associate names to units for better
+        # readability etc.
         if 'parent_names' in kwargs.keys():
             pass
 
@@ -162,20 +171,32 @@ class DAGInteractionLayer(nn.Module):
 
     def forward(self, layer_input):
         
-        masked_input_to_interm = F.mul(self.W_input_to_interm, self.mask)
-        interm_out = F.matmul(self.W_input_to_interm, layer_input) + self.B_input_to_interm
+        # input to interm
+        masked_input_to_interm = F.mul(self.W_input_to_interm, self.mask_input_to_interm)
+        interm_out = F.matmul(masked_input_to_interm, layer_input) + self.B_input_to_interm
+        interm_out = F.relu(interm_out)
         
-        out = F.matmul(self.W_interm_to_output, interm_out) + self.B_interm_to_output
+        # interm to output
+        masked_interm_to_output = F.mul(self.W_interm_to_output, self.mask_interm_to_output)
+        out = F.matmul(masked_interm_to_output, interm_out) + self.B_interm_to_output
+        out = F.relu(out)
+
+        return out
 
     def _init_params(self):
         # Say Bismillah
         pass
 
-    def _get_mask(self, parents, children):
+    def _get_mask_input_to_interm(self):
         
-        np_mask = dag_utils.get_layer_mask(parents, children, self.adjacency_matrix)
+        np_mask = dag_utils.get_layer_mask(self._parents, self._children, self.adjacency_matrix)
         return torch.from_numpy(np_mask)
 
+    def _get_mask_interm_to_output(self):
+        
+        np_mask = dag_utils.get_mask_for_intermediate_to_output(self.in_features, self.interm_unit_dim, self.out_features)
+        return torch.from_numpy(np_mask)
+   
     def __repr__(self):
 
         s = ('{name} ({in_features} -> {interm_dim} -> {out_features}, '
