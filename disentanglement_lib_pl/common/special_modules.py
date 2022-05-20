@@ -3,6 +3,7 @@ import torch
 from torch import nn
 from torch.nn import init
 import torch.nn.functional as F
+from common import dag_utils
 
 LIMIT_A, LIMIT_B, EPSILON = -.1, 1.1, 1e-6
 
@@ -111,11 +112,75 @@ class L0_Dense(nn.Module):
         return mask.view(self.in_features, 1) * self.weights
 
     def __repr__(self):
-        
+                
         s = ('{name}({in_features} -> {out_features}, droprate_init={droprate_init}, '
              'l_zero_weight={l_zero_weight}, temperature={temperature}, l_two_weight={l_two_weight}, '
              'local_rep={local_rep}')
         
+        if not self.use_bias:
+            s += ', bias=False'
+        
+        s += ')'
+        
+        return s.format(name=self.__class__.__name__, **self.__dict__)
+
+
+class DAGInteractionLayer(nn.Module):
+
+    def __init__(self, parents_list, children_list, adjacency_matrix, interm_unit_dim=1, bias=True, **kwargs):
+
+        super(DAGInteractionLayer, self).__init__()
+
+        self.in_features, self.out_features = len(parents_list), len(children_list)
+        self._parents, self._children = parents_list, children_list
+        
+        assert self.in_features > 0, f"Number of parents should be > 0, Given: {self.in_features}"
+        assert self.out_features > 0, f"Number of children should be > 0, Given: {self.out_features}"
+        assert interm_unit_dim > 0, f"Intermediate layer should have at least 1 unit, Given: {interm_unit_dim}"      
+        
+        self.interm_unit_dim = interm_unit_dim
+        self.use_bias = bias
+        self.adjacency_matrix = adjacency_matrix
+
+        self.W_input_to_interm = nn.Parameter(torch.Tensor(self.in_features, self.out_features))
+        self.W_interm_to_output = nn.Parameter(torch.Tensor(interm_unit_dim * self.out_features, self.out_features))
+        
+        if self.use_bias:
+            # we will need mask on bias as well 
+            self.B_input_to_interm = nn.Parameter(torch.Tensor(interm_unit_dim * self.out_features))
+            self.B_interm_to_output = nn.Parameter(torch.Tensor(self.out_features))
+
+        self.mask = self._get_mask(self._parents, self._children)
+
+        self._init_params()
+
+        if 'parent_names' in kwargs.keys():
+            pass
+
+        if 'children_names' in kwargs.keys():
+            pass
+
+    def forward(self, layer_input):
+        
+        masked_input_to_interm = F.mul(self.W_input_to_interm, self.mask)
+        interm_out = F.matmul(self.W_input_to_interm, layer_input) + self.B_input_to_interm
+        
+        out = F.matmul(self.W_interm_to_output, interm_out) + self.B_interm_to_output
+
+    def _init_params(self):
+        # Say Bismillah
+        pass
+
+    def _get_mask(self, parents, children):
+        
+        np_mask = dag_utils.get_layer_mask(parents, children, self.adjacency_matrix)
+        return torch.from_numpy(np_mask)
+
+    def __repr__(self):
+
+        s = ('{name} ({in_features} -> {interm_dim} -> {out_features}, '
+        'mask = {interaction_mask}')
+
         if not self.use_bias:
             s += ', bias=False'
         
