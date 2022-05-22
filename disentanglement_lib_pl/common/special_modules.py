@@ -145,8 +145,8 @@ class DAGInteractionLayer(nn.Module):
         # ---------------------#
         # Learnable Parameters #
         # -------------------- #
-        self.W_input_to_interm = nn.Parameter(torch.Tensor(self.in_features, self.out_features))
-        self.W_interm_to_output = nn.Parameter(torch.Tensor(interm_unit_dim * self.out_features, self.out_features))
+        self.W_input_to_interm = nn.Parameter(torch.Tensor(self.in_features, self.interm_unit_dim * self.out_features))
+        self.W_interm_to_output = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))
         
         if self.use_bias:
             # we will need mask on bias as well 
@@ -172,29 +172,78 @@ class DAGInteractionLayer(nn.Module):
     def forward(self, layer_input):
         
         # input to interm
-        masked_input_to_interm = F.mul(self.W_input_to_interm, self.mask_input_to_interm)
-        interm_out = F.matmul(masked_input_to_interm, layer_input) + self.B_input_to_interm
+        masked_input_to_interm = self.W_input_to_interm.mul(self.mask_input_to_interm)
+        interm_out = layer_input.matmul(masked_input_to_interm)
+        interm_out = interm_out + self.B_input_to_interm
         interm_out = F.relu(interm_out)
         
         # interm to output
-        masked_interm_to_output = F.mul(self.W_interm_to_output, self.mask_interm_to_output)
-        out = F.matmul(masked_interm_to_output, interm_out) + self.B_interm_to_output
+        masked_interm_to_output = self.W_interm_to_output.mul(self.mask_interm_to_output)
+        out = interm_out.matmul(masked_interm_to_output)
+        out = out + self.B_interm_to_output
         out = F.relu(out)
 
         return out
 
+    def diagnostic_forward(self, layer_input):
+        
+        # input to interm
+        print("Input: ", layer_input)
+        print("mask_input_to_interm: ", self.mask_input_to_interm)
+
+        masked_input_to_interm = self.W_input_to_interm.mul(self.mask_input_to_interm)
+        print("masked_input_to_interm:", masked_input_to_interm)
+        print("masked_input_to_interm.Size():", masked_input_to_interm.size())
+
+        interm_out = layer_input.matmul(masked_input_to_interm)
+        print("X * W_1", interm_out)
+        print("X * W_1 size()", interm_out.size())
+
+        interm_out = interm_out + self.B_input_to_interm
+
+        print("X * W_1 + b_1", interm_out)
+
+        interm_out = F.relu(interm_out)
+        print("U = ReLU(X * W_1 + b_1)", interm_out)
+        print("U.size()", interm_out.size())
+        
+        # interm to output
+        print("mask_interm_to_output ", self.mask_interm_to_output)
+
+        masked_interm_to_output = self.W_interm_to_output.mul(self.mask_interm_to_output)
+        print("masked_interm_to_output: ", masked_interm_to_output)
+
+        out = interm_out.matmul(masked_interm_to_output)
+        print("U * W_2", out)
+        print("U * W_2 size", out.size())
+
+        out = out + self.B_interm_to_output
+        print("U * W_2 + b_2", out)
+
+        out = F.relu(out)
+        print("Out = ReLU(U * W_2 + b_2)", out)
+        print("Out.size()", out.size())
+
+        return out
+
     def _init_params(self):
+        
         # Say Bismillah
-        pass
+        init.kaiming_normal_(self.W_input_to_interm, mode='fan_out')
+        init.kaiming_normal_(self.W_interm_to_output, mode='fan_out')
+        
+        if self.use_bias:
+            self.B_input_to_interm.data.fill_(0)
+            self.B_interm_to_output.data.fill_(0)
 
     def _get_mask_input_to_interm(self):
         
-        np_mask = dag_utils.get_layer_mask(self._parents, self._children, self.adjacency_matrix)
+        np_mask = dag_utils.get_layer_mask(self._parents, self._children, self.interm_unit_dim, self.adjacency_matrix)
         return torch.from_numpy(np_mask)
 
     def _get_mask_interm_to_output(self):
         
-        np_mask = dag_utils.get_mask_for_intermediate_to_output(self.in_features, self.interm_unit_dim, self.out_features)
+        np_mask = dag_utils.get_mask_for_intermediate_to_output(self.interm_unit_dim, self.out_features)
         return torch.from_numpy(np_mask)
    
     def __repr__(self):

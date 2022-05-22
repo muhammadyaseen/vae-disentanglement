@@ -1,8 +1,5 @@
-from more_itertools import first
 import numpy as np
-import seaborn, time
-import pandas as pd
-from pomegranate import BayesianNetwork
+
 
 def find_top_level_nodes(adj_mat):
     
@@ -36,8 +33,10 @@ def get_dag_layers(adj_mat):
         children = find_child_nodes(parents, adj_mat)
         dag_layers.append(children)
         parents = children
+    
+    return dag_layers
 
-def get_layer_mask(parents, children, adj_mat):
+def get_layer_mask(parents, children, interm_unit_dim, adj_mat):
     
     """
     In mask, rows correspond to parents and columns correspond to children
@@ -45,22 +44,29 @@ def get_layer_mask(parents, children, adj_mat):
     P, C = len(parents), len(children)
     
     # initialize with zeros
-    mask = np.zeros(shape=(P,C))
+    mask = np.zeros(shape=(P,C * interm_unit_dim), dtype=np.float32)
     
     for i, p in enumerate(parents): 
         for j, c in enumerate(children):
             # check DAG interaction and fill-in 1's where interaction is justified according to given DAG
             # i.e if p's index is present in c's parent list
             if p in adj_mat[c]:
-                mask[i, j] = 1.0
+                
+                # we have to set entries in the column associate with this parent eq to 1 
+                # if current child `c` belongs to current parent `p`. We operate over 1 row (i.e. 1 parent)
+                # but because interm units can have any dimension, the numbers of rows affected depends on that dimensionality
+                # if interm_unit_dim = k , it means we have t incoming connections from parent to interm child so we have to 
+                # set k entries eq to 1 in this row.
+                row_range = range(j * interm_unit_dim, (j + 1) * interm_unit_dim)
+                mask[ [i], row_range] = 1.0
     
     return mask
 
-def get_mask_for_intermediate_to_output(input_dim, interm_unit_dim, output_dim):
+def get_mask_for_intermediate_to_output(interm_unit_dim, output_dim):
     
-    M=np.zeros((input_dim * interm_unit_dim, output_dim))
-    R = np.array_split(range(input_dim * interm_unit_dim), input_dim) 
-    C = range(output_dim)
+    M = np.zeros((output_dim * interm_unit_dim, output_dim), dtype=np.float32)
+    R = np.array_split(range(output_dim * interm_unit_dim), output_dim) 
+    C = [[o] for o in range(output_dim)]
     
     M[R,C] = 1.0
     
