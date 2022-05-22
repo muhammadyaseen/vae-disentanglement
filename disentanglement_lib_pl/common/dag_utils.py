@@ -34,7 +34,8 @@ def get_dag_layers(adj_mat):
         dag_layers.append(children)
         parents = children
     
-    return dag_layers
+    # remove the last None element and return
+    return dag_layers[:-1]
 
 def get_layer_mask(parents, children, interm_unit_dim, adj_mat):
     

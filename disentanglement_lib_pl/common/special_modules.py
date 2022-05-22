@@ -146,18 +146,25 @@ class DAGInteractionLayer(nn.Module):
         # Learnable Parameters #
         # -------------------- #
         self.W_input_to_interm = nn.Parameter(torch.Tensor(self.in_features, self.interm_unit_dim * self.out_features))
-        self.W_interm_to_output = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))
-        
+        #self.W_interm_to_output = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))
+        self.W_interm_to_output_mu = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))
+        self.W_interm_to_output_sigma = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))
+
         if self.use_bias:
             # we will need mask on bias as well 
             self.B_input_to_interm = nn.Parameter(torch.Tensor(interm_unit_dim * self.out_features))
-            self.B_interm_to_output = nn.Parameter(torch.Tensor(self.out_features))
+            #self.B_interm_to_output = nn.Parameter(torch.Tensor(self.out_features))
+            self.B_interm_to_output_mu = nn.Parameter(torch.Tensor(self.out_features))
+            self.B_interm_to_output_sigma = nn.Parameter(torch.Tensor(self.out_features))
+        
         # -------------------------#
         # End Learnable Parameters #
         # ------------------------ #
 
         self.mask_input_to_interm = self._get_mask_input_to_interm()
-        self.mask_interm_to_output = self._get_mask_interm_to_output()
+        #self.mask_interm_to_output = self._get_mask_interm_to_output()
+        self.mask_interm_to_output_mu = self._get_mask_interm_to_output()
+        self.mask_interm_to_output_sigma = self._get_mask_interm_to_output()
         
         self._init_params()
 
@@ -178,12 +185,19 @@ class DAGInteractionLayer(nn.Module):
         interm_out = F.relu(interm_out)
         
         # interm to output
-        masked_interm_to_output = self.W_interm_to_output.mul(self.mask_interm_to_output)
-        out = interm_out.matmul(masked_interm_to_output)
-        out = out + self.B_interm_to_output
-        out = F.relu(out)
+        # \mu head
+        masked_interm_to_output_mu = self.W_interm_to_output_mu.mul(self.mask_interm_to_output_mu)
+        mu_out = interm_out.matmul(masked_interm_to_output_mu)
+        mu_out = mu_out + self.B_interm_to_output_mu
+        mu_out = F.relu(mu_out)
+        
+        # \sigma head
+        masked_interm_to_output_sigma = self.W_interm_to_output_sigma.mul(self.mask_interm_to_output_sigma)
+        sigma_out = interm_out.matmul(masked_interm_to_output_sigma)
+        sigma_out = sigma_out + self.B_interm_to_output_sigma
+        sigma_out = F.relu(sigma_out)
 
-        return out
+        return mu_out, sigma_out
 
     def diagnostic_forward(self, layer_input):
         
@@ -230,11 +244,15 @@ class DAGInteractionLayer(nn.Module):
         
         # Say Bismillah
         init.kaiming_normal_(self.W_input_to_interm, mode='fan_out')
-        init.kaiming_normal_(self.W_interm_to_output, mode='fan_out')
+        #init.kaiming_normal_(self.W_interm_to_output, mode='fan_out')
+        init.kaiming_normal_(self.W_interm_to_output_mu, mode='fan_out')
+        init.kaiming_normal_(self.W_interm_to_output_sigma, mode='fan_out')
         
         if self.use_bias:
             self.B_input_to_interm.data.fill_(0)
-            self.B_interm_to_output.data.fill_(0)
+            #self.B_interm_to_output.data.fill_(0)
+            self.B_interm_to_output_mu.data.fill_(0)
+            self.B_interm_to_output_sigma.data.fill_(0)
 
     def _get_mask_input_to_interm(self):
         
@@ -248,8 +266,11 @@ class DAGInteractionLayer(nn.Module):
    
     def __repr__(self):
 
-        s = ('{name} ({in_features} -> {interm_dim} -> {out_features}, '
-        'mask = {interaction_mask}')
+        s = ('{name} ({in_features} -> {interm_unit_dim} * {out_features} -> {out_features}, ' 
+        'parents: {_parents}, children: {_children}, ')
+
+        #'mask_input_to_interm = {mask_input_to_interm}, '
+        #'mask_interm_to_output = {mask_interm_to_output}, ')
 
         if not self.use_bias:
             s += ', bias=False'
