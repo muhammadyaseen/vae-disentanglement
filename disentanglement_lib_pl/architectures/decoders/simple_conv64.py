@@ -50,11 +50,11 @@ class SimpleConv64CommAss(BaseImageEncoder):
             # Contrary to padding=same in TF impl., padding = 1 has been added to all ConvTranspose2d layers because 
             # otherwise output shape isn't correct. This is because TF and PyTorch 
             # handle 'same' padding in different ways
-            nn.ConvTranspose2d(64, 64, 4, 2, 1, 1),
+            nn.ConvTranspose2d(64, 64, 4, 2, 1),
             nn.ReLU(True),
-            nn.ConvTranspose2d(64, 32, 4, 2, 1, 1),
+            nn.ConvTranspose2d(64, 32, 4, 2, 1),
             nn.ReLU(True),
-            nn.ConvTranspose2d(32, 32, 4, 2, 1, 1),
+            nn.ConvTranspose2d(32, 32, 4, 2, 1),
             nn.ReLU(True),
             nn.ConvTranspose2d(32, num_channels, 4, 2, 1)
         )
