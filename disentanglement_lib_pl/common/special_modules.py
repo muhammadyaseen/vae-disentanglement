@@ -1,9 +1,11 @@
+from re import I
 import numpy as np
 import torch
 from torch import nn
 from torch.nn import init
 import torch.nn.functional as F
 from common import dag_utils
+from common.ops import reparametrize
 
 LIMIT_A, LIMIT_B, EPSILON = -.1, 1.1, 1e-6
 
@@ -127,13 +129,15 @@ class L0_Dense(nn.Module):
 
 class DAGInteractionLayer(nn.Module):
 
-    def __init__(self, parents_list, children_list, adjacency_matrix, interm_unit_dim=1, bias=True, **kwargs):
+    def __init__(self, parents_list, children_list, adjacency_matrix, interm_unit_dim=1, bias=True, parent_is_root=False, root_dim=10, **kwargs):
 
         super(DAGInteractionLayer, self).__init__()
 
         self.in_features, self.out_features = len(parents_list), len(children_list)
         self._parents, self._children = parents_list, children_list
-        
+        self.parent_is_root = parent_is_root
+        self.root_dim = root_dim if self.parent_is_root else None
+
         assert self.in_features > 0, f"Number of parents should be > 0, Given: {self.in_features}"
         assert self.out_features > 0, f"Number of children should be > 0, Given: {self.out_features}"
         assert interm_unit_dim > 0, f"Intermediate layer should have at least 1 unit, Given: {interm_unit_dim}"      
@@ -197,7 +201,11 @@ class DAGInteractionLayer(nn.Module):
         sigma_out = sigma_out + self.B_interm_to_output_sigma
         sigma_out = F.relu(sigma_out)
 
-        return mu_out, sigma_out
+        # TODO: should we do it here ?
+        out_z = None
+        #out_z = reparametrize(mu_out, sigma_out)
+
+        return mu_out, sigma_out, out_z
 
     def diagnostic_forward(self, layer_input):
         
@@ -256,6 +264,16 @@ class DAGInteractionLayer(nn.Module):
 
     def _get_mask_input_to_interm(self):
         
+        # TODO: maybe we should allow this flexibility for every layer?
+        # i.e. allow multiple units to represent a 'concept' / DAG node
+
+        # The DAG we get has 1 top-level / root node. This will result in low capacity / bottle neck at 
+        # the start of latent network, so instead of representing that root node with a single unit we can
+        # instead use multiple units 
+        if self.parent_is_root:
+            C = len(self._children)
+            return torch.from_numpy(np.ones(shape=(self.root_dim, C * self.interm_unit_dim), dtype=np.float32))
+        
         np_mask = dag_utils.get_layer_mask(self._parents, self._children, self.interm_unit_dim, self.adjacency_matrix)
         return torch.from_numpy(np_mask)
 
@@ -266,8 +284,10 @@ class DAGInteractionLayer(nn.Module):
    
     def __repr__(self):
 
-        s = ('{name} ({in_features} -> {interm_unit_dim} * {out_features} -> {out_features}, ' 
-        'parents: {_parents}, children: {_children}, ')
+        input_dim = self.in_features if not self.parent_is_root else self.root_dim
+
+        s = ('{name} ({input_dim} -> {interm_unit_dim} * {out_features} -> {out_features}, ' 
+        'parents: {_parents}, children: {_children}, root: {parent_is_root} ')
 
         #'mask_input_to_interm = {mask_input_to_interm}, '
         #'mask_interm_to_output = {mask_interm_to_output}, ')
@@ -277,4 +297,4 @@ class DAGInteractionLayer(nn.Module):
         
         s += ')'
         
-        return s.format(name=self.__class__.__name__, **self.__dict__)
+        return s.format(name=self.__class__.__name__, input_dim=input_dim, **self.__dict__)

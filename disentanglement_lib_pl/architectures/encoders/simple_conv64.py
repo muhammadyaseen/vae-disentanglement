@@ -32,8 +32,48 @@ class SimpleConv64(BaseImageEncoder):
     def forward(self, x):
         return self.main(x)
 
-
 class SimpleGaussianConv64(SimpleConv64):
+    def __init__(self, latent_dim, num_channels, image_size):
+        super().__init__(latent_dim * 2, num_channels, image_size)
+
+        # override value of _latent_dim
+        self._latent_dim = latent_dim
+
+    def forward(self, x):
+        mu_logvar = self.main(x)
+        mu = mu_logvar[:, :self._latent_dim]
+        logvar = mu_logvar[:, self._latent_dim:]
+        return mu, logvar
+
+class SimpleConv64CommAss(BaseImageEncoder):
+    """
+    Encoder as used in 'Challenging Common Assumptions in the Unsupervised Learning of Disentangled Representations'
+    """
+    def __init__(self, latent_dim, num_channels, image_size):
+        super().__init__(latent_dim, num_channels, image_size)
+        assert image_size == 64, 'This model only works with image size 64x64.'
+
+        self.main = nn.Sequential(
+            nn.Conv2d(num_channels, 32, 4, 2), # B, 32, 31 x 31
+            nn.ReLU(True),
+            nn.Conv2d(32, 32, 4, 2), # B, 32, 14 x 14
+            nn.ReLU(True),
+            nn.Conv2d(32, 64, 4, 2), # B, 64, 6 x 6
+            nn.ReLU(True),
+            nn.Conv2d(64, 64, 4, 2), # B, 64, 2 x 2
+            nn.ReLU(True),
+            Flatten3D(), # B, 64*2*2
+            nn.Linear(64 * 2 * 2, 256),
+            nn.ReLU(True),
+            nn.Linear(256, latent_dim)
+        )
+
+        init_layers(self._modules)
+
+    def forward(self, x):
+        return self.main(x)
+
+class SimpleGaussianConv64CommAss(SimpleConv64CommAss):
     def __init__(self, latent_dim, num_channels, image_size):
         super().__init__(latent_dim * 2, num_channels, image_size)
 

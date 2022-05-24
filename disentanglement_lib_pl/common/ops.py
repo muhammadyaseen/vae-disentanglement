@@ -54,13 +54,19 @@ def entropy(x):
 
 
 class Flatten3D(nn.Module):
+    # Convert size of [batch, A, B, C] to [batch, A*B*C] e.g [2,3,4,4] to [2, 48]
+    # Used when to convert Conv2d outputs so that they can be multiplied with Linear layers
     def forward(self, x):
+        print(x.size())
         x = x.view(x.size()[0], -1)
         return x
 
 
 class Reshape(nn.Module):
     def __init__(self, size):
+        # size is a list of dimension sizes e.g. [num_channels, image_size, image_size]
+        # So given a linear layer of size [Batches, image_size * image_size * num_channels] this module converts
+        # it to size [Batches, num_channels, image_size, image_size]
         super().__init__()
         self.size = size
 
@@ -72,6 +78,9 @@ class Reshape(nn.Module):
 
 
 class Unsqueeze3D(nn.Module):
+    # Add 2 new dimensions at the end
+    # size [A, B, C] Becomes [A, B, C, 1, 1]
+
     def forward(self, x):
         x = x.unsqueeze(-1)
         x = x.unsqueeze(-1)

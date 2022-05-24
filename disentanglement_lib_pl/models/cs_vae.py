@@ -33,7 +33,8 @@ class ConceptStructuredVAE(nn.Module):
         self.z_dim = network_args.z_dim
         self.num_channels = network_args.num_channels
         self.image_size = network_args.image_size
-        
+        self.batch_size = network_args.batch_size
+
         # encoder and decoder
         encoder_name = network_args.encoder[0]
         decoder_name = network_args.decoder[0]
@@ -42,11 +43,12 @@ class ConceptStructuredVAE(nn.Module):
 
         # DAG
         self.dag_layer_nodes = dag_utils.get_dag_layers(adjacency_matrix)
-        print(self.dag_layer_nodes)
+        
         # model
         self.encoder = encoder(self.z_dim, self.num_channels, self.image_size)
-        self.dag_network = self._init_dag_network(adjacency_matrix)
-        self.decoder = decoder(len(self.dag_layer_nodes[-1]), self.num_channels, self.image_size)
+        self.dag_network = self._init_dag_network_modules(adjacency_matrix)
+        nodes_in_last_dag_layer = len(self.dag_layer_nodes[-1])
+        self.decoder = decoder(nodes_in_last_dag_layer, self.num_channels, self.image_size)
         
     def _init_dag_network(self, adjacency_matrix):
 
@@ -58,27 +60,82 @@ class ConceptStructuredVAE(nn.Module):
                                     children_list = self.dag_layer_nodes[L+1], 
                                     adjacency_matrix = adjacency_matrix, 
                                     interm_unit_dim = self.interm_unit_dim, 
-                                    bias=True
+                                    bias=True,
+                                    parent_is_root = L == 0
                 )
             )
 
-        return nn.Sequential(*dag_layers)    
+        # TODO: I should probably use nn.ModuleList instead because we need access 
+        # to intermediate layers for visualization and debuggin purpose. And we 
+        # can also process extra returned values from forward call
+        return nn.Sequential(*dag_layers)
+    
+    def _init_dag_network_modules(self, adjacency_matrix):
+
+        dag_layers = []
+        
+        for L in range(len(self.dag_layer_nodes) - 1):
+            dag_layers.append(
+                DAGInteractionLayer(parents_list = self.dag_layer_nodes[L],
+                                    children_list = self.dag_layer_nodes[L+1], 
+                                    adjacency_matrix = adjacency_matrix, 
+                                    interm_unit_dim = self.interm_unit_dim, 
+                                    bias=True,
+                                    parent_is_root = L == 0
+                )
+            )
+
+        return nn.ModuleList(modules=dag_layers)    
 
 
     def forward(self, x_true, **kwargs):
+        
+        fwd_pass_results = dict()
+        interm_outputs = []
+
+        z = self.encoder(x_true)
+        
+        for dag_layer in self.dag_network:
+            # Hope it doesn't mess up the compute graph
+            mu_out, sigma_out, z = dag_layer(z)
+            interm_output = {
+                'mu_out': mu_out,
+                'sigma_out': sigma_out,
+                'z': z 
+            }
+            interm_outputs.append(interm_output)
+        
+        #last_mu, last_sigma = self.dag_network(z)
+        
+        x_recon = torch.sigmoid(self.decode(interm_outputs[-1]['mu_out']))
+
+        return fwd_pass_results.update({
+            "x_recon": x_recon,
+            "x_true" :  x_true,
+            "intermediate_params": interm_output
+        })
+
+    def _ladder_kld_loss_fn(self, latent_layer_params):
         pass
-   
+    
     def loss_function(self, loss_type='cross_ent', **kwargs):
         
         x_recon, x_true = kwargs['x_recon'], kwargs['x_true']
-        mu, logvar = kwargs['mu'], kwargs['logvar']
+        interm_params = kwargs['intermediate_params']
         global_step = kwargs['global_step']
         bs = self.batch_size
+
         output_losses = dict()
         
         # initialize the loss of this batch with zero.
         output_losses[c.TOTAL_LOSS] = 0
     
+        #-------------------------
+        # KLD for our dag network - Since we can have arbitrary number of layers, it won't take a fixed form
+        #-------------------------
+        
+        
+        
         # detach all losses except for the full loss
         for loss_type in output_losses.keys():
             if loss_type == c.LOSS:
