@@ -39,9 +39,7 @@ class ConceptStructuredVAE(nn.Module):
         
         # encoder and decoder
         # Encoder is composed of BU nets, TD nets (aka DAG layers)
-        #encoder_name = network_args.encoder[0]
         decoder_name = network_args.decoder[0]
-        #encoder = getattr(encoders, encoder_name)
         decoder = getattr(decoders, decoder_name)
 
         # bottom up networks
@@ -49,7 +47,6 @@ class ConceptStructuredVAE(nn.Module):
         self.bottom_up_networks = self._init_bottom_up_networks()
         
         # model
-        #self.encoder = encoder(self.z_dim, self.num_channels, self.image_size)
         self.top_down_networks = self._init_top_down_networks()
         nodes_in_last_dag_layer = len(self.dag_layer_nodes[-1])
         self.decoder = decoder(nodes_in_last_dag_layer, self.num_channels, self.image_size)
@@ -97,8 +94,7 @@ class ConceptStructuredVAE(nn.Module):
                 DAGInteractionLayer(parents_list = self.dag_layer_nodes[L],
                                     children_list = self.dag_layer_nodes[L+1], 
                                     adjacency_matrix = self.adjacency_matrix, 
-                                    interm_unit_dim = self.interm_unit_dim, 
-                                    bias=True,
+                                    interm_unit_dim = self.interm_unit_dim,
                                     parent_is_root = L == 0,
                                     root_dim=self.root_dim
                 )
@@ -109,6 +105,7 @@ class ConceptStructuredVAE(nn.Module):
     def _top_down_pass(self, bu_net_outs, mode='sample', **kwargs):
         """
         mode: 'sample' OR 'inference'
+        When in 'inference' mode, should pass 'current_device' and 'num_sampples' as kwargs
         """
         assert mode in ['sample', 'inference']
 
