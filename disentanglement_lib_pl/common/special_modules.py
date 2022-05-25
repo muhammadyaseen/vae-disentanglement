@@ -202,10 +202,9 @@ class DAGInteractionLayer(nn.Module):
         sigma_out = F.relu(sigma_out)
 
         # TODO: should we do it here ?
-        out_z = None
         #out_z = reparametrize(mu_out, sigma_out)
 
-        return mu_out, sigma_out, out_z
+        return mu_out, sigma_out
 
     def diagnostic_forward(self, layer_input):
         

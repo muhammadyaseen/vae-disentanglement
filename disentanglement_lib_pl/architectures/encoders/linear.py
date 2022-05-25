@@ -6,13 +6,13 @@ from common.ops import Flatten3D
 
 class SimpleFCNNEncoder(BaseEncoder):
     
-    def __init__(self, latent_dim, in_dim, h_dims):
-        super().__init__(latent_dim, in_dim)
+    def __init__(self, out_dim, in_dim, h_dims):
+        super().__init__(out_dim, in_dim)
 
         self.main = nn.Sequential(
             nn.Linear(in_dim, h_dims[0]),
             nn.Tanh(),
-            nn.Linear(h_dims[0], latent_dim)
+            nn.Linear(h_dims[0], out_dim)
         )
 
         init_layers(self._modules)

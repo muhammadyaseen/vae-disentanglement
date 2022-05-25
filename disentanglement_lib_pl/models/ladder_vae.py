@@ -30,7 +30,7 @@ class LadderVAE(nn.Module):
 
         # bottom-up path
         self.nn_d_1 = encoders.SimpleConv64(latent_dim=self.z1_dim * 2, num_channels=self.num_channels, image_size=self.image_size)
-        self.nn_d_2 = encoders.SimpleFCNNEncoder(latent_dim=self.z2_dim * 2, in_dim=self.z1_dim * 2, h_dims=[self.z2_dim * 2])       
+        self.nn_d_2 = encoders.SimpleFCNNEncoder(out_dim=self.z2_dim * 2, in_dim=self.z1_dim * 2, h_dims=[self.z2_dim * 2])       
      
         # TODO: add logic here to switch the nn_z_1 net when L0 reg is being used
         regularization_opts = {
@@ -118,7 +118,6 @@ class LadderVAE(nn.Module):
         
         #step 2
         mu_q_1_hat, log_var_q_1_hat = torch.chunk(d_1, 2, dim=1)
-        #delta_log_var_1 = F.hardtanh(delta_log_var_1, -7., 2.)
         
         # step 3
         d_2  = self.nn_d_2(d_1)
