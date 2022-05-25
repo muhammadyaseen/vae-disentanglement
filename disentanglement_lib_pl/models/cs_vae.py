@@ -106,8 +106,12 @@ class ConceptStructuredVAE(nn.Module):
 
         return nn.ModuleList(modules=dag_layers)    
 
-    def _top_down_pass(self, bu_net_outs, **kwargs):
-        
+    def _top_down_pass(self, bu_net_outs, mode='sample', **kwargs):
+        """
+        mode: 'sample' OR 'inference'
+        """
+        assert mode in ['sample', 'inference']
+
         #-----------------------------------------------------
         # TOP DOWN pass, goes from z_L, ..., z_1, X
         #-----------------------------------------------------
@@ -116,7 +120,12 @@ class ConceptStructuredVAE(nn.Module):
         #print(bu_net_outs)
 
         # First z i.e z_L is sampled like this because mu_q_hat_L = mu_q_hat and sigma_q_hat_L = sigma_q_hat
-        z = reparametrize(bu_net_outs[0]['mu_q_hat'], bu_net_outs[0]['sigma_q_hat'])
+        if mode == 'inference':
+            z = reparametrize(bu_net_outs[0]['mu_q_hat'], bu_net_outs[0]['sigma_q_hat'])
+        
+        if mode == 'sample':
+            z = torch.randn(kwargs['num_samples'], self.root_dim)
+            z = z.to(kwargs['current_device'])
 
         td_net_outs = []
         for L, td_net in enumerate(self.top_down_networks):
@@ -126,25 +135,34 @@ class ConceptStructuredVAE(nn.Module):
             #print(f"mu sizes: mu_p_L {mu_p_L.shape} mu_q_hat {bu_net_outs[L+1]['mu_q_hat'].shape} ")
             #print(f"sigma sizes: sigma_p_L {sigma_p_L.shape} sigma_q_hat {bu_net_outs[L+1]['sigma_q_hat'].shape} ")
 
-            # Now we have to calc {mu|sigma}_q_L given {mu|sigma}_q_L_hat and {mu|sigma}_p_L
-            prec_q_L_hat = bu_net_outs[L+1]['sigma_q_hat'].exp().pow(-1)
-            prec_p_L = sigma_p_L.exp().pow(-1)
-            mu_q_L = (bu_net_outs[L+1]['mu_q_hat'] * prec_q_L_hat + mu_p_L * prec_p_L) / ( prec_q_L_hat + prec_p_L)
-            # have to do this log because of how `reparametrize` is implemented
-            sigma_q_L = (prec_q_L_hat + prec_p_L).pow(-1).log() 
-            
-            # sample for current layer
-            z = reparametrize(mu_q_L, sigma_q_L)
+            if mode == 'inference':
+                # Now we have to calc {mu|sigma}_q_L given {mu|sigma}_q_L_hat and {mu|sigma}_p_L
+                prec_q_L_hat = bu_net_outs[L+1]['sigma_q_hat'].exp().pow(-1)
+                prec_p_L = sigma_p_L.exp().pow(-1)
+                mu_q_L = (bu_net_outs[L+1]['mu_q_hat'] * prec_q_L_hat + mu_p_L * prec_p_L) / ( prec_q_L_hat + prec_p_L)
+                # have to do this log because of how `reparametrize` is implemented
+                sigma_q_L = (prec_q_L_hat + prec_p_L).pow(-1).log() 
+                
+                # sample for current layer
+                z = reparametrize(mu_q_L, sigma_q_L)
 
-            interm_output = {
-                'mu_p': mu_p_L,
-                'sigma_p': sigma_p_L,
-                'mu_q': mu_q_L,
-                'sigma_q': sigma_q_L,
-                'z': z 
-            }
+                interm_output = {
+                    'mu_p': mu_p_L,
+                    'sigma_p': sigma_p_L,
+                    'mu_q': mu_q_L,
+                    'sigma_q': sigma_q_L,
+                    'z': z 
+                }
+                td_net_outs.append(interm_output)
 
-            td_net_outs.append(interm_output)
+            if mode == 'sample':
+                z = reparametrize(mu_p_L, sigma_p_L) 
+                interm_output = {
+                    'mu_p': mu_p_L,
+                    'sigma_p': sigma_p_L,
+                    'z': z 
+                }
+                td_net_outs.append(interm_output)  
 
         return td_net_outs
     
@@ -278,3 +296,16 @@ class ConceptStructuredVAE(nn.Module):
 
         return torch.sigmoid(self.decoder(z, **kwargs))
 
+    def sample(self, num_samples, current_device):
+
+        #===== Generative part
+        # Top down until X
+        td_net_outs = self._top_down_pass(
+            bu_net_outs=[],
+            mode='sample',
+            num_samples=num_samples,
+            current_device=current_device
+        )
+
+        x_sampled = self.decode(td_net_outs[-1]['z'])
+        return x_sampled
