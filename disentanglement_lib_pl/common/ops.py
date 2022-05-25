@@ -57,7 +57,7 @@ class Flatten3D(nn.Module):
     # Convert size of [batch, A, B, C] to [batch, A*B*C] e.g [2,3,4,4] to [2, 48]
     # Used when to convert Conv2d outputs so that they can be multiplied with Linear layers
     def forward(self, x):
-        print(x.size())
+        #print(x.size())
         x = x.view(x.size()[0], -1)
         return x
 
