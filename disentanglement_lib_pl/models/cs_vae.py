@@ -102,7 +102,7 @@ class ConceptStructuredVAE(nn.Module):
 
         return nn.ModuleList(modules=dag_layers)    
 
-    def _top_down_pass(self, bu_net_outs, mode='sample', **kwargs):
+    def _top_down_pass(self, bu_net_outs, mode='inference', **kwargs):
         """
         mode: 'sample' OR 'inference'
         When in 'inference' mode, should pass 'current_device' and 'num_sampples' as kwargs
@@ -190,14 +190,20 @@ class ConceptStructuredVAE(nn.Module):
         # Encode
         bu_net_outs, td_net_outs = self.encode(x_true, **kwargs)
 
+        # concat all z's?
+        # interm_zs = [tno['z'] for tno in td_net_outs]
+        # concat_zs = torch.cat(interm_zs, dim=1)
+        # now pass this z to decoder ?
+        # TODO: Need to think about how grad / influence is affect is we pass 'z' or 'mu' and how is sigma used / affected
+
         # Decode
         x_recon = self.decode(td_net_outs[-1]['z'], **kwargs)
 
         fwd_pass_results.update({
             "x_recon": x_recon,
             "x_true" :  x_true,
-            "td_net_params": td_net_outs,
-            "bu_net_params": bu_net_outs
+            "td_net_outs": td_net_outs,
+            "bu_net_outs": bu_net_outs
         })
         
         return fwd_pass_results
@@ -226,8 +232,8 @@ class ConceptStructuredVAE(nn.Module):
     def loss_function(self, loss_type='cross_ent', **kwargs):
         
         x_recon, x_true = kwargs['x_recon'], kwargs['x_true']
-        td_net_outs = kwargs['td_net_params']
-        bu_net_outs = kwargs['bu_net_params']
+        td_net_outs = kwargs['td_net_outs']
+        bu_net_outs = kwargs['bu_net_outs']
         global_step = kwargs['global_step']
         bs = self.batch_size
 
