@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account=hai_cs_vaes
-#SBATCH --gres=gpus:4
+#SBATCH --gres=gpu:4
 #SBATCH --partition=develbooster
 #SBATCH --nodes=1
 #SBATCH --output=hai_cs_vaes-gpu-out-and-err.%j
@@ -24,8 +24,8 @@ LOGS_DIR=$PROJECT_ROOT/train-logs
 # --iterations_c=100000 \
 # --controlled_capacity_increase=True
 
-srun apptainer exec --nv --bind ./:/vae-disentanglement \
-    ../container-file/vae-disent-v1.1-tensorboard.sif python $PROJECT_ROOT/disentanglement_lib_pl/main_csvae.py \
+srun apptainer exec --nv --bind ./vae-disentanglement:/vae-disentanglement \
+    ./container-file/vae-disent-v1.1-tensorboard.sif python /vae-disentanglement/disentanglement_lib_pl/main_csvae.py \
     --name=$NAME \
     --ckpt_dir=$LOGS_DIR \
     --expr_name=$NAME \
@@ -40,7 +40,7 @@ srun apptainer exec --nv --bind ./:/vae-disentanglement \
     --batch_size=128 \
     --max_epoch=100 \
     --in_channels=3 \
-    --gpus 0  \
+    --gpus 0 1 2 3  \
     --visdom_on=False \
     --lr_G=0.0001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \

@@ -8,7 +8,7 @@ from torch import optim
 from models.vae import VAE
 from common import constants as c
 from common import data_loader
-from common.visdom_visualiser import VisdomVisualiser
+#from common.visdom_visualiser import VisdomVisualiser
 from evaluation import evaluation_utils
 
 
@@ -27,8 +27,8 @@ class BaseVAEExperiment(pl.LightningModule):
         self.visdom_on = params['visdom_on']
         self.save_dir = params['save_dir']
 
-        if self.visdom_on:
-            self.visdom_visualiser = VisdomVisualiser(params)
+        #if self.visdom_on:
+        #    self.visdom_visualiser = VisdomVisualiser(params)
 
     def forward(self, x_input, **kwargs):
         
