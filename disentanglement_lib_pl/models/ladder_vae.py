@@ -204,7 +204,6 @@ class LadderVAE(nn.Module):
 
         fwd_pass_results.update(
             { "x_recon" : x_recon,
-              "x_true" :  x_true,
               'z1': z1,
               'z2': z2
             }
