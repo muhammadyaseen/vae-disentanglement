@@ -211,7 +211,6 @@ class ConceptStructuredVAE(nn.Module):
 
         fwd_pass_results.update({
             "x_recon": x_recon,
-            "x_true" :  x_true,
             "td_net_outs": td_net_outs,
             "bu_net_outs": bu_net_outs
         })
