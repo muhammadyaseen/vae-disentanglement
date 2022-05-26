@@ -54,7 +54,7 @@ class BaseVAEExperiment(pl.LightningModule):
         
         # TODO: figure out a way to do model / architecture specific or dataset specific 
         # logging w/o if-else jungle
-        
+        print(f"Epoch {self.current_epoch} finished.")
         torch.set_grad_enabled(False)
         self.model.eval()
         
