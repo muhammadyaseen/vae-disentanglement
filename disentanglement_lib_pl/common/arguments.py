@@ -95,6 +95,13 @@ def get_args(sys_args):
     parser.add_argument('--lambda_od', default=1.0, type=float,
                         help='Hyperparameter for off diagonal values of covariance matrix.')
 
+    # For CS VAE
+    parser.add_argument('--adjacency_matrix', type=str, default=None, 
+                        help='Path to pickled Adjacency Matrix file for dataset' )
+    parser.add_argument('--root_dim', default=10, type=int,
+                        help='Dimension used to represent the root node')
+    parser.add_argument('--interm_unit_dim', default=2, type=int,
+                        help='Dimension of each intermediate layer unit for top-down / dag layer networks')
     # Dataset
     parser.add_argument('--dset_dir', default=os.getenv('DISENTANGLEMENT_LIB_DATA', './data'),
                         type=str, help='main dataset directory')

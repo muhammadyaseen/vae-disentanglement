@@ -1,4 +1,4 @@
-from turtle import forward
+import pickle
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -14,19 +14,25 @@ class ConceptStructuredVAE(nn.Module):
     Concept Structured VAEs
     """
 
-    def __init__(self, adjacency_matrix, network_args, **kwargs):
+    def __init__(self, network_args, **kwargs):
         """
         adjacency_matrix: str or list . If str, it is interpreted as path to pickled list
 
         """
         super(ConceptStructuredVAE, self).__init__()
 
-        self.adjacency_matrix = adjacency_matrix
+        if isinstance(network_args.adjacency_matrix, str):
+            self.adjacency_matrix = pickle.load(open(network_args.adjacency_matrix, 'rb'))
+        elif isinstance(network_args.adjacency_matrix, list):
+            self.adjacency_matrix = network_args.adjacency_matrix
+        else:
+            self.adjacency_matrix = None
+            raise ValueError("Unsupported format for adjacency_matrix")
 
         self.node_labels = kwargs['node_labels'] if 'node_labels' in kwargs.keys() else None
         self.interm_unit_dim = network_args.interm_unit_dim
         self.z_dim = network_args.z_dim
-        self.num_channels = network_args.num_channels
+        self.num_channels = network_args.in_channels
         self.image_size = network_args.image_size
         self.batch_size = network_args.batch_size
         self.root_dim = network_args.root_dim
@@ -49,8 +55,12 @@ class ConceptStructuredVAE(nn.Module):
         # model
         self.top_down_networks = self._init_top_down_networks()
         nodes_in_last_dag_layer = len(self.dag_layer_nodes[-1])
-        self.decoder = decoder(nodes_in_last_dag_layer, self.num_channels, self.image_size)
-    
+        total_dag_nodes = len(self.adjacency_matrix)
+        #self.decoder = decoder(nodes_in_last_dag_layer, self.num_channels, self.image_size)
+        self.decoder = decoder(total_dag_nodes - 1 + self.root_dim, self.num_channels, self.image_size)
+
+        print("Model Initialized")
+
     def _init_bottom_up_networks(self):
         
         dag_levels = len(self.dag_layer_nodes)
@@ -97,7 +107,7 @@ class ConceptStructuredVAE(nn.Module):
                                     interm_unit_dim = self.interm_unit_dim,
                                     parent_is_root = L == 0,
                                     root_dim=self.root_dim
-                )
+                                )
             )
 
         return nn.ModuleList(modules=dag_layers)    
@@ -115,20 +125,29 @@ class ConceptStructuredVAE(nn.Module):
         
         bu_net_outs = list(reversed(bu_net_outs))
         #print(bu_net_outs)
-
+        td_net_outs = []
         # First z i.e z_L is sampled like this because mu_q_hat_L = mu_q_hat and sigma_q_hat_L = sigma_q_hat
         if mode == 'inference':
             z = reparametrize(bu_net_outs[0]['mu_q_hat'], bu_net_outs[0]['sigma_q_hat'])
+            interm_output = {
+                    'mu_p':     torch.zeros(z.shape),
+                    'sigma_p':  torch.zeros(z.shape), # this is log_var, hence zero (e^0 = 1)
+                    'mu_q':     bu_net_outs[0]['mu_q_hat'],
+                    'sigma_q':  bu_net_outs[0]['sigma_q_hat'],
+                    'z': z 
+                }
+            td_net_outs.append(interm_output)
         
         if mode == 'sample':
             z = torch.randn(kwargs['num_samples'], self.root_dim)
             z = z.to(kwargs['current_device'])
+            interm_output = {'mu_p': None, 'sigma_p': None, 'z': z }
+            td_net_outs.append(interm_output)
 
-        td_net_outs = []
         for L, td_net in enumerate(self.top_down_networks):
             #print(L, td_net)
             # Hope it doesn't mess up the compute graph
-            mu_p_L, sigma_p_L = td_net(z)
+            mu_p_L, sigma_p_L = td_net(z, **kwargs)
             #print(f"mu sizes: mu_p_L {mu_p_L.shape} mu_q_hat {bu_net_outs[L+1]['mu_q_hat'].shape} ")
             #print(f"sigma sizes: sigma_p_L {sigma_p_L.shape} sigma_q_hat {bu_net_outs[L+1]['sigma_q_hat'].shape} ")
 
@@ -143,22 +162,12 @@ class ConceptStructuredVAE(nn.Module):
                 # sample for current layer
                 z = reparametrize(mu_q_L, sigma_q_L)
 
-                interm_output = {
-                    'mu_p': mu_p_L,
-                    'sigma_p': sigma_p_L,
-                    'mu_q': mu_q_L,
-                    'sigma_q': sigma_q_L,
-                    'z': z 
-                }
+                interm_output = {'mu_p': mu_p_L, 'sigma_p': sigma_p_L, 'mu_q': mu_q_L, 'sigma_q': sigma_q_L, 'z': z }
                 td_net_outs.append(interm_output)
 
             if mode == 'sample':
                 z = reparametrize(mu_p_L, sigma_p_L) 
-                interm_output = {
-                    'mu_p': mu_p_L,
-                    'sigma_p': sigma_p_L,
-                    'z': z 
-                }
+                interm_output = {'mu_p': mu_p_L, 'sigma_p': sigma_p_L, 'z': z}
                 td_net_outs.append(interm_output)  
 
         return td_net_outs
@@ -176,28 +185,29 @@ class ConceptStructuredVAE(nn.Module):
             # Hope it doesn't mess up the compute graph
             d_L = bu_net(d_L)
             mu_L, sigma_L = torch.chunk(d_L, 2, dim=1)
-            bu_net_outs.append({
-                'mu_q_hat': mu_L,
-                'sigma_q_hat': sigma_L
-            })
+            bu_net_outs.append({'mu_q_hat': mu_L, 'sigma_q_hat': sigma_L})
         
         return bu_net_outs
 
     def forward(self, x_true, **kwargs):
-        
+
         fwd_pass_results = dict()
         
         # Encode
         bu_net_outs, td_net_outs = self.encode(x_true, **kwargs)
 
         # concat all z's?
-        # interm_zs = [tno['z'] for tno in td_net_outs]
-        # concat_zs = torch.cat(interm_zs, dim=1)
+        interm_zs = [td_net_out['z'] for td_net_out in td_net_outs]
+        concated_zs = torch.cat(interm_zs, dim=1)
+        #print(concated_zs.shape)
+        # Decode
+        x_recon = self.decode(concated_zs, **kwargs)
+
         # now pass this z to decoder ?
-        # TODO: Need to think about how grad / influence is affect is we pass 'z' or 'mu' and how is sigma used / affected
+        # TODO: Need to think about how grad / influence is affected if we pass 'z' or 'mu' and how is sigma used / affected
 
         # Decode
-        x_recon = self.decode(td_net_outs[-1]['z'], **kwargs)
+        #x_recon = self.decode(td_net_outs[-1]['z'], **kwargs)
 
         fwd_pass_results.update({
             "x_recon": x_recon,
@@ -297,7 +307,7 @@ class ConceptStructuredVAE(nn.Module):
         # TODO: have to implement skips here?
         # Final recon, using z_1 as input i.e. final latent        
 
-        return torch.sigmoid(self.decoder(z, **kwargs))
+        return torch.sigmoid(self.decoder(z))
 
     def sample(self, num_samples, current_device):
 

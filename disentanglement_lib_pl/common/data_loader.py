@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 from common import constants as c
-from common.known_datasets import CorrelatedDSpritesDataset, ThreeShapesDataset, OneDimLatentDataset, ContinumDataset
+from common.known_datasets import CorrelatedDSpritesDataset, ThreeShapesDataset, OneDimLatentDataset, ContinumDataset, PolynomialDataset, DSpritesDataset
 
 class LabelHandler(object):
     def __init__(self, labels, label_weights, class_values):
@@ -342,7 +342,7 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
     
     transforms = _get_transforms_for_dataset(dataset_name, image_size)
     data_kwargs.update({'transforms': transforms})
-    print(data_kwargs)
+    #print(data_kwargs)
     dataset = dset(**data_kwargs)
     data_loader = DataLoader(dataset,
                              batch_size=batch_size,

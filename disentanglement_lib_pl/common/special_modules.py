@@ -180,8 +180,13 @@ class DAGInteractionLayer(nn.Module):
         if 'children_names' in kwargs.keys():
             pass
 
-    def forward(self, layer_input):
+    def forward(self, layer_input, **kwargs):
         
+        # Ideally we should be putting these masks on the correct device in the __init__
+        self.mask_input_to_interm = self.mask_input_to_interm.to(kwargs['current_device'])
+        self.mask_interm_to_output_mu = self.mask_interm_to_output_mu.to(kwargs['current_device'])
+        self.mask_interm_to_output_sigma = self.mask_interm_to_output_sigma.to(kwargs['current_device'])
+
         # input to interm
         masked_input_to_interm = self.W_input_to_interm.mul(self.mask_input_to_interm)
         interm_out = layer_input.matmul(masked_input_to_interm)

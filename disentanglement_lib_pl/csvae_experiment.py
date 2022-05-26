@@ -42,11 +42,12 @@ class ConceptStructuredVAEExperiment(pl.LightningModule):
         x_true1, label1 = batch
 
         self.curr_device = x_true1.device
-        fwd_pass_results = self.forward(x_true1, label=label1)
+        fwd_pass_results = self.forward(x_true1, label=label1, current_device=x_true1.device)
 
         fwd_pass_results.update({
             'optimizer_idx': optimizer_idx,
-            'batch_idx': batch_idx
+            'batch_idx': batch_idx,
+            'global_step': self.global_step
         })
         
         losses = self.model.loss_function(loss_type='cross_ent', **fwd_pass_results)
@@ -58,8 +59,13 @@ class ConceptStructuredVAEExperiment(pl.LightningModule):
         return losses
 
     def training_step_end(self, train_step_output):
-        pass
-    
+        
+        # This aggregation is required when we use multiple GPUs
+        train_step_output[c.TOTAL_LOSS] = train_step_output[c.TOTAL_LOSS].mean()
+        train_step_output[c.RECON] = train_step_output[c.RECON].mean()
+        train_step_output[c.KLD_LOSS] = train_step_output[c.KLD_LOSS].mean()
+            
+        
     def training_epoch_end(self, train_step_outputs):
         
         # TODO: figure out a way to do model / architecture specific or dataset specific 
@@ -72,21 +78,17 @@ class ConceptStructuredVAEExperiment(pl.LightningModule):
         # 1. Save avg loss in this epoch
         avg_loss = torch.stack([tso[c.TOTAL_LOSS] for tso in train_step_outputs]).mean()
         avg_kld_loss = torch.stack([tso[c.KLD_LOSS] for tso in train_step_outputs]).mean()
-        avg_kld_z1_loss = torch.stack([tso["kld_z1"] for tso in train_step_outputs]).mean()
-        avg_kld_z2_loss = torch.stack([tso["kld_z2"] for tso in train_step_outputs]).mean()
+        #avg_kld_z1_loss = torch.stack([tso["kld_z1"] for tso in train_step_outputs]).mean()
+        #avg_kld_z2_loss = torch.stack([tso["kld_z2"] for tso in train_step_outputs]).mean()
         avg_recon_loss = torch.stack([tso[c.RECON] for tso in train_step_outputs]).mean()
         
         
         self.logger.experiment.add_scalar("Total Loss (Train)", avg_loss, self.current_epoch)
         self.logger.experiment.add_scalar("Recon Loss (Train)", avg_recon_loss, self.current_epoch)
         self.logger.experiment.add_scalar("KLD Loss (Train)", avg_kld_loss, self.current_epoch)
-        self.logger.experiment.add_scalar("KLD Loss z1 (Train)", avg_kld_z1_loss, self.current_epoch)
-        self.logger.experiment.add_scalar("KLD Loss z2 (Train)", avg_kld_z2_loss, self.current_epoch)
+        #self.logger.experiment.add_scalar("KLD Loss z1 (Train)", avg_kld_z1_loss, self.current_epoch)
+        #self.logger.experiment.add_scalar("KLD Loss z2 (Train)", avg_kld_z2_loss, self.current_epoch)
 
-        if self.l_zero_reg:
-            reg_loss = torch.stack([tso["l_zero_reg"] for tso in train_step_outputs]).mean()
-            self.logger.experiment.add_scalar("Reg L-0 Loss", reg_loss, self.current_epoch)
-            scalar_metrics["l_zero_reg"] = reg_loss
 
         # 2. save recon images and generated images, histogram of latent layer activations
         self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(36), self.current_epoch)
@@ -107,8 +109,8 @@ class ConceptStructuredVAEExperiment(pl.LightningModule):
         scalar_metrics[c.TOTAL_LOSS] = avg_loss
         scalar_metrics[c.RECON] = avg_recon_loss
         scalar_metrics[c.KLD_LOSS] = avg_kld_loss
-        scalar_metrics['kld_z1'] = avg_kld_z1_loss
-        scalar_metrics['kld_z2'] = avg_kld_z2_loss
+        #scalar_metrics['kld_z1'] = avg_kld_z1_loss
+        #scalar_metrics['kld_z2'] = avg_kld_z2_loss
 
         torch.set_grad_enabled(True)
         self.model.train()
@@ -123,16 +125,24 @@ class ConceptStructuredVAEExperiment(pl.LightningModule):
 
         x_true, labels = batch
         self.curr_device = x_true.device
-        fwd_pass_results  = self.forward(x_true, labels = labels)
+        fwd_pass_results  = self.forward(x_true, labels = labels, current_device=self.curr_device)
 
         fwd_pass_results.update({
             'optimizer_idx': optimizer_idx,
-            'batch_idx': batch_idx
+            'batch_idx': batch_idx,
+            'global_step': self.global_step
         })
         
         val_losses = self.model.loss_function(loss_type='cross_ent', **fwd_pass_results)
         
         return val_losses
+
+    def validation_step_end(self, val_step_output):
+                
+        # This aggregation is required when we use multiple GPUs
+        val_step_output[c.TOTAL_LOSS] = val_step_output[c.TOTAL_LOSS].mean()
+        val_step_output[c.RECON] = val_step_output[c.RECON].mean()
+        val_step_output[c.KLD_LOSS] = val_step_output[c.KLD_LOSS].mean()
 
     def validation_end(self, outputs):
 
@@ -220,7 +230,7 @@ class ConceptStructuredVAEExperiment(pl.LightningModule):
     def _get_sampled_images(self, how_many: int):
 
         curr_device = next(self.model.parameters()).device
-        sampled_images = self.model.sample(how_many, curr_device)#.cpu().data
+        sampled_images = self.model.sample(how_many, current_device=curr_device)#.cpu().data
         grid_of_samples = vutils.make_grid(sampled_images, normalize=True, nrow=12, value_range=(0.0,1.0))
         return grid_of_samples
 
@@ -231,7 +241,7 @@ class ConceptStructuredVAEExperiment(pl.LightningModule):
         test_input, test_label = next(iter(self.sample_loader))
         test_input = test_input.to(curr_device)
         
-        fwd_pass_results = self.model.forward(test_input, labels = test_label)
+        fwd_pass_results = self.model.forward(test_input, labels = test_label, current_device=curr_device)
         recons = fwd_pass_results['x_recon']
         inputs_and_reconds_side_by_side = torch.cat([test_input, recons], dim = 3)
         img_input_vs_recon = vutils.make_grid(inputs_and_reconds_side_by_side, normalize=True, value_range=(0.0,1.0))

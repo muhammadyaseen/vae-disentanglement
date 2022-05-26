@@ -75,6 +75,6 @@ module load Python
 # building 
 docker build -t myaseende/vae-disentanglement:v1.1-tensorboard .
 # Running on my laptop
-docker run --rm -it -p 6006:6006 -v thesis_code:/thesis_code myaseende/vae-disentanglement:v1.1-tensorboard /bin/bash
+docker run --rm -it -p 6006:6006 -v ./vae-disentanglement:/vae-disentanglement myaseende/vae-disentanglement:v1.1-tensorboard /bin/bash
 # Pushing on my laptop
 docker image push myaseende/vae-disentanglement:v1.1-tensorboard
