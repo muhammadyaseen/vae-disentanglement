@@ -159,10 +159,22 @@ class VAE(nn.Module):
 
     def forward(self, x_true, **kwargs):
         
+        fwd_pass_results = dict()
+
         mu, logvar = self.encode(x=x_true)
         z = reparametrize(mu, logvar)
         x_recon = self.decode(z=z)
-        return x_recon, mu, z, logvar
+        
+        fwd_pass_results.update({
+            'x_recon': x_recon,
+            'mu' : mu,
+            'logvar': logvar,
+            'z': z
+        })
+        
+        return fwd_pass_results
+
+
 
     def sample(self, num_samples, current_device):
         

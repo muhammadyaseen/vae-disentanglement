@@ -6,7 +6,7 @@ from common.utils import setup_logging, initialize_seeds, set_environment_variab
 from common.arguments import get_args
 import models
 
-from vae_experiment import VAEExperiment
+from base_vae_experiment import BaseVAEExperiment
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
@@ -67,7 +67,7 @@ def main(_args):
     experiment_config['visdom_args'] = dict(
         save_every_epoch=_args.save_every_epoch
     )
-    experiment = VAEExperiment(model, experiment_config)
+    experiment = BaseVAEExperiment(model, experiment_config)
 
     trainer_config = dict(
         gpus=_args.gpus,

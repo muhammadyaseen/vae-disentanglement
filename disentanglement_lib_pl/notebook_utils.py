@@ -12,7 +12,7 @@ import torchvision.transforms.functional as T
 from torchvision import transforms
 from torch.utils.data import DataLoader
 
-from vae_experiment import VAEExperiment
+from vae_experiment import BaseVAEExperiment
 from laddervae_experiment import LadderVAEExperiment
 from common.data_loader import CustomImageFolder
 from common.known_datasets import DSpritesDataset, ThreeShapesDataset, ContinumDataset 
@@ -193,7 +193,7 @@ def load_vae_model(algo_name, algo_type, checkpoint_path, curr_dev,
     vae_experiment = None
 
     if algo_type == 'bvae':
-        vae_experiment = VAEExperiment.load_from_checkpoint(
+        vae_experiment = BaseVAEExperiment.load_from_checkpoint(
             checkpoint_path,
             map_location=curr_dev,
             vae_model=vae_model, 
