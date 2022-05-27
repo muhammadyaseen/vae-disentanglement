@@ -312,6 +312,7 @@ class ConceptStructuredVAE(nn.Module):
 
         #===== Generative part
         # Top down until X
+
         td_net_outs = self._top_down_pass(
             bu_net_outs=[],
             mode='sample',
@@ -319,5 +320,9 @@ class ConceptStructuredVAE(nn.Module):
             current_device=current_device
         )
 
-        x_sampled = self.decode(td_net_outs[-1]['z'])
+        # concat all z's?
+        interm_zs = [td_net_out['z'] for td_net_out in td_net_outs]
+        concated_zs = torch.cat(interm_zs, dim=1)
+
+        x_sampled = self.decode(concated_zs)
         return x_sampled
