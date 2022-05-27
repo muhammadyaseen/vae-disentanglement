@@ -43,7 +43,7 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         
     def training_epoch_end(self, train_step_outputs):
         
-        super(BaseVAEExperiment, self).training_epoch_end(train_step_outputs)
+        super(ConceptStructuredVAEExperiment, self).training_epoch_end(train_step_outputs)
 
         torch.set_grad_enabled(False)
         self.model.eval()

@@ -20,6 +20,8 @@ class BVAEExperiment(BaseVAEExperiment):
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
+        super(BVAEExperiment, self).training_step(self, batch, batch_idx, optimizer_idx)
+
         x_true, label = batch
         self.current_device = x_true.device
         fwd_pass_results = self.forward(x_true, label=label, current_device=self.current_device)
@@ -37,7 +39,7 @@ class BVAEExperiment(BaseVAEExperiment):
     
     def training_epoch_end(self, train_step_outputs):
                
-        super(BaseVAEExperiment, self).training_epoch_end(train_step_outputs)
+        super(BVAEExperiment, self).training_epoch_end(train_step_outputs)
 
         torch.set_grad_enabled(False)
         self.model.eval()

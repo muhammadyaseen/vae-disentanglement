@@ -26,6 +26,8 @@ class LadderVAEExperiment(BaseVAEExperiment):
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
+        super(LadderVAEExperiment, self).training_step(self, batch, batch_idx, optimizer_idx)
+
         x_true, label = batch
 
         self.current_device = x_true.device
@@ -49,7 +51,7 @@ class LadderVAEExperiment(BaseVAEExperiment):
     
     def training_epoch_end(self, train_step_outputs):
         
-        super(BaseVAEExperiment, self).training_epoch_end(train_step_outputs)
+        super(LadderVAEExperiment, self).training_epoch_end(train_step_outputs)
 
         torch.set_grad_enabled(False)
         self.model.eval()
