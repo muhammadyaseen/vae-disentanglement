@@ -25,7 +25,10 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         
         x_true, label = batch
         
-        print(f"Batch: {batch_idx}")
+        # update after every 10 batches
+        if batch_idx % 10 == 0:
+            print(f"Batch: {batch_idx} / {self.total_train_batches}")
+        
         self.current_device = x_true.device
         fwd_pass_results = self.forward(x_true, label=label, current_device=self.current_device)
 
@@ -38,10 +41,6 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         
         losses = self.model.loss_function(loss_type='cross_ent', **fwd_pass_results)
 
-        # TODO: find out a way to cleanly visualize mu and logvar of multiple layers
-        #losses['mu_batch'] = mu.detach().cpu()
-        #losses['logvar_batch'] = logvar.detach().cpu()
-
         return losses        
         
     def training_epoch_end(self, train_step_outputs):
@@ -52,16 +51,6 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         self.model.eval()
         
         # 1. Show algo specific scalars
-        
-        avg_kld_z1_loss = torch.stack([tso["kld_z1"] for tso in train_step_outputs]).mean()
-        avg_kld_z2_loss = torch.stack([tso["kld_z2"] for tso in train_step_outputs]).mean()
-        
-        self.logger.experiment.add_scalar("KLD Loss z1 (Train)", avg_kld_z1_loss, self.current_epoch)
-        self.logger.experiment.add_scalar("KLD Loss z2 (Train)", avg_kld_z2_loss, self.current_epoch)
-
-        if self.l_zero_reg:
-            reg_loss = torch.stack([tso["l_zero_reg"] for tso in train_step_outputs]).mean()
-            self.logger.experiment.add_scalar("Reg L-0 Loss", reg_loss, self.current_epoch)
         
         # TODO: find out a way to cleanly visualize mu and logvar of multiple layers
         # TODO: need to visualize CS - VAE specific stuff here

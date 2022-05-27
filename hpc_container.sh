@@ -88,5 +88,8 @@ sbatch vae-disentanglement/disentanglement_lib_pl/run_csvae_jsc.sh
 apptainer exec --nv --bind ./vae-disentanglement:/vae-disentanglement \
     ./container-file/vae-disent-v1.1-tensorboard.sif cat /etc/os-release
 
+apptainer exec --nv --bind $PROJECT/vae-disentanglement:/vae-disentanglement \
+    ./container-file/vae-disent-v1.1-tensorboard.sif 'pip list | grep light'
+
 
 

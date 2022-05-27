@@ -26,7 +26,8 @@ class BaseVAEExperiment(pl.LightningModule):
         self.current_device = None
         self.visdom_on = params['visdom_on']
         self.save_dir = params['save_dir']
-
+        self.total_train_batches = len(self.trainer.train_dataloader)
+        
         #if self.visdom_on:
         #    self.visdom_visualiser = VisdomVisualiser(params)
 
