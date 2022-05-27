@@ -55,7 +55,7 @@ class BaseVAEExperiment(pl.LightningModule):
         # TODO: figure out a way to do model / architecture specific or dataset specific 
         # logging w/o if-else jungle
         print(f"Epoch {self.current_epoch} finished.")
-        
+
         torch.set_grad_enabled(False)
         self.model.eval()
         
@@ -213,7 +213,7 @@ class BaseVAEExperiment(pl.LightningModule):
         test_input, test_label = next(iter(self.sample_loader))
         test_input = test_input.to(current_device)
 
-        fwd_pass_results = self.model.forward(test_input, labels = test_label)
+        fwd_pass_results = self.model.forward(test_input, current_device=current_device, labels = test_label)
         recons = fwd_pass_results['x_recon']
         inputs_and_reconds_side_by_side = torch.cat([test_input, recons], dim = 3)
         img_input_vs_recon = vutils.make_grid(inputs_and_reconds_side_by_side, normalize=True, value_range=(0.0,1.0))
