@@ -64,9 +64,9 @@ class BaseVAEExperiment(pl.LightningModule):
         avg_kld_loss = torch.stack([tso[c.KLD_LOSS] for tso in train_step_outputs]).mean()
         avg_recon_loss = torch.stack([tso[c.RECON] for tso in train_step_outputs]).mean()
 
-        self.logger.experiment.add_scalar("Total Loss (Train)", avg_loss, self.current_epoch)
-        self.logger.experiment.add_scalar("Recon Loss (Train)", avg_recon_loss, self.current_epoch)
-        self.logger.experiment.add_scalar("KLD Loss (Train)", avg_kld_loss, self.current_epoch)
+        self.logger.experiment.add_scalar("Loss/Total Loss (Train)", avg_loss, self.current_epoch)
+        self.logger.experiment.add_scalar("Loss/Reconstruction Loss (Train)", avg_recon_loss, self.current_epoch)
+        self.logger.experiment.add_scalar("Loss/Total KLD Loss (Train)", avg_kld_loss, self.current_epoch)
 
 
         # 2. save recon images and generated images, histogram of latent layer activations

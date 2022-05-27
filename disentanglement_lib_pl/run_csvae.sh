@@ -26,9 +26,9 @@ python $PROJECT_ROOT/disentanglement_lib_pl/main_csvae.py \
     --decoder=SimpleConv64 \
     --z_dim=10 \
     --w_kld=1 \
-    --num_workers=8 \
-    --batch_size=128 \
-    --max_epoch=100 \
+    --num_workers=1 \
+    --batch_size=64 \
+    --max_epoch=3 \
     --in_channels=3 \
     --gpus 0  \
     --visdom_on=False \
