@@ -20,15 +20,13 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
                  params: dict) -> None:
         
         super(ConceptStructuredVAEExperiment, self).__init__(vae_model, params)
+        
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
+        super(ConceptStructuredVAEExperiment, self).training_step(batch, batch_idx, optimizer_idx)
+        
         x_true, label = batch
-        
-        # update after every 10 batches
-        if batch_idx % 10 == 0:
-            print(f"Batch: {batch_idx} / {self.total_train_batches}")
-        
         self.current_device = x_true.device
         fwd_pass_results = self.forward(x_true, label=label, current_device=self.current_device)
 

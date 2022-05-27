@@ -26,8 +26,7 @@ class BaseVAEExperiment(pl.LightningModule):
         self.current_device = None
         self.visdom_on = params['visdom_on']
         self.save_dir = params['save_dir']
-        self.total_train_batches = len(self.trainer.train_dataloader)
-        
+
         #if self.visdom_on:
         #    self.visdom_visualiser = VisdomVisualiser(params)
 
@@ -37,8 +36,8 @@ class BaseVAEExperiment(pl.LightningModule):
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
-        # Traing step is usually unique so we do this if not implemented in sub-classes
-        raise NotImplementedError
+        if batch_idx % 10 == 0:
+            print(f"Batch: {batch_idx} / {len(self.trainer.train_dataloader)}")
 
     def training_step_end(self, train_step_output):
              

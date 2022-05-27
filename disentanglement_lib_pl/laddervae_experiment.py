@@ -10,7 +10,6 @@ from torchvision import transforms
 from models.ladder_vae import LadderVAE
 from common import constants as c
 from common import data_loader
-from common.visdom_visualiser import VisdomVisualiser
 from evaluation import evaluation_utils
 
 from base_vae_experiment import BaseVAEExperiment
