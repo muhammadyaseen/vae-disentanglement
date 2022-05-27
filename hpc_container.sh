@@ -78,3 +78,15 @@ docker build -t myaseende/vae-disentanglement:v1.1-tensorboard .
 docker run --rm -it -p 6006:6006 -v ./vae-disentanglement:/vae-disentanglement myaseende/vae-disentanglement:v1.1-tensorboard /bin/bash
 # Pushing on my laptop
 docker image push myaseende/vae-disentanglement:v1.1-tensorboard
+
+#From $PROJECT directory
+sbatch vae-disentanglement/disentanglement_lib_pl/run_csvae_jsc.sh
+
+# Apptainer commands can also be directly ran on Login nodes
+# This is useful when you just want to check something quick in the container 
+# and don't want to allocate resources / budget for it
+apptainer exec --nv --bind ./vae-disentanglement:/vae-disentanglement \
+    ./container-file/vae-disent-v1.1-tensorboard.sif cat /etc/os-release
+
+
+

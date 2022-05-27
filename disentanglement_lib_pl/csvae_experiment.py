@@ -24,7 +24,8 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
         x_true, label = batch
-
+        
+        print(f"Batch: {batch_idx}")
         self.current_device = x_true.device
         fwd_pass_results = self.forward(x_true, label=label, current_device=self.current_device)
 

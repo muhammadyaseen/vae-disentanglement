@@ -9,12 +9,14 @@
 #SBATCH --mail-user=muhammad.yaseen@cispa.de
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
 
-FILENAME=$(basename $0)
-FILENAME="${FILENAME%.*}"
+#FILENAME=$(basename $0)
+#FILENAME="${FILENAME%.*}"
+
 NAME="CS_VAE_celeba"
 echo "name=$NAME"
 
-PROJECT_ROOT=./vae-disentanglement
+# This path will work anywhere in JUWELS-Booster
+PROJECT_ROOT=$PROJECT/vae-disentanglement
 
 export DISENTANGLEMENT_LIB_DATA=$PROJECT_ROOT/datasets/
 DATASET_NAME=celeba
@@ -24,7 +26,9 @@ LOGS_DIR=$PROJECT_ROOT/train-logs
 # --iterations_c=100000 \
 # --controlled_capacity_increase=True
 
-srun apptainer exec --nv --bind ./vae-disentanglement:/vae-disentanglement \
+# The path after .sif refers to the path within containers
+srun --account=hai_cs_vaes --gres=gpu:4 --partition=develbooster --nodes=1 \
+    apptainer exec --nv --bind $PROJECT_ROOT:/vae-disentanglement \
     ./container-file/vae-disent-v1.1-tensorboard.sif python /vae-disentanglement/disentanglement_lib_pl/main_csvae.py \
     --name=$NAME \
     --ckpt_dir=$LOGS_DIR \
