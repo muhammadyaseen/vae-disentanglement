@@ -5,7 +5,7 @@
 #SBATCH --nodes=1
 #SBATCH --output=hai_cs_vaes-gpu-out-and-err.%j
 #SBATCH --error=hai_cs_vaes-gpu-out-and-err.%j
-#SBATCH --job-name=hai_cs_vaes-CS-VAE
+#SBATCH --job-name=hai_cs_vaes-Beta-VAE
 #SBATCH --mail-user=muhammad.yaseen@cispa.de
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
 #SBATCH --time=02:00:00
@@ -16,7 +16,7 @@ echo "name=$NAME"
 # This path will work anywhere in JUWELS-Booster
 PROJECT_ROOT=/vae-disentanglement
 export DISENTANGLEMENT_LIB_DATA=$PROJECT_ROOT/datasets/
-DATASET_NAME=celeba
+DATASET_NAME=dsprites_correlated
 LOGS_DIR=$PROJECT_ROOT/train-logs
 
 # --max_c=25 \

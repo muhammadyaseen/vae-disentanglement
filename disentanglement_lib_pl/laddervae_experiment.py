@@ -27,7 +27,7 @@ class LadderVAEExperiment(BaseVAEExperiment):
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
-        super(LadderVAEExperiment, self).training_step(self, batch, batch_idx, optimizer_idx)
+        super(LadderVAEExperiment, self).training_step(batch, batch_idx, optimizer_idx)
 
         x_true, label = batch
 

@@ -21,7 +21,7 @@ class BVAEExperiment(BaseVAEExperiment):
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
-        super(BVAEExperiment, self).training_step(self, batch, batch_idx, optimizer_idx)
+        super(BVAEExperiment, self).training_step(batch, batch_idx, optimizer_idx)
 
         x_true, label = batch
         self.current_device = x_true.device
