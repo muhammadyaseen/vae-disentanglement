@@ -18,9 +18,10 @@ class LadderVAEExperiment(BaseVAEExperiment):
 
     def __init__(self,
                  vae_model: LadderVAE,
-                 params: dict) -> None:
+                 params: dict,
+                 dataset_params: dict) -> None:
         
-        super(LadderVAEExperiment, self).__init__(vae_model, params)
+        super(LadderVAEExperiment, self).__init__(vae_model, params, dataset_params)
       
         self.l_zero_reg = params['l_zero_reg']
 

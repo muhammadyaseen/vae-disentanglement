@@ -112,6 +112,9 @@ def get_args(sys_args):
                         help='pin_memory flag of data loader. Check this blogpost for details:'
                              'https://devblogs.nvidia.com/how-optimize-data-transfers-cuda-cc/')
 
+    # Dataset specific params
+    parser.add_argument('--correlation_strength', default=0.0, type=float, help='Correlation strength in dsprites_correlated dataset')
+
     # Logging and visualization
     parser.add_argument('--expr_name', default='VAE_Experiment', type=str, help='a descriptive name for this experiment, will be used as logging dir name.')
     parser.add_argument('--train_output_dir', default='train_outputs', type=str, help='output directory')

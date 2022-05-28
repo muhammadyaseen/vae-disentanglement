@@ -447,7 +447,7 @@ class DSpritesDataset(Dataset):
 
 class CorrelatedDSpritesDataset(Dataset):
 
-    def __init__(self, correlation_strength, seed=0, **kwargs):
+    def __init__(self, correlation_strength, seed=0, split='train'):
         """
         Parameters
         ----------
@@ -463,7 +463,7 @@ class CorrelatedDSpritesDataset(Dataset):
         self.dataset = named_data.get_named_ground_truth_data('dsprites_full')
         self.iterator_len = self.dataset.images.shape[0]
         self.correlation_strength = correlation_strength
-        self.split = kwargs['split']
+        self.split = split
 
         if self.split == 'test':
             # we only want a subset when loading in test/validation mode 
@@ -482,7 +482,7 @@ class CorrelatedDSpritesDataset(Dataset):
         
         self.dataset.state_space = correlated_state_space
 
-        print(f"Initialize [CorrelatedDSpritesDataset] with %d examples. Shape %s." % (self.iterator_len,self.dataset.images.shape))
+        print(f"Initialize [CorrelatedDSpritesDataset] with {self.iterator_len} examples. Shape {self.dataset.images.shape}.")
 
     @staticmethod
     def has_labels():
@@ -495,13 +495,16 @@ class CorrelatedDSpritesDataset(Dataset):
         return self.iterator_len
 
     def __getitem__(self, item):
+        
         assert item < self.iterator_len
+        
         factors, observations = self.dataset.sample(1, random_state=self.random_state)
+        
         #print(factors.size, observations.size)
         #print(factors[0].shape, observations[0].shape)
-        # Convert output to CHW from HWC
         
-        # `sample` function returns data with an extra `batch` axis on some reason so 
-        # we have to index into it as with [0] to return just one example
+        # Convert output to CHW from HWC
+        # `sample` function returns data with an extra `batch` axis for some reason so 
+        # we have to index into it with [0] to return just one example
         return torch.from_numpy(np.moveaxis(observations[0], 2, 0), ).type(torch.FloatTensor), factors[0]
     

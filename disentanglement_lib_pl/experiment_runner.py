@@ -22,6 +22,13 @@ EXPERIMENT_CLASS = {
     'ConceptStructuredVAE': ConceptStructuredVAEExperiment
 }
 
+def get_dataset_specific_params(cmdline_args):
+
+    if cmdline_args.dset_name == 'dsprites_correlated': 
+        return dict(correlation_strength=cmdline_args.correlation_strength)
+    else:
+        return {}
+
 def get_scalar_metrics_for_alg(cmdline_args):
     
     base_metrics = ['loss','recon', 'kld_loss']
@@ -139,8 +146,10 @@ def main(_args):
         save_every_epoch=_args.save_every_epoch
     ) 
 
+    dataset_params = get_dataset_specific_params(cmdline_args)
+
     # Instantiate main experiment class (PytorchLightning Module)
-    experiment = EXPERIMENT_CLASS[_args.alg](model, experiment_config)
+    experiment = EXPERIMENT_CLASS[_args.alg](model, experiment_config, dataset_params)
 
     trainer_params = get_trainer_params(_args, tb_logger)
     trainer = Trainer(**trainer_params)

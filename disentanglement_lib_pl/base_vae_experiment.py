@@ -17,7 +17,8 @@ class BaseVAEExperiment(pl.LightningModule):
 
     def __init__(self,
                  vae_model: nn.Module,
-                 params: dict) -> None:
+                 params: dict,
+                 dataset_params: dict) -> None:
         
         super(BaseVAEExperiment, self).__init__()
 
@@ -28,6 +29,7 @@ class BaseVAEExperiment(pl.LightningModule):
         self.visdom_on = params['visdom_on']
         self.save_dir = params['save_dir']
         self.max_epochs = params['max_epochs']
+        self.dataset_params = dataset_params
 
         #if self.visdom_on:
         #    self.visdom_visualiser = VisdomVisualiser(params)
@@ -73,6 +75,9 @@ class BaseVAEExperiment(pl.LightningModule):
         # log passed in params Once for reproducibility
         if self.current_epoch == 0:
             for param_name, param_val in self.params.items():
+                self.logger.experiment.add_text(f"Script_Params/{param_name}", str(param_val), self.current_epoch)
+            
+            for param_name, param_val in self.dataset_params.items():
                 self.logger.experiment.add_text(f"Script_Params/{param_name}", str(param_val), self.current_epoch)
 
 
@@ -196,10 +201,12 @@ class BaseVAEExperiment(pl.LightningModule):
                                             seed=self.params['seed'],
                                             image_size=self.params['image_size'],
                                             split="train",
-                                            train_pct=0.90
+                                            train_pct=0.90,
+                                            **self.dataset_params
                                             )
 
     def val_dataloader(self):
+        
         
         self.sample_loader = data_loader.get_dataloader(self.params['dataset'],
                                             self.params['datapath'],
@@ -212,7 +219,8 @@ class BaseVAEExperiment(pl.LightningModule):
                                             seed=self.params['seed'],
                                             image_size=self.params['image_size'],
                                             split="test",
-                                            train_pct=0.10
+                                            train_pct=0.10,
+                                            **self.dataset_params
                                             )
         return self.sample_loader
 

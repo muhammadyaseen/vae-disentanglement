@@ -17,9 +17,10 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
 
     def __init__(self,
                  vae_model: ConceptStructuredVAE,
-                 params: dict) -> None:
+                 params: dict,
+                 dataset_params: dict) -> None:
         
-        super(ConceptStructuredVAEExperiment, self).__init__(vae_model, params)
+        super(ConceptStructuredVAEExperiment, self).__init__(vae_model, params, dataset_params)
         
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):

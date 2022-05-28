@@ -14,9 +14,10 @@ class BVAEExperiment(BaseVAEExperiment):
 
     def __init__(self,
                  vae_model: VAE,
-                 params: dict) -> None:
+                 params: dict,
+                 dataset_params: dict) -> None:
         
-        super(BVAEExperiment, self).__init__(vae_model, params)
+        super(BVAEExperiment, self).__init__(vae_model, params, dataset_params)
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         

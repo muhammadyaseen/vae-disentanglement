@@ -50,9 +50,11 @@ TEST_DATASETS = DATASETS[0:2]  # celebA, dsprites_full
 # Architectures
 DISCRIMINATORS = ('SimpleDiscriminator', 'SimpleDiscriminatorConv64')
 TILERS = ('MultiTo2DChannel',)
-DECODERS = ('SimpleConv64', 'ShallowLinear', 'DeepLinear','SimpleFCNNDencoder')
+DECODERS = ('SimpleConv64', 'ShallowLinear', 'DeepLinear','SimpleFCNNDencoder',
+            'SimpleConv64CommAss')
 ENCODERS = ('SimpleConv64', 'SimpleGaussianConv64', 'PadlessConv64', 'PadlessGaussianConv64',
-            'ShallowGaussianLinear', 'DeepGaussianLinear','SimpleFCNNEncoder')
+            'ShallowGaussianLinear', 'DeepGaussianLinear','SimpleFCNNEncoder', 
+            'SimpleGaussianConv64CommAss')
 
 # Evaluation Metrics
 EVALUATION_METRICS = ('dci', 'factor_vae_metric', 'sap_score', 'mig', 'irs', 'beta_vae_sklearn')
