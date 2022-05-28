@@ -1,16 +1,14 @@
 #!/bin/bash
 #SBATCH --account=hai_cs_vaes
 #SBATCH --gres=gpu:4
-#SBATCH --partition=develbooster
+#SBATCH --partition=booster
 #SBATCH --nodes=1
 #SBATCH --output=hai_cs_vaes-gpu-out-and-err.%j
 #SBATCH --error=hai_cs_vaes-gpu-out-and-err.%j
 #SBATCH --job-name=hai_cs_vaes-CS-VAE
 #SBATCH --mail-user=muhammad.yaseen@cispa.de
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
-
-#FILENAME=$(basename $0)
-#FILENAME="${FILENAME%.*}"
+#SBATCH --time=05:00:00
 
 NAME="CS_VAE_celeba"
 echo "name=$NAME"
@@ -42,7 +40,7 @@ srun --account=hai_cs_vaes --gres=gpu:4 --partition=develbooster --nodes=1 \
     --w_kld=1 \
     --num_workers=48 \
     --batch_size=128 \
-    --max_epoch=5 \
+    --max_epoch=50 \
     --in_channels=3 \
     --gpus 0 1 2 3  \
     --visdom_on=False \
