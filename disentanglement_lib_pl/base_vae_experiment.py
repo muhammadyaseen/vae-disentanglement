@@ -70,6 +70,12 @@ class BaseVAEExperiment(pl.LightningModule):
         torch.set_grad_enabled(False)
         self.model.eval()
         
+        # log passed in params Once for reproducibility
+        if self.current_epoch == 0:
+            for param_name, param_val in self.params.items():
+                self.logger.experiment.add_text(f"Script_Params/{param_name}", str(param_val), self.current_epoch)
+
+
         # 1. Save avg loss in this epoch
         avg_loss = torch.stack([tso[c.TOTAL_LOSS] for tso in train_step_outputs]).mean()
         avg_kld_loss = torch.stack([tso[c.KLD_LOSS] for tso in train_step_outputs]).mean()

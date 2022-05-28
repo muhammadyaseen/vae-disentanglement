@@ -91,5 +91,8 @@ apptainer exec --nv --bind ./vae-disentanglement:/vae-disentanglement \
 apptainer exec --nv --bind $PROJECT/vae-disentanglement:/vae-disentanglement \
     ./container-file/vae-disent-v1.1-tensorboard.sif 'pip list | grep light'
 
+apptainer exec ./container-file/vae-disent-v1.1-tensorboard.sif \
+    python -c 'import time;print(time.strftime("%d %m %Y %H:%M:%S", time.localtime(time.time())))'
+
 
 
