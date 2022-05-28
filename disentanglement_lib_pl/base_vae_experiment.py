@@ -1,3 +1,4 @@
+import time
 import torch
 from torch import nn
 import pytorch_lightning as pl
@@ -26,6 +27,7 @@ class BaseVAEExperiment(pl.LightningModule):
         self.current_device = None
         self.visdom_on = params['visdom_on']
         self.save_dir = params['save_dir']
+        self.max_epochs = params['max_epochs']
 
         #if self.visdom_on:
         #    self.visdom_visualiser = VisdomVisualiser(params)
@@ -36,7 +38,7 @@ class BaseVAEExperiment(pl.LightningModule):
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
-        if batch_idx % 10 == 0:
+        if batch_idx % 100 == 0:
             print(f"Batch: {batch_idx} / {len(self.trainer.train_dataloader)}")
 
     def training_step_end(self, train_step_output):
@@ -49,12 +51,21 @@ class BaseVAEExperiment(pl.LightningModule):
         if isinstance(self.model, VAE) and self.model.controlled_capacity_increase:
             self.logger.experiment.add_scalar("C", self.model.c_current, self.global_step)
 
+    def on_train_epoch_start(self):
+        
+        timestamp = time.strftime("%d-%m-%Y %H:%M:%S", time.localtime(time.time()))
+        print(f"Epoch {self.current_epoch} / {self.max_epochs} started at {timestamp}")
+    
+    def on_train_epoch_end(self):
+        
+        timestamp = time.strftime("%d-%m-%Y %H:%M:%S", time.localtime(time.time()))
+        print(f"Epoch {self.current_epoch} / {self.max_epochs} ended at {timestamp}")
     
     def training_epoch_end(self, train_step_outputs):
         
         # TODO: figure out a way to do model / architecture specific or dataset specific 
         # logging w/o if-else jungle
-        print(f"Epoch {self.current_epoch} finished.")
+        
 
         torch.set_grad_enabled(False)
         self.model.eval()

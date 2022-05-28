@@ -130,8 +130,8 @@ class ConceptStructuredVAE(nn.Module):
         if mode == 'inference':
             z = reparametrize(bu_net_outs[0]['mu_q_hat'], bu_net_outs[0]['sigma_q_hat'])
             interm_output = {
-                    'mu_p':     torch.zeros(z.shape),
-                    'sigma_p':  torch.zeros(z.shape), # this is log_var, hence zero (e^0 = 1)
+                    'mu_p':     torch.zeros(z.shape).to(kwargs['current_device']),
+                    'sigma_p':  torch.zeros(z.shape).to(kwargs['current_device']), # this is log_var, hence zero (e^0 = 1)
                     'mu_q':     bu_net_outs[0]['mu_q_hat'],
                     'sigma_q':  bu_net_outs[0]['sigma_q_hat'],
                     'z': z 

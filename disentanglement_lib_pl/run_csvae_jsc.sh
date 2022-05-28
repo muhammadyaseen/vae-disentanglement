@@ -29,7 +29,7 @@ LOGS_DIR=$PROJECT_ROOT/train-logs
 # The path after .sif refers to the path within containers
 srun --account=hai_cs_vaes --gres=gpu:4 --partition=develbooster --nodes=1 \
     apptainer exec --nv --bind $PROJECT/vae-disentanglement:/vae-disentanglement \
-    ./container-file/vae-disent-v1.1-tensorboard.sif python /vae-disentanglement/disentanglement_lib_pl/main_csvae.py \
+    ./container-file/vae-disent-v1.1-tensorboard.sif python /vae-disentanglement/disentanglement_lib_pl/experiment_runner.py \
     --name=$NAME \
     --ckpt_dir=$LOGS_DIR \
     --expr_name=$NAME \
@@ -40,7 +40,7 @@ srun --account=hai_cs_vaes --gres=gpu:4 --partition=develbooster --nodes=1 \
     --decoder=SimpleConv64 \
     --z_dim=10 \
     --w_kld=1 \
-    --num_workers=8 \
+    --num_workers=48 \
     --batch_size=128 \
     --max_epoch=5 \
     --in_channels=3 \

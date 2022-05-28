@@ -15,7 +15,7 @@ LOGS_DIR=$PROJECT_ROOT/train-logs
 # --iterations_c=100000 \
 # --controlled_capacity_increase=True
 
-python $PROJECT_ROOT/disentanglement_lib_pl/main_csvae.py \
+python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --name=$NAME \
     --ckpt_dir=$LOGS_DIR \
     --expr_name=$NAME \
