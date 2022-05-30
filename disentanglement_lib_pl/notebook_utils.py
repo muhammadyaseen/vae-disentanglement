@@ -755,10 +755,7 @@ def estimate_responsible_dimension(pairs, vae_model, current_device):
 
 def check_correlated_dimensions(image_batch, vae_model, current_device):
     """
-    Hi, just to make sure I understood the experiment you wanted to do correctly I have written it down. 
-    Let me know if it is right.
-
-    Train a normal \beta-VAE network on the correlated data
+    Train a normal Beta-VAE network on the correlated data
     Once it has been trained, pass a batch of B examples and do the following:
 
     For each example X:
@@ -778,25 +775,49 @@ def check_correlated_dimensions(image_batch, vae_model, current_device):
 
     with torch.no_grad():
 
-        for img, _ in image_batch:
+        fwd_pass_results = vae_model.model.forward(image_batch, current_device=current_device)
+        x_recon_orig, mu_orig = fwd_pass_results['x_recon'], fwd_pass_results['mu'] 
 
-            fwd_pass_results = vae_model.model.forward(img, current_device=current_device)
-            x_recon, mu_orig = fwd_pass_results['x_recon'], fwd_pass_results['mu'] 
-
-            # for each example X
-            # perturb unit l=1 to L 
-            mu_perturbed = [_perturb_mu_in_given_dim(mu_orig, dim_to_perturb=i) for i in mu_orig.shape[1]]
+        # for each example X, perturb unit l=1 to L 
+        for mu in mu_orig:
+            # (dim(mu), mu)
+            mus_perturbed = _generate_perturbed_copies(mu)
+            
             # generate and image from these perturbed means
-            x_recons_perturbed = [vae_model.model.decode(mu_perturbed_i, current_device=current_device) for mu_perturbed_i in mu_perturbed]
+            # (dim(mu), X.shape)
+            x_recons_perturbed = vae_model.model.decode(mus_perturbed, current_device=current_device)
             # pass images again and compare with mu_perturbed
-            mus_compare = [vae_model.model.encode(x_recons_perturbed_i, current_device=current_device)[0] for x_recons_perturbed_i in x_recons_perturbed]
+            # (dim(mu), mu)
+            mus_perturbed_recon, _ = vae_model.model.encode(x_recons_perturbed, current_device=current_device)
 
+            sq_diff = (mus_perturbed_recon - mus_perturbed).pow(2)
 
-            # Let's say we perturbed dim=n in mu_perturbed, now we have to check how many dims in corresponding `mus_compare` are different
-            # we can take a difference an see ?
+        # Let's say we perturbed dim=n in mu_perturbed, now we have to check how many dims in corresponding `mus_compare` are different
+        # we can take a difference an see ?
 
-def _perturb_mu_in_given_dim(vector_batch, dim_to_perturb):
-    pass
+def _generate_perturbed_copies(vector, dims_to_perturb=None, limit=3, inter=2/3, mode = 'relative'):
+    """
+    Assumes that vector is of shape (vector_dim, )
+    Returns (vector_dim, vector_dim) shaped vector where in (i, vector_dim) 
+    """
+
+    perturbed_copies = []
+
+    for d in range(vector.shape[0]):
+        if dims_to_perturb is not None and d not in dims_to_perturb:
+                continue
+        
+        vector_d = vector.clone()
+        
+        if mode == 'relative':
+            lim = vector_d[d] / 2
+            min_val, max_val = vector_d[d] - lim, vector_d[d] + lim + 0.1
+        
+        vector_d[d] = max_val
+
+        perturbed_copies.append(vector_d)
+
+    return torch.stack(perturbed_copies, dim=0)
 
 
 def sample_latent_pairs_differing_in_k_factors(diff_factor_indices, npz_dataset, how_many_pairs=1):
