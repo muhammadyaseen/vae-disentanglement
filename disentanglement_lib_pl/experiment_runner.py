@@ -92,7 +92,7 @@ def get_trainer_params(cmdline_args, logger):
             default_root_dir=logger.save_dir,
             min_epochs=1,
             logger=logger,
-            limit_train_batches=0.05,
+            limit_train_batches=1.0,
             limit_val_batches=0.05,
             num_sanity_val_steps=2,
             callbacks = None,
@@ -104,7 +104,9 @@ def get_trainer_params(cmdline_args, logger):
     import pytorch_lightning as pl
     if pl.__version__ == '1.6.3': # Container/Cluster
         base_trainer_params.update({
-            'strategy': 'dp',
+            'strategy': 'ddp',
+            'accelerator': 'gpu',
+            'devices': 4,
             'enable_progress_bar': False,
         })
     
