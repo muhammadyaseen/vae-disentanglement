@@ -30,12 +30,14 @@ class BaseVAEExperiment(pl.LightningModule):
         self.save_dir = params['save_dir']
         self.max_epochs = params['max_epochs']
         self.dataset_params = dataset_params
-
+        
+        print(f"Experiment class: {self.device}")
+        print(f"Model class: {next(self.model.parameters()).device}")
+        
         #if self.visdom_on:
         #    self.visdom_visualiser = VisdomVisualiser(params)
 
     def forward(self, x_input, **kwargs):
-        
         return self.model.forward(x_input, **kwargs)
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
@@ -44,7 +46,7 @@ class BaseVAEExperiment(pl.LightningModule):
             print(f"Batch: {batch_idx} / {len(self.trainer.train_dataloader)}")
 
     def training_step_end(self, train_step_output):
-             
+
         # This aggregation is required when we use multiple GPUs
         train_step_output[c.TOTAL_LOSS] = train_step_output[c.TOTAL_LOSS].mean()
         train_step_output[c.RECON] = train_step_output[c.RECON].mean()
@@ -67,8 +69,9 @@ class BaseVAEExperiment(pl.LightningModule):
         
         # TODO: figure out a way to do model / architecture specific or dataset specific 
         # logging w/o if-else jungle
+        timestamp = time.strftime("%d-%m-%Y %H:%M:%S", time.localtime(time.time()))
+        print(f"training_epoch_end() called for epoch: {self.current_epoch} / {self.max_epochs} at {timestamp}")     
         
-
         torch.set_grad_enabled(False)
         self.model.eval()
         

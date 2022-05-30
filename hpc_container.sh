@@ -34,20 +34,10 @@ srun -N1 --partition=develbooster --account=hai_cs_vaes --gres=gpu:1 $SCRATCH/co
 salloc --partition=develbooster --gres=gpu:1 --account=hai_cs_vaes --time=00:30:00
 srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --nv $SCRATCH/container/vae-disent.oci
 
-srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --network-args "portmap=8080:8080/tcp" --nv ../container-file/vae-disent-v1.1-tensorboard.sif 
-srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --nv ../container-file/vae-disent-v1.1-tensorboard.sif 
-srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --network none \
-    --network-args "portmap=8080:8080" \
-    --nv ../container-file/vae-disent-v1.1-tensorboard.sif 
-
-srun -N1 --partition=develbooster --account=hai_cs_vaes --pty  \
-    apptainer exec --bind ./vae-disentanglement:/vae-disentanglement \
-    ./container-file/vae-disent-v1.1-tensorboard.sif python /vae-disentanglement/disentanglement_lib_pl/visdomtest.py --visdom_port 8097 --visdom_host localhost 
-
-srun -N1 --partition=develbooster --account=hai_cs_vaes --pty  \
-    apptainer exec --bind ./vae-disentanglement:/vae-disentanglement \
-    ./container-file/vae-disent-v1.1-tensorboard.sif bash /vae-disentanglement/disentanglement_lib_pl/run_visdom_test.sh
-
+# https://apptainer.org/docs/user/main/cli/apptainer_shell.html
+# To get a shell inside the container
+srun -N1 --partition=develbooster --account=hai_cs_vaes --pty \
+    apptainer shell --nv ../container-file/vae-disent-v1.1-tensorboard.sif 
 
 srun -N1 --partition=develbooster --account=hai_cs_vaes --pty  \
     apptainer shell --nv --bind ./vae-disentanglement:/vae-disentanglement \
@@ -57,15 +47,6 @@ srun -N1 --partition=develbooster --account=hai_cs_vaes --pty  \
 srun --nodes=1 --gres=gpu:2 --partition=develbooster --account=hai_cs_vaes \
     apptainer exec --nv --bind ./:/vae-disentanglement \
     ../container-file/vae-disent-v1.1-tensorboard.sif bash /vae-disentanglement/disentanglement_lib_pl/run_bvae_jsc.sh
-
-
-#sbatch    
-# https://apptainer.org/docs/user/main/cli/apptainer_shell.html
-
-#get correlated data set up to load
-#read up experimental settings and params from paper
-#figure out how to use gpus in the container env
-#figure out the slurm dir structure for placing code and putting results.
 
 # Running visdom
 module load Python
@@ -90,9 +71,6 @@ apptainer exec --nv --bind ./vae-disentanglement:/vae-disentanglement \
 
 apptainer exec --nv --bind $PROJECT/vae-disentanglement:/vae-disentanglement \
     ./container-file/vae-disent-v1.1-tensorboard.sif 'pip list | grep light'
-
-apptainer exec ./container-file/vae-disent-v1.1-tensorboard.sif \
-    python -c 'import time;print(time.strftime("%d %m %Y %H:%M:%S", time.localtime(time.time())))'
 
 
 

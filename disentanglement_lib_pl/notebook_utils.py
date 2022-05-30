@@ -12,10 +12,12 @@ import torchvision.transforms.functional as T
 from torchvision import transforms
 from torch.utils.data import DataLoader
 
-from vae_experiment import BaseVAEExperiment
+from base_vae_experiment import BaseVAEExperiment
+from bvae_experiment import BVAEExperiment
 from laddervae_experiment import LadderVAEExperiment
+
 from common.data_loader import CustomImageFolder
-from common.known_datasets import DSpritesDataset, ThreeShapesDataset, ContinumDataset 
+from common.known_datasets import DSpritesDataset, CorrelatedDSpritesDataset, ThreeShapesDataset, ContinumDataset 
 
 ModelParams = namedtuple('ModelParams', ["z_dim", "l_dim", "num_labels" , "in_channels", 
                                         "image_size", "batch_size", "w_recon", "w_kld", 
@@ -161,7 +163,7 @@ def get_configured_dataset(dset_name):
     if dset_name == 'dsprites_full':
         dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor())
     elif dset_name == 'dsprites_correlated':
-        dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor())
+        dataset = CorrelatedDSpritesDataset(correlation_strength=0.2, split="train", seed=123)
     elif dset_name == 'dsprites_colored':
         dataset = DSpritesDataset(root="../datasets/dsprites/", split="train", transforms=transforms.ToTensor(), 
         correlated=True, colored=True)
@@ -193,7 +195,7 @@ def load_vae_model(algo_name, algo_type, checkpoint_path, curr_dev,
     vae_experiment = None
 
     if algo_type == 'bvae':
-        vae_experiment = BaseVAEExperiment.load_from_checkpoint(
+        vae_experiment = BVAEExperiment.load_from_checkpoint(
             checkpoint_path,
             map_location=curr_dev,
             vae_model=vae_model, 
@@ -539,7 +541,7 @@ def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_
         z_dim, 6, 0, in_channels, 64, batch_size, 1.0, beta,
         False, 0, 0,
         0, 0, 0, 0, 0,
-        ['SimpleGaussianConv64'],['SimpleConv64'], None, 'BetaVAE'
+        ['SimpleGaussianConv64CommAss'],['SimpleConv64CommAss'], None, 'BetaVAE'
     )
     experiment_config = dict(
             in_channels=in_channels,
@@ -750,6 +752,52 @@ def estimate_responsible_dimension(pairs, vae_model, current_device):
         dim_wise_variance = diff_vecs.pow(2).sum(0)/(len(pairs)-1)
         most_varied_dim = torch.argmax(dim_wise_variance)
         return diff_vecs.cpu().numpy(), dim_wise_variance.cpu().numpy(), most_varied_dim.item()
+
+def check_correlated_dimensions(image_batch, vae_model, current_device):
+    """
+    Hi, just to make sure I understood the experiment you wanted to do correctly I have written it down. 
+    Let me know if it is right.
+
+    Train a normal \beta-VAE network on the correlated data
+    Once it has been trained, pass a batch of B examples and do the following:
+
+    For each example X:
+        Pass it thru network to get latent activations then
+        For each latent dim l from 1 to L do:
+            perturb unit l which gives an image X_l
+            pass X_l again thru the network and record the perturbed mean \mu_l
+
+    For each dimension see if passing the image again leads to a change in any dimension other than the perturbed one (correlation)
+
+    Ideally, we expect only the unit associated with the originally perturned dimension to change.
+
+    If changing unit m consistently results in changes in unit n then we conclude that those two dimensions are correlated.
+
+    We can then introduce a layer before that and connect these two dims to a unit in prev layer.
+    """
+
+    with torch.no_grad():
+
+        for img, _ in image_batch:
+
+            fwd_pass_results = vae_model.model.forward(img, current_device=current_device)
+            x_recon, mu_orig = fwd_pass_results['x_recon'], fwd_pass_results['mu'] 
+
+            # for each example X
+            # perturb unit l=1 to L 
+            mu_perturbed = [_perturb_mu_in_given_dim(mu_orig, dim_to_perturb=i) for i in mu_orig.shape[1]]
+            # generate and image from these perturbed means
+            x_recons_perturbed = [vae_model.model.decode(mu_perturbed_i, current_device=current_device) for mu_perturbed_i in mu_perturbed]
+            # pass images again and compare with mu_perturbed
+            mus_compare = [vae_model.model.encode(x_recons_perturbed_i, current_device=current_device)[0] for x_recons_perturbed_i in x_recons_perturbed]
+
+
+            # Let's say we perturbed dim=n in mu_perturbed, now we have to check how many dims in corresponding `mus_compare` are different
+            # we can take a difference an see ?
+
+def _perturb_mu_in_given_dim(vector_batch, dim_to_perturb):
+    pass
+
 
 def sample_latent_pairs_differing_in_k_factors(diff_factor_indices, npz_dataset, how_many_pairs=1):
     

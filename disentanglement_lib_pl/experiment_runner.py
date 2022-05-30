@@ -1,6 +1,7 @@
 import sys
 import torch
 import os
+import pdb
 
 from common.utils import setup_logging, initialize_seeds, set_environment_variables
 from common.arguments import get_args
@@ -101,13 +102,13 @@ def get_trainer_params(cmdline_args, logger):
         
     # version specific params (local vs. cluster)
     import pytorch_lightning as pl
-    if pl.__version__ == '1.6.3': # Local
+    if pl.__version__ == '1.6.3': # Container/Cluster
         base_trainer_params.update({
             'strategy': 'dp',
             'enable_progress_bar': False,
         })
     
-    if pl.__version__ == '1.4.4': # Container/Cluster
+    if pl.__version__ == '1.4.4': # Local
         base_trainer_params.update({
             'accelerator': 'dp',
             'progress_bar_refresh_rate': 0
@@ -134,7 +135,7 @@ def main(_args):
 
 
     # Get expr metadata and hyperparams etc
-    experiment_config = get_experiment_config_for_alg(cmdline_args)
+    experiment_config = get_experiment_config_for_alg(_args)
 
     experiment_config['visual_args'] = dict(
         dataset = _args.dset_name,
@@ -146,10 +147,13 @@ def main(_args):
         save_every_epoch=_args.save_every_epoch
     ) 
 
-    dataset_params = get_dataset_specific_params(cmdline_args)
+    dataset_params = get_dataset_specific_params(_args)
 
     # Instantiate main experiment class (PytorchLightning Module)
     experiment = EXPERIMENT_CLASS[_args.alg](model, experiment_config, dataset_params)
+
+    
+    #pdb.set_trace()
 
     trainer_params = get_trainer_params(_args, tb_logger)
     trainer = Trainer(**trainer_params)

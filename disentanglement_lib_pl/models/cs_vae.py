@@ -130,8 +130,8 @@ class ConceptStructuredVAE(nn.Module):
         if mode == 'inference':
             z = reparametrize(bu_net_outs[0]['mu_q_hat'], bu_net_outs[0]['sigma_q_hat'])
             interm_output = {
-                    'mu_p':     torch.zeros(z.shape).to(kwargs['current_device']),
-                    'sigma_p':  torch.zeros(z.shape).to(kwargs['current_device']), # this is log_var, hence zero (e^0 = 1)
+                    'mu_p':     torch.zeros(z.shape, device=kwargs['current_device']),
+                    'sigma_p':  torch.zeros(z.shape, device=kwargs['current_device']), # this is log_var, hence zero (e^0 = 1)
                     'mu_q':     bu_net_outs[0]['mu_q_hat'],
                     'sigma_q':  bu_net_outs[0]['sigma_q_hat'],
                     'z': z 
@@ -139,8 +139,7 @@ class ConceptStructuredVAE(nn.Module):
             td_net_outs.append(interm_output)
         
         if mode == 'sample':
-            z = torch.randn(kwargs['num_samples'], self.root_dim)
-            z = z.to(kwargs['current_device'])
+            z = torch.randn(kwargs['num_samples'], self.root_dim, device=kwargs['current_device'])
             interm_output = {'mu_p': None, 'sigma_p': None, 'z': z }
             td_net_outs.append(interm_output)
 
