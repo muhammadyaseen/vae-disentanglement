@@ -104,9 +104,9 @@ def get_trainer_params(cmdline_args, logger):
     import pytorch_lightning as pl
     if pl.__version__ == '1.6.3': # Container/Cluster
         base_trainer_params.update({
-            'strategy': 'ddp',
+            'strategy': 'dp',
             'accelerator': 'gpu',
-            'devices': 4,
+            'devices': [0, 1, 2, 3],
             'enable_progress_bar': False,
         })
     
