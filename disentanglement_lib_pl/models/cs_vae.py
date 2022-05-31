@@ -56,8 +56,8 @@ class ConceptStructuredVAE(nn.Module):
         self.top_down_networks = self._init_top_down_networks()
         nodes_in_last_dag_layer = len(self.dag_layer_nodes[-1])
         total_dag_nodes = len(self.adjacency_matrix)
-        #self.decoder = decoder(nodes_in_last_dag_layer, self.num_channels, self.image_size)
-        self.decoder = decoder(total_dag_nodes - 1 + self.root_dim, self.num_channels, self.image_size)
+        decoder_inp = total_dag_nodes - 1 + self.root_dim if len(self.dag_layer_nodes[0]) == 1 else total_dag_nodes
+        self.decoder = decoder(decoder_inp, self.num_channels, self.image_size)
 
         print("Model Initialized")
 
@@ -79,9 +79,17 @@ class ConceptStructuredVAE(nn.Module):
             # a single unit so have to do special here
             elif d == 0:
                 inp_dim = len(self.dag_layer_nodes[d+1]) * 2
-                bu_nets.append(
-                    encoders.SimpleFCNNEncoder(self.root_dim * 2, inp_dim, [inp_dim * 2])
-                )
+                out_dim = len(self.dag_layer_nodes[d]) * 2
+                # When we only have a single root node (e.g from output for chow-lin)
+                if len(self.dag_layer_nodes[0]) == 1:
+                    bu_nets.append(
+                        encoders.SimpleFCNNEncoder(self.root_dim * 2, inp_dim, [inp_dim * 2])
+                    )
+                # When we have multiple nodes in top layer (e.g from output for exact)
+                else:
+                    bu_nets.append(
+                        encoders.SimpleFCNNEncoder(out_dim, inp_dim, [inp_dim * 2])
+                    )
             
             # all the other layers in DAG
             else:
@@ -105,7 +113,7 @@ class ConceptStructuredVAE(nn.Module):
                                     children_list = self.dag_layer_nodes[L+1], 
                                     adjacency_matrix = self.adjacency_matrix, 
                                     interm_unit_dim = self.interm_unit_dim,
-                                    parent_is_root = L == 0,
+                                    parent_is_root = L == 0 and len(self.dag_layer_nodes[0]) == 1,
                                     root_dim=self.root_dim
                                 )
             )
