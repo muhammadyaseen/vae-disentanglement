@@ -271,7 +271,7 @@ class DAGInteractionLayer(nn.Module):
         # TODO: maybe we should allow this flexibility for every layer?
         # i.e. allow multiple units to represent a 'concept' / DAG node
 
-        # The DAG we get has 1 top-level / root node. This will result in low capacity / bottle neck at 
+        # If we get a DAG from chow-lin algo it has 1 top-level / root node. This will result in low capacity / bottle neck at 
         # the start of latent network, so instead of representing that root node with a single unit we can
         # instead use multiple units 
         if self.parent_is_root:
