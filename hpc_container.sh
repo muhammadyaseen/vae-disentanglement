@@ -73,4 +73,11 @@ apptainer exec --nv --bind $PROJECT/vae-disentanglement:/vae-disentanglement \
     ./container-file/vae-disent-v1.1-tensorboard.sif 'pip list | grep light'
 
 
+# Moving files via scp
+# First move to laptop
+scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_cs_vaes/vae-disentanglement/<etc> ./<etc>
+# Then to Cispa
+scp <etc> c01muya@gpu03:/home/c01muya/vae-disentanglement/train-logs/jscmodel
+
+
 

@@ -152,18 +152,18 @@ class VAE(nn.Module):
         return output_losses
 
     def encode(self, x, **kwargs):
-        return self.encoder(x, **kwargs)
+        return self.encoder(x)
 
     def decode(self, z, **kwargs):
-        return torch.sigmoid(self.decoder(z, **kwargs))
+        return torch.sigmoid(self.decoder(z))
 
     def forward(self, x_true, **kwargs):
         
         fwd_pass_results = dict()
 
-        mu, logvar = self.encode(x=x_true)
+        mu, logvar = self.encode(x=x_true, **kwargs)
         z = reparametrize(mu, logvar)
-        x_recon = self.decode(z=z)
+        x_recon = self.decode(z=z, **kwargs)
         
         fwd_pass_results.update({
             'x_recon': x_recon,

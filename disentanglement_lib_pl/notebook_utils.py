@@ -19,11 +19,15 @@ from laddervae_experiment import LadderVAEExperiment
 from common.data_loader import CustomImageFolder
 from common.known_datasets import DSpritesDataset, CorrelatedDSpritesDataset, ThreeShapesDataset, ContinumDataset 
 
+from experiment_runner import get_dataset_specific_params
+
 ModelParams = namedtuple('ModelParams', ["z_dim", "l_dim", "num_labels" , "in_channels", 
                                         "image_size", "batch_size", "w_recon", "w_kld", 
                                          "controlled_capacity_increase", "max_c", "iterations_c",
                                         "w_tc", "w_infovae", "w_dipvae", "lambda_od", "lambda_d_factor",
                                         "encoder", "decoder", "loss_terms", "alg", "l_zero_reg"])
+
+CmdLineArgsProxy = namedtuple('DatasetParams', ["dset_name", "correlation_strength"])
 
 """
 Start: dsprites notebook functions
@@ -189,6 +193,8 @@ def load_vae_model(algo_name, algo_type, checkpoint_path, curr_dev,
 
     import models
     
+    cmdline_args = CmdLineArgsProxy("dsprites_correlated", 0.2)
+    dataset_params = get_dataset_specific_params(cmdline_args)
     vae_model_class = getattr(models, algo_name)
     vae_model = vae_model_class(model_params)
         
@@ -199,14 +205,16 @@ def load_vae_model(algo_name, algo_type, checkpoint_path, curr_dev,
             checkpoint_path,
             map_location=curr_dev,
             vae_model=vae_model, 
-            params=exp_params)
+            params=exp_params,
+            dataset_params=dataset_params)
     
     if algo_type == 'laddervae':
         vae_experiment = LadderVAEExperiment.load_from_checkpoint(
             checkpoint_path,
             map_location=curr_dev,
             vae_model=vae_model, 
-            params=exp_params)
+            params=exp_params,
+            dataset_params=dataset_params)
 
     vae_experiment = vae_experiment.to(curr_dev)
 
@@ -534,14 +542,14 @@ def show_traversal_images(vae_model, anchor_image, limit, interp_step, dim=-1, m
 def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_dim , beta, 
                                             checkpoint_path, current_device, 
                                             activation_type='without_labels', seed=123,  batches=None,
-                                            in_channels=1, **kwargs
+                                            in_channels=1, l_zero_reg=False, **kwargs
     ):
 
     bvae_model_params = ModelParams(
-        z_dim, 6, 0, in_channels, 64, batch_size, 1.0, beta,
+        [z_dim], 6, 0, in_channels, 64, batch_size, 1.0, beta,
         False, 0, 0,
         0, 0, 0, 0, 0,
-        ['SimpleGaussianConv64CommAss'],['SimpleConv64CommAss'], None, 'BetaVAE'
+        ['SimpleGaussianConv64CommAss'],['SimpleConv64CommAss'], None, 'BetaVAE', l_zero_reg
     )
     experiment_config = dict(
             in_channels=in_channels,
@@ -557,11 +565,14 @@ def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_
             seed=seed,
             evaluation_metrics=None,
             visdom_on=False,
-            save_dir=None
+            save_dir=None,
+            max_epochs=1,
+            l_zero_reg=l_zero_reg
     )
 
     model_for_dset = load_vae_model(
-        algo_name='BetaVAE', 
+        algo_name='BetaVAE',
+        algo_type='bvae', 
         checkpoint_path=checkpoint_path, 
         curr_dev=current_device,
         model_params=bvae_model_params,
@@ -891,6 +902,7 @@ def laddervae_load_model_and_data_and_get_activations(dset_name, dset_path, batc
             evaluation_metrics=None,
             visdom_on=False,
             save_dir=None,
+            max_epochs=1,
             l_zero_reg=kwargs['l_zero_reg']
     )
 
