@@ -86,13 +86,16 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         T = len(self.model.top_down_networks)
 
         for t, td_net in enumerate(self.model.top_down_networks):
-            print(f"Z{1+T-t}-to-Z{T-t}")
+            #print(f"Z{1+T-t}-to-Z{T-t}")
 
             full_mat = torchvision.utils.make_grid(td_net.W_input_to_interm)
-            print(td_net.W_input_to_interm.shape, full_mat.shape)
+            #print(td_net.W_input_to_interm.shape, full_mat.shape)
             masked_mat = torchvision.utils.make_grid(td_net.W_input_to_interm.mul(td_net.mask_input_to_interm))
-            print(td_net.mask_input_to_interm.shape, masked_mat.shape)
+            #print(td_net.mask_input_to_interm.shape, masked_mat.shape)
             
-            full_and_masked_side_by_side = torch.cat([full_mat, masked_mat], dim = 2) 
+            full_and_masked_side_by_side = torch.cat([full_mat, masked_mat], dim = 1) 
             self.logger.experiment.add_image(f"Weights/Z{1+T-t}-to-Z{T-t}", full_and_masked_side_by_side, self.current_epoch)
+            
+            #self.logger.experiment.add_image(f"Weights/Z{1+T-t}-to-Z{T-t}", full_mat, self.current_epoch)
+            #self.logger.experiment.add_image(f"WeightsMasked/Z{1+T-t}-to-Z{T-t}", masked_mat, self.current_epoch)
 

@@ -8,7 +8,7 @@ echo "name=$NAME"
 PROJECT_ROOT=./vae-disentanglement
 
 export DISENTANGLEMENT_LIB_DATA=$PROJECT_ROOT/datasets/
-DATASET_NAME=celeba
+DATASET_NAME=dsprites_correlated
 LOGS_DIR=$PROJECT_ROOT/train-logs
 
 # --max_c=25 \
@@ -29,9 +29,10 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --num_workers=1 \
     --batch_size=64 \
     --max_epoch=3 \
-    --in_channels=3 \
+    --in_channels=1 \
     --gpus 0  \
     --visdom_on=False \
     --lr_G=0.0001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
-    --interm_unit_dim=2
+    --interm_unit_dim=2 \
+    --correlation_strength=0.2
