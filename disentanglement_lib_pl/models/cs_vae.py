@@ -147,7 +147,8 @@ class ConceptStructuredVAE(nn.Module):
             td_net_outs.append(interm_output)
         
         if mode == 'sample':
-            z = torch.randn(kwargs['num_samples'], self.root_dim, device=kwargs['current_device'])
+            top_layer_dim = self.root_dim if len(self.dag_layer_nodes[0]) == 1 else len(self.dag_layer_nodes[0]) 
+            z = torch.randn(kwargs['num_samples'], top_layer_dim, device=kwargs['current_device'])
             interm_output = {'mu_p': None, 'sigma_p': None, 'z': z }
             td_net_outs.append(interm_output)
 

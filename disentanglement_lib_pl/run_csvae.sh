@@ -2,7 +2,7 @@
 
 FILENAME=$(basename $0)
 FILENAME="${FILENAME%.*}"
-NAME="CS_VAE_celeba"
+NAME="CS_VAE_tbtest"
 echo "name=$NAME"
 
 PROJECT_ROOT=./vae-disentanglement

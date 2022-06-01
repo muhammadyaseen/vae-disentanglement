@@ -149,7 +149,8 @@ class DAGInteractionLayer(nn.Module):
         # ---------------------#
         # Learnable Parameters #
         # -------------------- #
-        self.W_input_to_interm = nn.Parameter(torch.Tensor(self.in_features, self.interm_unit_dim * self.out_features))
+        self.W_input_to_interm = nn.Parameter(torch.Tensor(self.root_dim if self.parent_is_root else self.in_features, 
+                                                            self.interm_unit_dim * self.out_features))
         #self.W_interm_to_output = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))
         self.W_interm_to_output_mu = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))
         self.W_interm_to_output_sigma = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))

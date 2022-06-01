@@ -1,17 +1,9 @@
 
-from numpy.lib.function_base import select
 import torch
-import pytorch_lightning as pl
-import torchvision.utils as vutils
-
-from torch import optim
-from torchvision import transforms
+import torchvision
 from base_vae_experiment import BaseVAEExperiment
 
 from models.cs_vae import ConceptStructuredVAE
-from common import constants as c
-from common import data_loader
-from evaluation import evaluation_utils
 
 class ConceptStructuredVAEExperiment(BaseVAEExperiment):
 
@@ -54,40 +46,53 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         torch.set_grad_enabled(False)
         self.model.eval()
 
-        # TODO: need to visualize CS - VAE specific stuff here
+        # Add KLD Loss for every layer
+        self._log_kld_loss_per_layer(train_step_outputs)
+
+        # Visualize Components of mean and sigma vector for every layer
+        self._log_mu_sigma_per_layer(train_step_outputs)
+
+        # Visualize per layer weights
+        self._log_per_layer_weights(train_step_outputs)
+
+        torch.set_grad_enabled(True)
+        self.model.train()
+
+    def _log_kld_loss_per_layer(self, train_step_outputs):
+        
         all_loss_keys = train_step_outputs[0].keys()
 
-        # Add KLD Loss for every layer
         per_layer_kld_keys = [key for key in all_loss_keys if 'KLD_z_' in key]
+        
         for kld_loss_key in per_layer_kld_keys:
             kld_loss = torch.stack([tso[kld_loss_key] for tso in train_step_outputs]).mean()
             self.logger.experiment.add_scalar(f"KLD_Per_Layer/{kld_loss_key}", kld_loss, self.current_epoch)
 
-        # TODO: find out a way to cleanly visualize mu and logvar of multiple layers        
-        # Visualize Components of mean and sigma vector for every layer
+    def _log_mu_sigma_per_layer(self, train_step_outputs):
+        """
+        only logging mu for now
+        """
         all_td_net_outs = [tso['td_net_outs'] for tso in train_step_outputs]
         td_net_count = len(all_td_net_outs[0])
         
         for t in range(td_net_count):
-            # get mu and sigma of t-th layer
-            #mus
             mus = torch.cat([tdno[t]['mu_q'] for tdno in all_td_net_outs], dim=0).mean(0).tolist()
             mu_dict = {f"mu_q_layer_{t}/component_{i}": component_val for i, component_val in enumerate(mus)}            
             for k , v in mu_dict.items():
                 self.logger.experiment.add_scalar(k, v, self.current_epoch)
 
-            #sigmas = torch.cat([tdno[t]['sigma_q'] for tdno in all_td_net_outs], dim=0).mean(0).tolist()
-            #sigma_dict = {f"sigma_q_{t}_[{i}]": component_val for i, component_val in enumerate(sigmas)}
-            #self.logger.experiment.add_scalars(f"logvar_{t} components", sigma_dict, self.current_epoch)
-
-        #if self.current_epoch == 0:
-        #    print(tags)
-            # layout = {
-            #     'Layer0': {'mu_q_0': ['Multiline', tags[0]]}, 
-            #     'Layer1': {'mu_q_1': ['Multiline', tags[1]]}
-            # }
-            # self.logger.experiment.add_custom_scalars(layout)
+    def _log_per_layer_weights(self, train_step_outputs):
         
-        torch.set_grad_enabled(True)
-        self.model.train()
+        T = len(self.model.top_down_networks)
+
+        for t, td_net in enumerate(self.model.top_down_networks):
+            print(f"Z{1+T-t}-to-Z{T-t}")
+
+            full_mat = torchvision.utils.make_grid(td_net.W_input_to_interm)
+            print(td_net.W_input_to_interm.shape, full_mat.shape)
+            masked_mat = torchvision.utils.make_grid(td_net.W_input_to_interm.mul(td_net.mask_input_to_interm))
+            print(td_net.mask_input_to_interm.shape, masked_mat.shape)
+            
+            full_and_masked_side_by_side = torch.cat([full_mat, masked_mat], dim = 2) 
+            self.logger.experiment.add_image(f"Weights/Z{1+T-t}-to-Z{T-t}", full_and_masked_side_by_side, self.current_epoch)
 
