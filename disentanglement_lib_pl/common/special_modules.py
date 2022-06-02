@@ -133,10 +133,14 @@ class DAGInteractionLayer(nn.Module):
 
         super(DAGInteractionLayer, self).__init__()
 
-        self.in_features, self.out_features = len(parents_list), len(children_list)
+        self.parent_is_single_root_node = parent_is_root
+        self.root_dim = root_dim if self.parent_is_single_root_node else None
+
+        self.in_features = len(parents_list) if not self.parent_is_single_root_node else self.root_dim
+        self.out_features = len(children_list)
+
         self._parents, self._children = parents_list, children_list
-        self.parent_is_root = parent_is_root
-        self.root_dim = root_dim if self.parent_is_root else None
+        
 
         assert self.in_features > 0, f"Number of parents should be > 0, Given: {self.in_features}"
         assert self.out_features > 0, f"Number of children should be > 0, Given: {self.out_features}"
@@ -149,16 +153,13 @@ class DAGInteractionLayer(nn.Module):
         # ---------------------#
         # Learnable Parameters #
         # -------------------- #
-        self.W_input_to_interm = nn.Parameter(torch.Tensor(self.root_dim if self.parent_is_root else self.in_features, 
-                                                            self.interm_unit_dim * self.out_features))
-        #self.W_interm_to_output = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))
+        self.W_input_to_interm = nn.Parameter(torch.Tensor(self.in_features, self.interm_unit_dim * self.out_features))
         self.W_interm_to_output_mu = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))
         self.W_interm_to_output_sigma = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))
 
         if self.use_bias:
             # we will need mask on bias as well 
             self.B_input_to_interm = nn.Parameter(torch.Tensor(interm_unit_dim * self.out_features))
-            #self.B_interm_to_output = nn.Parameter(torch.Tensor(self.out_features))
             self.B_interm_to_output_mu = nn.Parameter(torch.Tensor(self.out_features))
             self.B_interm_to_output_sigma = nn.Parameter(torch.Tensor(self.out_features))
         
@@ -275,7 +276,7 @@ class DAGInteractionLayer(nn.Module):
         # If we get a DAG from chow-lin algo it has 1 top-level / root node. This will result in low capacity / bottle neck at 
         # the start of latent network, so instead of representing that root node with a single unit we can
         # instead use multiple units 
-        if self.parent_is_root:
+        if self.parent_is_single_root_node:
             C = len(self._children)
             return torch.from_numpy(np.ones(shape=(self.root_dim, C * self.interm_unit_dim), dtype=np.float32))
         
@@ -289,17 +290,12 @@ class DAGInteractionLayer(nn.Module):
    
     def __repr__(self):
 
-        input_dim = self.in_features if not self.parent_is_root else self.root_dim
-
-        s = ('{name} ({input_dim} -> {interm_unit_dim} * {out_features} -> {out_features}, ' 
-        'parents: {_parents}, children: {_children}, root: {parent_is_root} ')
-
-        #'mask_input_to_interm = {mask_input_to_interm}, '
-        #'mask_interm_to_output = {mask_interm_to_output}, ')
+        s = ('{name} ({in_features} -> {interm_unit_dim} * {out_features} -> {out_features}, ' 
+        'parents: {_parents}, children: {_children}, root: {parent_is_single_root_node} ')
 
         if not self.use_bias:
             s += ', bias=False'
         
         s += ')'
         
-        return s.format(name=self.__class__.__name__, input_dim=input_dim, **self.__dict__)
+        return s.format(name=self.__class__.__name__, **self.__dict__)

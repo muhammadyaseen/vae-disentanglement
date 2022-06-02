@@ -129,6 +129,9 @@ def main(_args):
     model_cl = getattr(models, _args.alg)
     model = model_cl(_args)
    
+    print("Model Specification")
+    print(model)
+    
     # load checkpoint
     if _args.ckpt_load:
         model.load_checkpoint(_args.ckpt_load, 

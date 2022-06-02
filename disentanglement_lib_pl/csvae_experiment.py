@@ -73,7 +73,7 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         only logging mu for now
         """
         all_td_net_outs = [tso['td_net_outs'] for tso in train_step_outputs]
-        td_net_count = len(all_td_net_outs[0])
+        td_net_count = len(self.model.top_down_networks)
         
         for t in range(td_net_count):
             mus = torch.cat([tdno[t]['mu_q'] for tdno in all_td_net_outs], dim=0).mean(0).tolist()
