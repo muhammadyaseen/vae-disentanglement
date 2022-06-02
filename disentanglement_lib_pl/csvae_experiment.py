@@ -2,8 +2,11 @@
 import torch
 import torchvision
 from base_vae_experiment import BaseVAEExperiment
+import matplotlib.pyplot as plt
+from matplotlib import cm as mpl_colormaps
 
 from models.cs_vae import ConceptStructuredVAE
+from common.utils import CenteredNorm
 
 class ConceptStructuredVAEExperiment(BaseVAEExperiment):
 
@@ -88,14 +91,17 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         for t, td_net in enumerate(self.model.top_down_networks):
             #print(f"Z{1+T-t}-to-Z{T-t}")
 
-            full_mat = torchvision.utils.make_grid(td_net.W_input_to_interm)
-            #print(td_net.W_input_to_interm.shape, full_mat.shape)
-            masked_mat = torchvision.utils.make_grid(td_net.W_input_to_interm.mul(td_net.mask_input_to_interm))
-            #print(td_net.mask_input_to_interm.shape, masked_mat.shape)
+            #full_mat = torchvision.utils.make_grid(td_net.W_input_to_interm)
+            #masked_mat = torchvision.utils.make_grid(td_net.W_input_to_interm.mul(td_net.mask_input_to_interm))
             
-            full_and_masked_side_by_side = torch.cat([full_mat, masked_mat], dim = 1) 
-            self.logger.experiment.add_image(f"Weights/Z{1+T-t}-to-Z{T-t}", full_and_masked_side_by_side, self.current_epoch)
+            full_and_masked_side_by_side = torch.cat([td_net.W_input_to_interm, td_net.W_input_to_interm.mul(td_net.mask_input_to_interm)], 
+                                                dim = 0).cpu().numpy()
+            plt.gcf().tight_layout(pad=0)
+            plt.gca().margins(0)
+            plt.axis('off')
+            plt.imshow(full_and_masked_side_by_side, cmap=mpl_colormaps.coolwarm, norm=CenteredNorm())
+        
+            self.logger.experiment.add_figure(f"Weights/Z{1+T-t}-to-Z{T-t}", plt.gcf(), self.current_epoch)
+            #self.logger.experiment.add_image(f"Weights/Z{1+T-t}-to-Z{T-t}", full_and_masked_side_by_side, self.current_epoch)
             
-            #self.logger.experiment.add_image(f"Weights/Z{1+T-t}-to-Z{T-t}", full_mat, self.current_epoch)
-            #self.logger.experiment.add_image(f"WeightsMasked/Z{1+T-t}-to-Z{T-t}", masked_mat, self.current_epoch)
-
+            
