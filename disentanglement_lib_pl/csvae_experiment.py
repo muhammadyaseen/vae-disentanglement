@@ -54,7 +54,8 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
 
         # Visualize Components of mean and sigma vector for every layer
         self._log_mu_sigma_per_layer(train_step_outputs)
-
+        self._log_mu_histograms(train_step_outputs)
+        
         # Visualize per layer weights
         self._log_per_layer_weights(train_step_outputs)
 
@@ -86,6 +87,20 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
             mu_dict = {f"mu_q_layer_{t}/component_{i}": component_val for i, component_val in enumerate(mus)}            
             for k , v in mu_dict.items():
                 self.logger.experiment.add_scalar(k, v, self.current_epoch)
+
+    def _log_mu_histograms(self, train_step_outputs):
+        
+        all_td_net_outs = [tso['td_net_outs'] for tso in train_step_outputs]
+        td_net_count = len(self.model.top_down_networks)
+        
+        # Every td_net gives 1 (multidim) mu
+        for t in range(td_net_count):
+
+            mus = torch.cat([tdno[t]['mu_q'] for tdno in all_td_net_outs], dim=0) #.mean(0).tolist()
+        
+            # Loop over every dim and add its histogram
+            for k in range(mus.shape[1]):
+                self.logger.experiment.add_histogram(f"Mu_{t}\Dim_{k}", mus[:, k], self.global_step)
 
     def _log_per_layer_weights(self, train_step_outputs):
         
