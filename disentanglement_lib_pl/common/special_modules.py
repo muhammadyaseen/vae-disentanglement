@@ -258,13 +258,11 @@ class DAGInteractionLayer(nn.Module):
         
         # Say Bismillah
         init.kaiming_normal_(self.W_input_to_interm, mode='fan_out')
-        #init.kaiming_normal_(self.W_interm_to_output, mode='fan_out')
         init.kaiming_normal_(self.W_interm_to_output_mu, mode='fan_out')
         init.kaiming_normal_(self.W_interm_to_output_sigma, mode='fan_out')
         
         if self.use_bias:
             self.B_input_to_interm.data.fill_(0)
-            #self.B_interm_to_output.data.fill_(0)
             self.B_interm_to_output_mu.data.fill_(0)
             self.B_interm_to_output_sigma.data.fill_(0)
 

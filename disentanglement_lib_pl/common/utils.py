@@ -6,6 +6,7 @@ import numpy as np
 import random
 from importlib import reload
 import os
+import json
 
 import torch.nn
 import torch.nn.init as init
@@ -348,6 +349,14 @@ def make_dirs(args):
     os.makedirs(args.ckpt_dir, exist_ok=True)
     os.makedirs(args.train_output_dir, exist_ok=True)
     os.makedirs(args.test_output_dir, exist_ok=True)
+
+def save_cmdline_params(args):
+    
+    cmdline_params_dir = os.path.join(args.ckpt_dir, args.expr_name)
+    os.makedirs(cmdline_params_dir, exist_ok=True)
+    cmdline_params_file = os.path.join(cmdline_params_dir, "run-params.txt")
+    
+    json.dump(args.__dict__, open(cmdline_params_file, 'w'))
 
 # Shamelessly copied from new matplotlib source code
 # because I'm too afraid to upgrade and mess up my dev environment.

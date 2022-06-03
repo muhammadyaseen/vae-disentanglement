@@ -11,7 +11,7 @@ class SimpleFCNNEncoder(BaseEncoder):
 
         self.main = nn.Sequential(
             nn.Linear(in_dim, h_dims[0]),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Linear(h_dims[0], out_dim)
         )
 

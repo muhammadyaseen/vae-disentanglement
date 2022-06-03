@@ -37,10 +37,11 @@ class ConceptStructuredVAE(nn.Module):
         self.batch_size = network_args.batch_size
         self.root_dim = network_args.root_dim
 
+        self.add_classification_loss = c.AUX_CLASSIFICATION in kwargs['loss_terms']
         self.w_recon = 1.0
         self.w_kld = 1.0
         
-        # DAG
+        # DAG - 0th element is list of first level nodels, last element is list of leaves / terminal nodes
         self.dag_layer_nodes = dag_utils.get_dag_layers(self.adjacency_matrix)        
         
         # encoder and decoder
@@ -58,8 +59,14 @@ class ConceptStructuredVAE(nn.Module):
         total_dag_nodes = len(self.adjacency_matrix)
         decoder_inp = total_dag_nodes - 1 + self.root_dim if len(self.dag_layer_nodes[0]) == 1 else total_dag_nodes
         self.decoder = decoder(decoder_inp, self.num_channels, self.image_size)
+        
+        if self.add_classification_loss:
+            self.classification_heads = self._init_classification_heads()
 
         print("Model Initialized")
+
+    def _init_classification_heads(self):
+        pass
 
     def _init_bottom_up_networks(self):
         
@@ -68,15 +75,15 @@ class ConceptStructuredVAE(nn.Module):
 
         for d in reversed(range(dag_levels)):
             
-            # first BU net takes image X as input so it needs to have different architecture
+            # first BU net takes image X as input (and outputs params for z_1) so it needs to have different architecture
             if d == dag_levels - 1:
                 out_dim = len(self.dag_layer_nodes[d]) * 2
                 bu_nets.append(
                     encoders.SimpleConv64(out_dim, self.num_channels, self.image_size)
                 )
             
-            # last BU layer corresponds to root, we don't represent root with 
-            # a single unit so have to do special here
+            # last BU layer corresponds to root (outputs params for z_L), 
+            # we don't represent root with a single unit so have to do special here
             elif d == 0:
                 inp_dim = len(self.dag_layer_nodes[d+1]) * 2
                 out_dim = len(self.dag_layer_nodes[d]) * 2
@@ -91,7 +98,7 @@ class ConceptStructuredVAE(nn.Module):
                         encoders.SimpleFCNNEncoder(out_dim, inp_dim, [inp_dim * 2])
                     )
             
-            # all the other layers in DAG
+            # all the other layers in DAG (params for z_2 to z_{d-1})
             else:
                 inp_dim = len(self.dag_layer_nodes[d+1]) * 2
                 out_dim = len(self.dag_layer_nodes[d]) * 2
@@ -130,7 +137,7 @@ class ConceptStructuredVAE(nn.Module):
         #-----------------------------------------------------
         # TOP DOWN pass, goes from z_L, ..., z_1, X
         #-----------------------------------------------------
-        
+        # We reverse the outputs because BU pass gives us outputs in the order X, z_1, z_2, ... z_L
         bu_net_outs = list(reversed(bu_net_outs))
         #print(bu_net_outs)
         td_net_outs = []
@@ -152,6 +159,7 @@ class ConceptStructuredVAE(nn.Module):
             interm_output = {'mu_p': None, 'sigma_p': None, 'z': z }
             td_net_outs.append(interm_output)
 
+        # Remaining z's i.e z_{L-1},..., z_2, z_1 are sampled like this
         for L, td_net in enumerate(self.top_down_networks):
             #print(L, td_net)
             # Hope it doesn't mess up the compute graph
@@ -197,6 +205,13 @@ class ConceptStructuredVAE(nn.Module):
         
         return bu_net_outs
 
+    def _classification_heads_pass(self, td_net_outs):
+        """
+        Simple Logistic classification
+        Have to be careful on how sigmoidal layer behaves with DataParallel 
+        """
+        pass
+
     def forward(self, x_true, **kwargs):
 
         fwd_pass_results = dict()
@@ -204,6 +219,11 @@ class ConceptStructuredVAE(nn.Module):
         # Encode
         bu_net_outs, td_net_outs = self.encode(x_true, **kwargs)
 
+        # Aux classification heads
+        if self.add_classification_loss:
+            clf_outs = self._classification_heads_pass(td_net_outs)
+            fwd_pass_results["clf_outs"] = clf_outs.detach()
+        
         # concat all z's?
         interm_zs = [td_net_out['z'] for td_net_out in td_net_outs]
         concated_zs = torch.cat(interm_zs, dim=1)
@@ -214,9 +234,6 @@ class ConceptStructuredVAE(nn.Module):
         # now pass this z to decoder ?
         # TODO: Need to think about how grad / influence is affected if we pass 'z' or 'mu' and how is sigma used / affected
 
-        # Decode
-        #x_recon = self.decode(td_net_outs[-1]['z'], **kwargs)
-
         fwd_pass_results.update({
             "x_recon": x_recon,
             "td_net_outs": td_net_outs,
@@ -224,6 +241,9 @@ class ConceptStructuredVAE(nn.Module):
         })
         
         return fwd_pass_results
+
+    def _classification_loss(self, td_net_outs, layered_labels):
+        pass
 
     def _cs_vae_kld_loss_fn(self, bu_net_outs, td_net_outs):
         
@@ -234,9 +254,9 @@ class ConceptStructuredVAE(nn.Module):
 
         for L, (bu_param, td_param) in enumerate(dist_params):
             
-            if L == 0:
+            if L == 0: # for z_L
                 layer_loss = kl_divergence_mu0_var1(bu_param['mu_q_hat'], bu_param['sigma_q_hat'])
-            else:
+            else: # for all other z's i.e z_1,...,z_{L-1}
                 layer_loss = kl_divergence_diag_mu_var(td_param['mu_q'], td_param['sigma_q'], 
                                           td_param['mu_p'], td_param['sigma_p'])
             
@@ -253,6 +273,7 @@ class ConceptStructuredVAE(nn.Module):
         bu_net_outs = kwargs['bu_net_outs']
         global_step = kwargs['global_step']
         bs = self.batch_size
+        layered_labels = None # ?? # needed for classification loss
 
         output_losses = dict()
         
@@ -275,11 +296,16 @@ class ConceptStructuredVAE(nn.Module):
         # KLD for our dag network 
         #-------------------------
         # Since we can have arbitrary number of layers, it won't take a fixed form      
-        output_losses[c.KLD_LOSS], loss_per_layer = self._cs_vae_kld_loss_fn(bu_net_outs, td_net_outs)
+        output_losses[c.KLD_LOSS], kld_loss_per_layer = self._cs_vae_kld_loss_fn(bu_net_outs, td_net_outs)
         
         output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
-        output_losses.update(loss_per_layer)
+        output_losses.update(kld_loss_per_layer)
         
+        # 3. Auxiliary classification loss
+        if self.add_classification_loss:
+            output_losses[c.AUX_CLASSIFICATION], clf_loss_per_layer = self._classification_loss(td_net_outs, layered_labels)
+
+
         # detach all losses except for the full loss
         
         for loss_type in output_losses.keys():

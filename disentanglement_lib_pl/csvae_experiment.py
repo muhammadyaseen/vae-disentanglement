@@ -58,6 +58,9 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         # Visualize per layer weights
         self._log_per_layer_weights(train_step_outputs)
 
+        if self.model.add_classification_loss:
+            self._log_classification_losses(train_step_outputs)
+        
         torch.set_grad_enabled(True)
         self.model.train()
 
@@ -104,4 +107,12 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
             self.logger.experiment.add_figure(f"Weights/Z{1+T-t}-to-Z{T-t}", plt.gcf(), self.current_epoch)
             #self.logger.experiment.add_image(f"Weights/Z{1+T-t}-to-Z{T-t}", full_and_masked_side_by_side, self.current_epoch)
             
-            
+    def _log_classification_losses(self, train_step_outputs):
+        
+        all_loss_keys = train_step_outputs[0].keys()
+
+        per_layer_keys = [key for key in all_loss_keys if 'clf_loss_' in key]
+        
+        for loss_key in per_layer_keys:
+            loss = torch.stack([tso[loss_key] for tso in train_step_outputs]).mean()
+            self.logger.experiment.add_scalar(f"Clf_Loss_Per_Layer/{loss_key}", loss, self.current_epoch)
