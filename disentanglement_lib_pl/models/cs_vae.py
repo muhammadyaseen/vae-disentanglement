@@ -37,7 +37,7 @@ class ConceptStructuredVAE(nn.Module):
         self.batch_size = network_args.batch_size
         self.root_dim = network_args.root_dim
 
-        self.add_classification_loss = c.AUX_CLASSIFICATION in kwargs['loss_terms']
+        self.add_classification_loss = c.AUX_CLASSIFICATION in network_args.loss_terms
         self.w_recon = 1.0
         self.w_kld = 1.0
         

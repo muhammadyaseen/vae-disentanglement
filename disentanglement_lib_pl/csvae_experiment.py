@@ -55,7 +55,7 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         # Visualize Components of mean and sigma vector for every layer
         self._log_mu_sigma_per_layer(train_step_outputs)
         self._log_mu_histograms(train_step_outputs)
-        
+
         # Visualize per layer weights
         self._log_per_layer_weights(train_step_outputs)
 
@@ -100,7 +100,7 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         
             # Loop over every dim and add its histogram
             for k in range(mus.shape[1]):
-                self.logger.experiment.add_histogram(f"Mu_{t}\Dim_{k}", mus[:, k], self.global_step)
+                self.logger.experiment.add_histogram(f"Mu_{t}/Dim_{k}", mus[:, k], self.current_epoch)
 
     def _log_per_layer_weights(self, train_step_outputs):
         

@@ -1,8 +1,6 @@
 import sys
 import torch
 import os
-import pdb
-import json
 
 from common.utils import setup_logging, initialize_seeds, save_cmdline_params
 from common.arguments import get_args
@@ -174,4 +172,4 @@ if __name__ == "__main__":
     initialize_seeds(cmdline_args.seed)
     save_cmdline_params(cmdline_args)
    
-    #main(cmdline_args)
+    main(cmdline_args)
