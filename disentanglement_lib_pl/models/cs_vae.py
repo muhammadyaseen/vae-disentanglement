@@ -244,7 +244,7 @@ class ConceptStructuredVAE(nn.Module):
             
             kld_loss += layer_loss
         
-        return kld_loss, loss_per_layer
+        return kld_loss * self.w_kld, loss_per_layer
 
     def loss_function(self, loss_type='cross_ent', **kwargs):
         
@@ -277,7 +277,7 @@ class ConceptStructuredVAE(nn.Module):
         # Since we can have arbitrary number of layers, it won't take a fixed form      
         output_losses[c.KLD_LOSS], loss_per_layer = self._cs_vae_kld_loss_fn(bu_net_outs, td_net_outs)
         
-        output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS] * self.w_kld
+        output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
         output_losses.update(loss_per_layer)
         
         # detach all losses except for the full loss
