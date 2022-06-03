@@ -92,7 +92,7 @@ def get_trainer_params(cmdline_args, logger):
             default_root_dir=logger.save_dir,
             min_epochs=1,
             logger=logger,
-            limit_train_batches=1.0,
+            limit_train_batches=0.03,
             limit_val_batches=0.05,
             num_sanity_val_steps=2,
             callbacks = None,
@@ -129,6 +129,9 @@ def main(_args):
     model_cl = getattr(models, _args.alg)
     model = model_cl(_args)
    
+    print("Model Specification")
+    print(model)
+    
     # load checkpoint
     if _args.ckpt_load:
         model.load_checkpoint(_args.ckpt_load, 
