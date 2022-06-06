@@ -31,7 +31,7 @@ class ConceptStructuredVAE(nn.Module):
 
         self.node_labels = kwargs['node_labels'] if 'node_labels' in kwargs.keys() else None
         self.interm_unit_dim = network_args.interm_unit_dim
-        self.z_dim = network_args.z_dim
+        #self.z_dim = network_args.z_dim
         self.num_channels = network_args.in_channels
         self.image_size = network_args.image_size
         self.batch_size = network_args.batch_size
@@ -147,9 +147,9 @@ class ConceptStructuredVAE(nn.Module):
             interm_output = {
                     'mu_p':     torch.zeros(z.shape, device=kwargs['current_device']),
                     'sigma_p':  torch.zeros(z.shape, device=kwargs['current_device']), # this is log_var, hence zero (e^0 = 1)
-                    'mu_q':     bu_net_outs[0]['mu_q_hat'],
-                    'sigma_q':  bu_net_outs[0]['sigma_q_hat'],
-                    'z': z 
+                    'mu_q':     bu_net_outs[0]['mu_q_hat'].detach(),
+                    'sigma_q':  bu_net_outs[0]['sigma_q_hat'].detach(),
+                    'z': z.detach() 
                 }
             td_net_outs.append(interm_output)
         
@@ -178,7 +178,8 @@ class ConceptStructuredVAE(nn.Module):
                 # sample for current layer
                 z = reparametrize(mu_q_L, sigma_q_L)
 
-                interm_output = {'mu_p': mu_p_L, 'sigma_p': sigma_p_L, 'mu_q': mu_q_L, 'sigma_q': sigma_q_L, 'z': z }
+                interm_output = {'mu_p': mu_p_L.detach(), 'sigma_p': sigma_p_L.detach(), 
+                                 'mu_q': mu_q_L.detach(), 'sigma_q': sigma_q_L.detach(), 'z': z.detach() }
                 td_net_outs.append(interm_output)
 
             if mode == 'sample':

@@ -107,12 +107,9 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         T = len(self.model.top_down_networks)
 
         for t, td_net in enumerate(self.model.top_down_networks):
-            #print(f"Z{1+T-t}-to-Z{T-t}")
 
-            #full_mat = torchvision.utils.make_grid(td_net.W_input_to_interm)
-            #masked_mat = torchvision.utils.make_grid(td_net.W_input_to_interm.mul(td_net.mask_input_to_interm))
-            
-            full_and_masked_side_by_side = torch.cat([td_net.W_input_to_interm, td_net.W_input_to_interm.mul(td_net.mask_input_to_interm)], 
+            full_and_masked_side_by_side = torch.cat([td_net.inp_to_interm.W_input_to_interm, 
+                                                      td_net.inp_to_interm.W_input_to_interm.mul(td_net.inp_to_interm.input_to_intermediate_mask)], 
                                                 dim = 0).cpu().numpy()
             plt.gcf().tight_layout(pad=0)
             plt.gca().margins(0)
@@ -120,7 +117,6 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
             plt.imshow(full_and_masked_side_by_side, cmap=mpl_colormaps.coolwarm, norm=CenteredNorm())
         
             self.logger.experiment.add_figure(f"Weights/Z{1+T-t}-to-Z{T-t}", plt.gcf(), self.current_epoch)
-            #self.logger.experiment.add_image(f"Weights/Z{1+T-t}-to-Z{T-t}", full_and_masked_side_by_side, self.current_epoch)
             
     def _log_classification_losses(self, train_step_outputs):
         

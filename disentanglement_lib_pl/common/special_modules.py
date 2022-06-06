@@ -274,9 +274,9 @@ class DAGInteractionLayer(nn.Module):
     def forward(self, layer_input, **kwargs):
         
         x = self.inp_to_interm(layer_input, **kwargs)
-        print(x)
+        #print(x)
         x = self.interm1(x, **kwargs)
-        print(x)
+        #print(x)
         mu, logvar = self.out(x, **kwargs)
 
         return mu, logvar
