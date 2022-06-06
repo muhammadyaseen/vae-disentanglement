@@ -72,3 +72,31 @@ def get_mask_for_intermediate_to_output(interm_unit_dim, output_dim):
     M[R,C] = 1.0
     
     return M
+
+def get_mask_intermediate_to_intermediate(out_group_dim, in_out_groups, in_group_dim):
+    """
+    Generate weight matrix mask for intermediate layers on DAGInteractionLayer
+
+    Parameters
+    ----------
+    out_group_dim: Number of units in a group for layer before output
+    in_out_groups: Number of input and output groups
+    in_group_dim: Number of units in a group for layer after input
+    
+    Returns
+    -------
+    M : 2-D array of shape (in_group_dim * in_out_groups, out_group_dim * in_out_groups) 
+    representing the mask
+    """
+
+    from itertools import product
+    M = np.zeros((in_out_groups * in_group_dim, out_group_dim * in_out_groups), dtype=np.float32)
+    C = np.array_split(range(out_group_dim * in_out_groups), in_out_groups) 
+    R = np.array_split(range(in_group_dim * in_out_groups), in_out_groups) 
+    
+    for r,c in zip(R,C):
+        for p in product(r,c): 
+            M[p] = 1.0
+
+    return M
+        

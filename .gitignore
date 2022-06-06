@@ -12,3 +12,4 @@ disent-vaes/logs
 *.pyc
 *.yaml
 scripts/
+models/

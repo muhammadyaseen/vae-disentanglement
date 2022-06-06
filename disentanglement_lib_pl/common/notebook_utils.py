@@ -220,13 +220,13 @@ def load_vae_model(algo_name, algo_type, checkpoint_path, curr_dev,
 
     return vae_experiment
 
-def get_latent_activations(dataset, vae_model, curr_dev, batch_size = 32, batches = None, 
+def get_latent_activations(dataloader, vae_model, curr_dev, batch_size = 32, batches = None, 
                                     model_type='bvae'):
    
     assert model_type in ['bvae', 'laddervae']
     #assert latent_layer in ['z1', 'z2']
 
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle = True, drop_last=True)
+    #loader = DataLoader(dataset, batch_size=batch_size, shuffle = True, drop_last=True)
     
     latent_acts = None
     
@@ -247,7 +247,7 @@ def get_latent_activations(dataset, vae_model, curr_dev, batch_size = 32, batche
 
     with torch.no_grad():
 
-        for x_batch, _ in tqdm(loader):
+        for x_batch, _ in dataloader:
             
             if batches is not None and batches_processed >= batches:
                 break
@@ -302,18 +302,18 @@ def plot_latent_dist(activations, label="Factor X"):
     axes.hist(activations, label=label, align='mid')
     axes.legend(prop={'size': 10},loc='upper left')
 
-def get_latent_activations_with_labels(dataset, vae_model, curr_dev, batch_size = 32, 
+def get_latent_activations_with_labels(dataloader, vae_model, curr_dev, batch_size = 32, 
                                     batches = None, group_by=False, model_type='bvae', latent_layer='z1'):
    
     assert model_type in ['bvae', 'laddervae']
     assert latent_layer in ['z1', 'z2']
 
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle = True, drop_last=True)
+    #loader = DataLoader(dataset, batch_size=batch_size, shuffle = True, drop_last=True)
     label_and_latent_act_dict = defaultdict(list)
     
     batches_processed = 0
     with torch.no_grad():
-        for x_batch, label_batch in tqdm(loader):
+        for x_batch, label_batch in dataloader:
             
             if batches is not None and batches_processed >= batches:
                 break
@@ -351,21 +351,21 @@ def get_latent_activations_with_labels(dataset, vae_model, curr_dev, batch_size 
     
     return label_and_latent_act_dict
 
-def get_latent_activations_with_labels_for_scatter(dataset, vae_model, curr_dev, z_dim, l_dim, 
+def get_latent_activations_with_labels_for_scatter(dataloader, vae_model, curr_dev, z_dim, l_dim, 
                                 batch_size = 32, batches = None, model_type='bvae', latent_layer='z1'):
    
     assert model_type in ['bvae', 'laddervae']
     assert latent_layer in ['z1', 'z2']
 
-    loader = DataLoader(dataset, batch_size=batch_size, shuffle = True, drop_last=True)
+    #loader = DataLoader(dataset, batch_size=batch_size, shuffle = True, drop_last=True)
     
-    B = batches if batches is not None else len(loader)
+    B = batches if batches is not None else len(dataloader)
     mu_batches = np.zeros(shape=(batch_size * B, z_dim))
     label_batches = np.zeros(shape=(batch_size * B, l_dim))
     
     batches_processed = 0
     with torch.no_grad():
-        for x_batch, label_batch in tqdm(loader):
+        for x_batch, label_batch in dataloader:
             
             if batches is not None and batches_processed >= batches:
                 break
@@ -376,14 +376,16 @@ def get_latent_activations_with_labels_for_scatter(dataset, vae_model, curr_dev,
             mu_batch = None
             if model_type == 'bvae':
                 mu_batch, _ = vae_model.model.encode(x_batch)
-            
+
             if model_type == 'laddervae':
-                z1, z2, _ = vae_model.model.encode(x_batch)
-                mu_batch = z1 if latent_layer == 'z1' else z2
+                # TODO: fix this
+                fwd_pass_results = vae_model.model.encode(x_batch)
+                mu_batch = None
+                # mu_batch = z1 if latent_layer == 'z1' else z2
 
             # convert to numpy format so that we can easily use in matplotlib
             mu_batch = mu_batch.detach().cpu().numpy()
-            label_batch = label_batch.cpu().numpy()
+            label_batch = label_batch.numpy()
             
             for i in range(batch_size):
                 mu_batches[batches_processed*batch_size + i] = mu_batch[i]
@@ -582,23 +584,24 @@ def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_
     model_for_dset.eval()
 
     dataset = get_configured_dataset(dset_name)
-
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle = True, drop_last=True)
+    
     activations = None
     if activation_type == 'with_labels':
-        activations = get_latent_activations_with_labels(dataset, model_for_dset, 
+        activations = get_latent_activations_with_labels(loader, model_for_dset, 
                                     current_device,
                                     batch_size=batch_size,
                                     batches=batches)
         
     elif activation_type == 'without_labels':
-        activations = get_latent_activations(dataset, 
+        activations = get_latent_activations(loader, 
                                     model_for_dset,
                                     current_device,
                                     batch_size=batch_size,
                                     batches=batches)
     
     elif activation_type == 'for_scatter':
-        activations = get_latent_activations_with_labels_for_scatter(dataset, 
+        activations = get_latent_activations_with_labels_for_scatter(loader, 
                                     model_for_dset,
                                     current_device,
                                     z_dim=z_dim,
@@ -764,7 +767,7 @@ def estimate_responsible_dimension(pairs, vae_model, current_device):
         most_varied_dim = torch.argmax(dim_wise_variance)
         return diff_vecs.cpu().numpy(), dim_wise_variance.cpu().numpy(), most_varied_dim.item()
 
-def check_correlated_dimensions(image_batch, vae_model, current_device):
+def check_correlated_dimensions(image_batch, vae_model, current_device, perturb_value=None, perturb_mode='fixed'):
     """
     Train a normal Beta-VAE network on the correlated data
     Once it has been trained, pass a batch of B examples and do the following:
@@ -784,15 +787,17 @@ def check_correlated_dimensions(image_batch, vae_model, current_device):
     We can then introduce a layer before that and connect these two dims to a unit in prev layer.
     """
 
+    
     with torch.no_grad():
-
+        
+        sq_diff_batch = []
         fwd_pass_results = vae_model.model.forward(image_batch, current_device=current_device)
         x_recon_orig, mu_orig = fwd_pass_results['x_recon'], fwd_pass_results['mu'] 
 
         # for each example X, perturb unit l=1 to L 
         for mu in mu_orig:
             # (dim(mu), mu)
-            mus_perturbed = _generate_perturbed_copies(mu)
+            mus_perturbed = _generate_perturbed_copies(mu, mode=perturb_mode,fixed_val=perturb_value)
             
             # generate and image from these perturbed means
             # (dim(mu), X.shape)
@@ -802,14 +807,15 @@ def check_correlated_dimensions(image_batch, vae_model, current_device):
             mus_perturbed_recon, _ = vae_model.model.encode(x_recons_perturbed, current_device=current_device)
 
             sq_diff = (mus_perturbed_recon - mus_perturbed).pow(2)
+            sq_diff_batch.append((sq_diff, mus_perturbed_recon, mus_perturbed, x_recons_perturbed))
 
-        # Let's say we perturbed dim=n in mu_perturbed, now we have to check how many dims in corresponding `mus_compare` are different
-        # we can take a difference an see ?
+        return sq_diff_batch
 
-def _generate_perturbed_copies(vector, dims_to_perturb=None, limit=3, inter=2/3, mode = 'relative'):
+def _generate_perturbed_copies(vector, dims_to_perturb=None, perturb_mode = 'fixed', fixed_val=None):
     """
     Assumes that vector is of shape (vector_dim, )
-    Returns (vector_dim, vector_dim) shaped vector where in (i, vector_dim) 
+    Returns (vector_dim, vector_dim) shaped vector where in (i, vector_dim)
+    perturb_mode: 'fixed','relative-min','relative-max' 
     """
 
     perturbed_copies = []
@@ -819,17 +825,37 @@ def _generate_perturbed_copies(vector, dims_to_perturb=None, limit=3, inter=2/3,
                 continue
         
         vector_d = vector.clone()
+        lim = vector_d[d] / 2
+        min_val, max_val = vector_d[d] - lim, vector_d[d] + lim + 0.1
         
-        if mode == 'relative':
-            lim = vector_d[d] / 2
-            min_val, max_val = vector_d[d] - lim, vector_d[d] + lim + 0.1
+        if perturb_mode == 'relative-max':    
+            vector_d[d] = vector_d[d] + max_val
         
-        vector_d[d] = max_val
+        if perturb_mode == 'relative-min':
+            vector_d[d] = vector_d[d] - min_val
+        
+        if perturb_mode == 'fixed':
+            vector_d[d] = vector_d[d] + fixed_val
 
         perturbed_copies.append(vector_d)
 
     return torch.stack(perturbed_copies, dim=0)
 
+def visualize_perturbed_dims(diff_entry):
+    """
+    diff_entry: is a single element from the output of `check_correlated_dimensions`
+    """
+
+    # 0-th index stores the squared differences
+    diff_np = diff_entry[0].cpu().numpy()
+    
+    fig, axs = plt.subplots(1,diff_np.shape[0])
+    for r in range(diff_np.shape[0]):
+        axs[r].imshow(np.expand_dims(diff_np[r,:], axis=1), cmap='Reds')
+        axs[r].set_yticklabels([])
+        axs[r].set_yticks([])
+        axs[r].set_xticks([])
+        axs[r].set_xticklabels([])
 
 def sample_latent_pairs_differing_in_k_factors(diff_factor_indices, npz_dataset, how_many_pairs=1):
     
@@ -955,3 +981,4 @@ def laddervae_load_model_and_data_and_get_activations(dset_name, dset_path, batc
 """
 END: Notebook + Visualization functions required for LadderVAE
 """
+

@@ -1,4 +1,5 @@
-from re import I
+from re import I, M
+from turtle import forward
 import numpy as np
 import torch
 from torch import nn
@@ -9,6 +10,120 @@ from common.ops import reparametrize
 
 LIMIT_A, LIMIT_B, EPSILON = -.1, 1.1, 1e-6
 
+"""
+These modules are used in DagInteractionLayer
+"""
+
+class InputToIntermediate(nn.Module):
+    def __init__(self, input_to_intermediate_mask, in_features, intermediate_group_dim, out_groups):
+
+        super().__init__()
+
+        self.input_to_intermediate_mask = input_to_intermediate_mask
+        self.in_features = in_features
+        self.out_groups = out_groups
+        self.intermediate_group_dim = intermediate_group_dim
+
+        self.W_input_to_interm = nn.Parameter(torch.Tensor(self.in_features, self.intermediate_group_dim * self.out_groups))
+        self.B_input_to_interm = nn.Parameter(torch.Tensor(self.intermediate_group_dim * self.out_groups))
+
+        self._init_params()
+    
+    def _init_params(self):
+        
+        init.kaiming_normal_(self.W_input_to_interm, mode='fan_in')
+        self.B_input_to_interm.data.fill_(0)
+        
+    def forward(self, layer_input, **kwargs):
+        
+        self.input_to_intermediate_mask = self.input_to_intermediate_mask.to(kwargs['current_device'])
+        
+        # input to interm
+        masked_input_to_interm = self.W_input_to_interm.mul(self.input_to_intermediate_mask)
+        interm_out = layer_input.matmul(masked_input_to_interm)
+        interm_out = interm_out + self.B_input_to_interm
+        interm_out = F.relu(interm_out)
+        
+        return interm_out
+
+class Intermediate(nn.Module):
+    def __init__(self, in_out_groups, intermediate_group_dim, in_group_dim):
+
+        super().__init__()
+
+        self.intermediate_mask = torch.from_numpy(dag_utils.get_mask_intermediate_to_intermediate(intermediate_group_dim, in_out_groups, in_group_dim))
+        self.in_out_groups = in_out_groups
+        self.in_group_dim = in_group_dim
+        self.out_features = intermediate_group_dim * in_out_groups
+        self.intermediate_group_dim = intermediate_group_dim
+        
+        self.W_intermediate = nn.Parameter(torch.Tensor(self.in_out_groups * in_group_dim, 
+                                                        self.in_out_groups * self.intermediate_group_dim))
+
+        self.b_intermediate = nn.Parameter(torch.Tensor(self.in_out_groups * self.intermediate_group_dim))
+
+        self._init_params()
+
+    def _init_params(self):
+        
+        init.kaiming_normal_(self.W_intermediate, mode='fan_in')
+        self.b_intermediate.data.fill_(0)
+    
+    def forward(self, layer_input, **kwargs):
+        
+        self.intermediate_mask = self.intermediate_mask.to(kwargs['current_device'])
+
+        # input to interm
+        masked_interm_to_interm = self.W_intermediate.mul(self.intermediate_mask)
+        interm_out = layer_input.matmul(masked_interm_to_interm)
+        interm_out = interm_out + self.b_intermediate
+        interm_out = F.relu(interm_out)
+        
+        return interm_out
+
+class IntermediateToOutput(nn.Module):
+    
+    def __init__(self, in_out_groups, in_group_dim):
+
+        super().__init__()
+
+        self.in_out_groups = in_out_groups
+        self.in_group_dim = in_group_dim
+        self.out_group_dim = 1
+        self.output_mask = torch.from_numpy(dag_utils.get_mask_intermediate_to_intermediate(self.out_group_dim, in_out_groups, in_group_dim))
+        
+        self.W_out_mu = nn.Parameter(torch.Tensor(self.in_out_groups * self.in_group_dim, self.in_out_groups))
+        self.b_out_mu = nn.Parameter(torch.Tensor(self.in_out_groups))
+        
+        self.W_out_logvar = nn.Parameter(torch.Tensor(self.in_out_groups * self.in_group_dim, self.in_out_groups))
+        self.b_out_logvar = nn.Parameter(torch.Tensor(self.in_out_groups))
+
+        self._init_params()
+    
+    def _init_params(self):
+        
+        init.kaiming_normal_(self.W_out_mu, mode='fan_in')
+        init.kaiming_normal_(self.W_out_logvar, mode='fan_in')
+        self.b_out_mu.data.fill_(0)
+        self.b_out_logvar.data.fill_(0)
+    
+    def forward(self, layer_input, **kwargs):
+        
+        self.output_mask = self.output_mask.to(kwargs['current_device'])
+
+        # \mu head
+        masked_interm_to_output_mu = self.W_out_mu.mul(self.output_mask)
+        mu_out = layer_input.matmul(masked_interm_to_output_mu)
+        mu_out = mu_out + self.b_out_mu        
+        mu_out = F.relu(mu_out)
+        
+        # \sigma head
+        masked_interm_to_output_sigma = self.W_out_logvar.mul(self.output_mask)
+        logvar_out = layer_input.matmul(masked_interm_to_output_sigma)
+        logvar_out = logvar_out + self.b_out_logvar
+        logvar_out = F.relu(logvar_out)
+        
+        return mu_out, logvar_out
 
 class L0_Dense(nn.Module):
     
@@ -129,7 +244,8 @@ class L0_Dense(nn.Module):
 
 class DAGInteractionLayer(nn.Module):
 
-    def __init__(self, parents_list, children_list, adjacency_matrix, interm_unit_dim=1, bias=True, parent_is_root=False, root_dim=10, **kwargs):
+    def __init__(self, parents_list, children_list, adjacency_matrix, interm_unit_dim=1, 
+                bias=True, parent_is_root=False, root_dim=10, **kwargs):
 
         super(DAGInteractionLayer, self).__init__()
 
@@ -150,122 +266,21 @@ class DAGInteractionLayer(nn.Module):
         self.use_bias = bias
         self.adjacency_matrix = adjacency_matrix
 
-        # ---------------------#
-        # Learnable Parameters #
-        # -------------------- #
-        self.W_input_to_interm = nn.Parameter(torch.Tensor(self.in_features, self.interm_unit_dim * self.out_features))
-        self.W_interm_to_output_mu = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))
-        self.W_interm_to_output_sigma = nn.Parameter(torch.Tensor(self.interm_unit_dim * self.out_features, self.out_features))
-
-        if self.use_bias:
-            # we will need mask on bias as well 
-            self.B_input_to_interm = nn.Parameter(torch.Tensor(interm_unit_dim * self.out_features))
-            self.B_interm_to_output_mu = nn.Parameter(torch.Tensor(self.out_features))
-            self.B_interm_to_output_sigma = nn.Parameter(torch.Tensor(self.out_features))
+        self.inp_to_interm = InputToIntermediate(self._get_mask_input_to_interm(), self.in_features, self.interm_unit_dim, self.out_features)
+        self.interm1 = Intermediate(self.out_features, in_group_dim=self.interm_unit_dim, intermediate_group_dim=3)
+        self.out = IntermediateToOutput(self.out_features, in_group_dim=3)
         
-        # -------------------------#
-        # End Learnable Parameters #
-        # ------------------------ #
-
-        self.mask_input_to_interm = self._get_mask_input_to_interm()
-        #self.mask_interm_to_output = self._get_mask_interm_to_output()
-        self.mask_interm_to_output_mu = self._get_mask_interm_to_output()
-        self.mask_interm_to_output_sigma = self._get_mask_interm_to_output()
-        
-        self._init_params()
-
-        # TODO: here we can probably associate names to units for better
-        # readability etc.
-        if 'parent_names' in kwargs.keys():
-            pass
-
-        if 'children_names' in kwargs.keys():
-            pass
 
     def forward(self, layer_input, **kwargs):
         
-        # Ideally we should be putting these masks on the correct device in the __init__
-        self.mask_input_to_interm = self.mask_input_to_interm.to(kwargs['current_device'])
-        self.mask_interm_to_output_mu = self.mask_interm_to_output_mu.to(kwargs['current_device'])
-        self.mask_interm_to_output_sigma = self.mask_interm_to_output_sigma.to(kwargs['current_device'])
+        x = self.inp_to_interm(layer_input, **kwargs)
+        print(x)
+        x = self.interm1(x, **kwargs)
+        print(x)
+        mu, logvar = self.out(x, **kwargs)
 
-        # input to interm
-        masked_input_to_interm = self.W_input_to_interm.mul(self.mask_input_to_interm)
-        interm_out = layer_input.matmul(masked_input_to_interm)
-        interm_out = interm_out + self.B_input_to_interm
-        interm_out = F.relu(interm_out)
+        return mu, logvar
         
-        # interm to output
-        # \mu head
-        masked_interm_to_output_mu = self.W_interm_to_output_mu.mul(self.mask_interm_to_output_mu)
-        mu_out = interm_out.matmul(masked_interm_to_output_mu)
-        mu_out = mu_out + self.B_interm_to_output_mu
-        mu_out = F.relu(mu_out)
-        
-        # \sigma head
-        masked_interm_to_output_sigma = self.W_interm_to_output_sigma.mul(self.mask_interm_to_output_sigma)
-        sigma_out = interm_out.matmul(masked_interm_to_output_sigma)
-        sigma_out = sigma_out + self.B_interm_to_output_sigma
-        sigma_out = F.relu(sigma_out)
-
-        # TODO: should we do it here ?
-        #out_z = reparametrize(mu_out, sigma_out)
-
-        return mu_out, sigma_out
-
-    def diagnostic_forward(self, layer_input):
-        
-        # input to interm
-        print("Input: ", layer_input)
-        print("mask_input_to_interm: ", self.mask_input_to_interm)
-
-        masked_input_to_interm = self.W_input_to_interm.mul(self.mask_input_to_interm)
-        print("masked_input_to_interm:", masked_input_to_interm)
-        print("masked_input_to_interm.Size():", masked_input_to_interm.size())
-
-        interm_out = layer_input.matmul(masked_input_to_interm)
-        print("X * W_1", interm_out)
-        print("X * W_1 size()", interm_out.size())
-
-        interm_out = interm_out + self.B_input_to_interm
-
-        print("X * W_1 + b_1", interm_out)
-
-        interm_out = F.relu(interm_out)
-        print("U = ReLU(X * W_1 + b_1)", interm_out)
-        print("U.size()", interm_out.size())
-        
-        # interm to output
-        print("mask_interm_to_output ", self.mask_interm_to_output)
-
-        masked_interm_to_output = self.W_interm_to_output.mul(self.mask_interm_to_output)
-        print("masked_interm_to_output: ", masked_interm_to_output)
-
-        out = interm_out.matmul(masked_interm_to_output)
-        print("U * W_2", out)
-        print("U * W_2 size", out.size())
-
-        out = out + self.B_interm_to_output
-        print("U * W_2 + b_2", out)
-
-        out = F.relu(out)
-        print("Out = ReLU(U * W_2 + b_2)", out)
-        print("Out.size()", out.size())
-
-        return out
-
-    def _init_params(self):
-        
-        # Say Bismillah
-        init.kaiming_normal_(self.W_input_to_interm, mode='fan_out')
-        init.kaiming_normal_(self.W_interm_to_output_mu, mode='fan_out')
-        init.kaiming_normal_(self.W_interm_to_output_sigma, mode='fan_out')
-        
-        if self.use_bias:
-            self.B_input_to_interm.data.fill_(0)
-            self.B_interm_to_output_mu.data.fill_(0)
-            self.B_interm_to_output_sigma.data.fill_(0)
-
     def _get_mask_input_to_interm(self):
         
         # TODO: maybe we should allow this flexibility for every layer?
@@ -280,20 +295,3 @@ class DAGInteractionLayer(nn.Module):
         
         np_mask = dag_utils.get_layer_mask(self._parents, self._children, self.interm_unit_dim, self.adjacency_matrix)
         return torch.from_numpy(np_mask)
-
-    def _get_mask_interm_to_output(self):
-        
-        np_mask = dag_utils.get_mask_for_intermediate_to_output(self.interm_unit_dim, self.out_features)
-        return torch.from_numpy(np_mask)
-   
-    def __repr__(self):
-
-        s = ('{name} ({in_features} -> {interm_unit_dim} * {out_features} -> {out_features}, ' 
-        'parents: {_parents}, children: {_children}, root: {parent_is_single_root_node} ')
-
-        if not self.use_bias:
-            s += ', bias=False'
-        
-        s += ')'
-        
-        return s.format(name=self.__class__.__name__, **self.__dict__)
