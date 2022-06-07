@@ -31,9 +31,6 @@ class BaseVAEExperiment(pl.LightningModule):
         self.max_epochs = params['max_epochs']
         self.dataset_params = dataset_params
         
-        print(f"Experiment class: {self.device}")
-        print(f"Model class: {next(self.model.parameters()).device}")
-        
         #if self.visdom_on:
         #    self.visdom_visualiser = VisdomVisualiser(params)
 
@@ -43,7 +40,8 @@ class BaseVAEExperiment(pl.LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
         if batch_idx % 1000 == 0:
-            print(f"Batch: {batch_idx} / {len(self.trainer.train_dataloader)}")
+            #print(f"Batch: {batch_idx} / {len(self.trainer.train_dataloader)}")
+            self.log(f"Batch: {batch_idx} / {len(self.trainer.train_dataloader)}", rank_zero_only=True)
 
     def training_step_end(self, train_step_output):
 
@@ -58,7 +56,8 @@ class BaseVAEExperiment(pl.LightningModule):
     def on_train_epoch_start(self):
         
         timestamp = time.strftime("%d-%m-%Y %H:%M:%S", time.localtime(time.time()))
-        print(f"Epoch {self.current_epoch} / {self.max_epochs} started at {timestamp}")
+        #print(f"Epoch {self.current_epoch} / {self.max_epochs} started at {timestamp}")
+        self.log(f"Epoch {self.current_epoch} / {self.max_epochs} started at {timestamp}", rank_zero_only=True)
 
         # if self.current_epoch == 0:
         #     print("Loggin model graph")
@@ -74,14 +73,16 @@ class BaseVAEExperiment(pl.LightningModule):
     def on_train_epoch_end(self):
         
         timestamp = time.strftime("%d-%m-%Y %H:%M:%S", time.localtime(time.time()))
-        print(f"Epoch {self.current_epoch} / {self.max_epochs} ended at {timestamp}")
+        #print(f"Epoch {self.current_epoch} / {self.max_epochs} ended at {timestamp}")
+        self.log(f"Epoch {self.current_epoch} / {self.max_epochs} ended at {timestamp}", rank_zero_only=True)
     
     def training_epoch_end(self, train_step_outputs):
         
         # TODO: figure out a way to do model / architecture specific or dataset specific 
         # logging w/o if-else jungle
         timestamp = time.strftime("%d-%m-%Y %H:%M:%S", time.localtime(time.time()))
-        print(f"training_epoch_end() called for epoch: {self.current_epoch} / {self.max_epochs} at {timestamp}")     
+        #print(f"training_epoch_end() called for epoch: {self.current_epoch} / {self.max_epochs} at {timestamp}")     
+        self.log(f"training_epoch_end() called for epoch: {self.current_epoch} / {self.max_epochs} at {timestamp}", rank_zero_only=True)
         
         torch.set_grad_enabled(False)
         self.model.eval()
@@ -123,7 +124,8 @@ class BaseVAEExperiment(pl.LightningModule):
         self.model.train()
 
     def on_train_end(self):
-        print("Training finished.")
+        #print("Training finished.")
+        self.log("Training finished.", rank_zero_only=True)
         if self.visdom_on:
             self._save_visdom_environment()
         
