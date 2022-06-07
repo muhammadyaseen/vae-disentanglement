@@ -79,7 +79,7 @@ class ConceptStructuredVAE(nn.Module):
             if d == dag_levels - 1:
                 out_dim = len(self.dag_layer_nodes[d]) * 2
                 bu_nets.append(
-                    encoders.SimpleConv64(out_dim, self.num_channels, self.image_size)
+                    encoders.SimpleConv64CommAss(out_dim, self.num_channels, self.image_size)
                 )
             
             # last BU layer corresponds to root (outputs params for z_L), 
@@ -133,7 +133,7 @@ class ConceptStructuredVAE(nn.Module):
         When in 'inference' mode, should pass 'current_device' and 'num_sampples' as kwargs
         """
         assert mode in ['sample', 'inference']
-
+        current_device = kwargs.get('current_device', next(self.parameters()).device)
         #-----------------------------------------------------
         # TOP DOWN pass, goes from z_L, ..., z_1, X
         #-----------------------------------------------------
@@ -145,8 +145,8 @@ class ConceptStructuredVAE(nn.Module):
         if mode == 'inference':
             z = reparametrize(bu_net_outs[0]['mu_q_hat'], bu_net_outs[0]['sigma_q_hat'])
             interm_output = {
-                    'mu_p':     torch.zeros(z.shape, device=kwargs['current_device']),
-                    'sigma_p':  torch.zeros(z.shape, device=kwargs['current_device']), # this is log_var, hence zero (e^0 = 1)
+                    'mu_p':     torch.zeros(z.shape, device=current_device),
+                    'sigma_p':  torch.zeros(z.shape, device=current_device), # this is log_var, hence zero (e^0 = 1)
                     'mu_q':     bu_net_outs[0]['mu_q_hat'].detach(),
                     'sigma_q':  bu_net_outs[0]['sigma_q_hat'].detach(),
                     'z': z.detach() 
@@ -155,7 +155,7 @@ class ConceptStructuredVAE(nn.Module):
         
         if mode == 'sample':
             top_layer_dim = self.root_dim if len(self.dag_layer_nodes[0]) == 1 else len(self.dag_layer_nodes[0]) 
-            z = torch.randn(kwargs['num_samples'], top_layer_dim, device=kwargs['current_device'])
+            z = torch.randn(kwargs['num_samples'], top_layer_dim, device=current_device)
             interm_output = {'mu_p': None, 'sigma_p': None, 'z': z }
             td_net_outs.append(interm_output)
 
@@ -163,7 +163,8 @@ class ConceptStructuredVAE(nn.Module):
         for L, td_net in enumerate(self.top_down_networks):
             #print(L, td_net)
             # Hope it doesn't mess up the compute graph
-            mu_p_L, sigma_p_L = td_net(z, **kwargs)
+            #mu_p_L, sigma_p_L = td_net(z, **kwargs)
+            mu_p_L, sigma_p_L = td_net(z, current_device=current_device)
             #print(f"mu sizes: mu_p_L {mu_p_L.shape} mu_q_hat {bu_net_outs[L+1]['mu_q_hat'].shape} ")
             #print(f"sigma sizes: sigma_p_L {sigma_p_L.shape} sigma_q_hat {bu_net_outs[L+1]['sigma_q_hat'].shape} ")
 

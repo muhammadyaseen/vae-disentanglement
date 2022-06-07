@@ -42,7 +42,7 @@ class BaseVAEExperiment(pl.LightningModule):
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
         
-        if batch_idx % 100 == 0:
+        if batch_idx % 1000 == 0:
             print(f"Batch: {batch_idx} / {len(self.trainer.train_dataloader)}")
 
     def training_step_end(self, train_step_output):
@@ -59,6 +59,17 @@ class BaseVAEExperiment(pl.LightningModule):
         
         timestamp = time.strftime("%d-%m-%Y %H:%M:%S", time.localtime(time.time()))
         print(f"Epoch {self.current_epoch} / {self.max_epochs} started at {timestamp}")
+
+        # if self.current_epoch == 0:
+        #     print("Loggin model graph")
+        #     current_device = next(self.model.parameters()).device
+        #     self.logger.experiment.add_graph(
+        #         self.model, 
+        #         input_to_model=torch.randn(
+        #             size=(1, self.model.num_channels, 64, 64), 
+        #             device=current_device
+        #         )
+        #     )
     
     def on_train_epoch_end(self):
         

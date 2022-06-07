@@ -130,6 +130,7 @@ def main(_args):
    
     print("Model Specification")
     print(model)
+    exit()
     
     # load checkpoint
     if _args.ckpt_load:

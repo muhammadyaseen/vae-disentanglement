@@ -43,6 +43,10 @@ class InputToIntermediate(nn.Module):
         
         return interm_out
 
+    def __repr__(self):
+        return f"InputToIntermediate(in_features={self.in_features}, intermediate_group_dim={self.intermediate_group_dim}, " \
+               f"out_groups={self.out_groups})"
+
 class Intermediate(nn.Module):
     def __init__(self, in_out_groups, intermediate_group_dim, in_group_dim):
 
@@ -77,6 +81,10 @@ class Intermediate(nn.Module):
         interm_out = F.relu(interm_out)
         
         return interm_out
+
+    def __repr__(self):
+        return f"Intermediate(in_out_groups={self.in_out_groups}, intermediate_group_dim={self.intermediate_group_dim}, " \
+               f"in_group_dim={self.in_group_dim})"
 
 class IntermediateToOutput(nn.Module):
     
@@ -121,6 +129,10 @@ class IntermediateToOutput(nn.Module):
         logvar_out = F.relu(logvar_out)
         
         return mu_out, logvar_out
+
+    def __repr__(self):
+        return f"IntermediateToOutput(in_out_groups={self.in_out_groups}, in_group_dim={self.in_group_dim}, " \
+               f"out_group_dim={self.out_group_dim})"
 
 class L0_Dense(nn.Module):
     

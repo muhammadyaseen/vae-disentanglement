@@ -93,10 +93,10 @@ def show_images_grid(imgs_, num_images=25):
 """
 End: dsprites notebook functions
 """
-def __show(imgs):
+def __show(imgs, **kwargs):
     if not isinstance(imgs, list):
         imgs = [imgs]
-    fix, axs = plt.subplots(ncols=len(imgs), squeeze=False)
+    fig, axs = plt.subplots(ncols=len(imgs), squeeze=False, **kwargs)
     for i, img in enumerate(imgs):
         img = img.detach()
         img = T.to_pil_image(img)
@@ -523,7 +523,7 @@ def show_traversal_plot(vae_model, anchor_image, limit, interp_step, dim=-1, mod
     ax.vlines(ref,0,0.5)
 
 def show_traversal_images(vae_model, anchor_image, limit, interp_step, dim=-1, mode='relative',
-                    layer_to_explore='z1', model_type='bvae',nrow=10):
+                    layer_to_explore='z1', model_type='bvae',nrow=10,  **kwargs):
     
     assert model_type in ['bvae', 'laddervae']
     assert layer_to_explore in ['z1', 'z2']
@@ -536,9 +536,9 @@ def show_traversal_images(vae_model, anchor_image, limit, interp_step, dim=-1, m
     # .squeeze() removes the first dim and then stack concats the images along a new first dim
     # to give [num_images,channels,img_size, img_size]
     traversed_images_stacked = torch.stack([t_img.squeeze(0) for _ , t_img in traversed_images], dim=0)
-    img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=nrow, value_range=(0.0,1.0))
+    img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=nrow, value_range=(0.0,1.0), pad_value=1.0)
 
-    __show(img_grid)
+    __show(img_grid, **kwargs)
 
 
 def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_dim , beta, 
