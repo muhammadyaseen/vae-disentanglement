@@ -133,7 +133,7 @@ class ConceptStructuredVAE(nn.Module):
         When in 'inference' mode, should pass 'current_device' and 'num_sampples' as kwargs
         """
         assert mode in ['sample', 'inference']
-        current_device = kwargs.get('current_device', next(self.parameters()).device)
+        current_device = kwargs.get('current_device') #, next(self.parameters()).device)
         #-----------------------------------------------------
         # TOP DOWN pass, goes from z_L, ..., z_1, X
         #-----------------------------------------------------
@@ -304,6 +304,8 @@ class ConceptStructuredVAE(nn.Module):
             output_losses[c.KLD_LOSS], kld_loss_per_layer = self._cs_vae_kld_loss_fn(bu_net_outs, td_net_outs)
             output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
             output_losses.update(kld_loss_per_layer)
+        else:
+            output_losses[c.KLD_LOSS] = 0.0
         
         # 3. Auxiliary classification loss
         if self.add_classification_loss:

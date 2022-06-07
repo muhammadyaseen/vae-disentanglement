@@ -139,7 +139,8 @@ class BaseVAEExperiment(pl.LightningModule):
             'x_true': x_true,
             'optimizer_idx': optimizer_idx,
             'batch_idx': batch_idx,
-            'global_step': self.global_step
+            'global_step': self.global_step,
+            'current_epoch': self.current_epoch
         })
         
         val_losses = self.model.loss_function(loss_type='cross_ent', **fwd_pass_results)

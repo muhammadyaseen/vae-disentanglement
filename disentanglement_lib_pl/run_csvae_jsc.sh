@@ -8,15 +8,15 @@
 #SBATCH --job-name=hai_cs_vaes-CS-VAE
 #SBATCH --mail-user=muhammad.yaseen@cispa.de
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
-#SBATCH --time=00:55:00
+#SBATCH --time=00:59:00
 
-NAME="CS_VAE_celeba_restructure_test"
+NAME="CS_VAE_dsprites_correlated_restructure_test"
 echo "name=$NAME"
 
 # This path will work anywhere in JUWELS-Booster
 PROJECT_ROOT=/vae-disentanglement
 export DISENTANGLEMENT_LIB_DATA=$PROJECT_ROOT/datasets/
-DATASET_NAME=celeba
+DATASET_NAME=dsprites_correlated
 LOGS_DIR=$PROJECT_ROOT/train-logs
 
 # The path after .sif refers to the path within containers
