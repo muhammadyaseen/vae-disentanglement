@@ -274,6 +274,8 @@ class ConceptStructuredVAE(nn.Module):
         td_net_outs = kwargs['td_net_outs']
         bu_net_outs = kwargs['bu_net_outs']
         global_step = kwargs['global_step']
+        current_epoch = kwargs['current_epoch']
+
         bs = self.batch_size
         layered_labels = None # ?? # needed for classification loss
 
@@ -298,10 +300,10 @@ class ConceptStructuredVAE(nn.Module):
         # KLD for our dag network 
         #-------------------------
         # Since we can have arbitrary number of layers, it won't take a fixed form      
-        output_losses[c.KLD_LOSS], kld_loss_per_layer = self._cs_vae_kld_loss_fn(bu_net_outs, td_net_outs)
-        
-        output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
-        output_losses.update(kld_loss_per_layer)
+        if current_epoch > 10:
+            output_losses[c.KLD_LOSS], kld_loss_per_layer = self._cs_vae_kld_loss_fn(bu_net_outs, td_net_outs)
+            output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
+            output_losses.update(kld_loss_per_layer)
         
         # 3. Auxiliary classification loss
         if self.add_classification_loss:

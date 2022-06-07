@@ -791,13 +791,14 @@ def check_correlated_dimensions(image_batch, vae_model, current_device, perturb_
     with torch.no_grad():
         
         sq_diff_batch = []
-        fwd_pass_results = vae_model.model.forward(image_batch, current_device=current_device)
-        x_recon_orig, mu_orig = fwd_pass_results['x_recon'], fwd_pass_results['mu'] 
+        #fwd_pass_results = vae_model.model.forward(image_batch, current_device=current_device)
+        mus_orig, logvars_orig = vae_model.model.encode(image_batch)
+        #x_recon_orig, mu_orig = fwd_pass_results['x_recon'], fwd_pass_results['mu'] 
 
         # for each example X, perturb unit l=1 to L 
-        for mu in mu_orig:
+        for mu in mus_orig:
             # (dim(mu), mu)
-            mus_perturbed = _generate_perturbed_copies(mu, mode=perturb_mode,fixed_val=perturb_value)
+            mus_perturbed = _generate_perturbed_copies(mu, perturb_mode=perturb_mode,fixed_val=perturb_value)
             
             # generate and image from these perturbed means
             # (dim(mu), X.shape)
