@@ -1,0 +1,103 @@
+{
+  "main": {
+    "id": "c80c6ec9edaddb4e",
+    "type": "split",
+    "children": [
+      {
+        "id": "c29540eee5189604",
+        "type": "leaf",
+        "state": {
+          "type": "markdown",
+          "state": {
+            "file": "CSVAE experiments.md",
+            "mode": "source",
+            "source": false
+          }
+        }
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "d45eec7116358791",
+    "type": "split",
+    "children": [
+      {
+        "id": "43a5399acf9386c8",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "091dff956aba6eff",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {}
+            }
+          },
+          {
+            "id": "e9a1f5a808402419",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "6b18d73fee2a0408",
+    "type": "split",
+    "children": [
+      {
+        "id": "950a49ca88729668",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1f46f4bbba509565",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "CSVAE experiments.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "active": "c29540eee5189604",
+  "lastOpenFiles": [
+    "CSVAE experiments.md",
+    "images/sq_diff_vs_feat_imps.png",
+    "images/iccsvae-e2.png",
+    "images/iccsvae-e1.png",
+    "ToDos 03_06_22.md",
+    "Correlated BetaVAE experiments.md",
+    "ToDos 06_06_22.md",
+    "ToDos 04_06_22.md",
+    "Thinking Fast and Slow.md",
+    "Russel's conjugation.md"
+  ]
+}

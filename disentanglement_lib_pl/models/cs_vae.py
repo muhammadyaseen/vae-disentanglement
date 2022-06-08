@@ -305,7 +305,7 @@ class ConceptStructuredVAE(nn.Module):
             output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
             output_losses.update(kld_loss_per_layer)
         else:
-            output_losses[c.KLD_LOSS] = 0.0
+            output_losses[c.KLD_LOSS] = torch.Tensor([0.0]).to(device=x_recon.device)
         
         # 3. Auxiliary classification loss
         if self.add_classification_loss:
