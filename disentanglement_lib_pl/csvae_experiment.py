@@ -54,7 +54,7 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         self._log_kld_loss_per_layer(train_step_outputs)
 
         # Visualize Components of mean and sigma vector for every layer
-        self._log_mu_sigma_per_layer(train_step_outputs)
+        self._log_mu_per_layer(train_step_outputs)
         self._log_mu_histograms(train_step_outputs)
 
         # Visualize per layer weights
@@ -76,16 +76,18 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
             kld_loss = torch.stack([tso[kld_loss_key] for tso in train_step_outputs]).mean()
             self.logger.experiment.add_scalar(f"KLD_Per_Layer/{kld_loss_key}", kld_loss, self.current_epoch)
 
-    def _log_mu_sigma_per_layer(self, train_step_outputs):
+    def _log_mu_per_layer(self, train_step_outputs):
         """
         only logging mu for now
         """
         all_td_net_outs = [tso['td_net_outs'] for tso in train_step_outputs]
         td_net_count = len(self.model.top_down_networks)
         
-        for t in range(td_net_count):
-            mus = torch.cat([tdno[t]['mu_q'] for tdno in all_td_net_outs], dim=0).mean(0).tolist()
-            mu_dict = {f"mu_q_layer_{t}/component_{i}": component_val for i, component_val in enumerate(mus)}            
+        # reverse because tdnet[0] actually corresponds to params for z_L
+        for net_idx, latent_idx in zip(range(td_net_count), range(td_net_count)[::-1]):
+            mus = torch.cat([tdno[net_idx]['mu_q'] for tdno in all_td_net_outs], dim=0).mean(0).tolist()
+            # we do '+1' because latent indexing is 1-based, there is no Z_0
+            mu_dict = {f"mu_q_{latent_idx + 1}/component_{i}": component_val for i, component_val in enumerate(mus)}            
             for k , v in mu_dict.items():
                 self.logger.experiment.add_scalar(k, v, self.current_epoch)
 
@@ -95,13 +97,13 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         td_net_count = len(self.model.top_down_networks)
         
         # Every td_net gives 1 (multidim) mu
-        for t in range(td_net_count):
+        for net_idx, latent_idx in zip(range(td_net_count), range(td_net_count)[::-1]):
 
-            mus = torch.cat([tdno[t]['mu_q'] for tdno in all_td_net_outs], dim=0) #.mean(0).tolist()
+            mus = torch.cat([tdno[net_idx]['mu_q'] for tdno in all_td_net_outs], dim=0) #.mean(0).tolist()
         
             # Loop over every dim and add its histogram
             for k in range(mus.shape[1]):
-                self.logger.experiment.add_histogram(f"Mu_{t}/Dim_{k}", mus[:, k], self.current_epoch)
+                self.logger.experiment.add_histogram(f"Mu_{latent_idx + 1}/Dim_{k}", mus[:, k], self.current_epoch)
 
     def _log_per_layer_weights(self, train_step_outputs):
         

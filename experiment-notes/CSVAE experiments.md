@@ -1,15 +1,23 @@
+- [ ] Implement classification heads and think of a more general strategy to localize information in units
+- [ ] Debug Dying units / mu problem - Sparsity or Implementation Bug ?
+- [ ] Run both nets for 5 epochs to check if correct plots are being drawn
+
 ### Experiments with Increased Capacity 
 I did two sets of experiments on DSprites dataset
 1. IC CSVAE without KLD loss scheduling
 	In this case the same problems persisted. Loss doesn't change much and the activations are close to zero. Reconstructions are very bad, just a dull gray square-ish blob in the center
+	
 	![[iccsvae-e1.png]]
 2. IC CSVAE with KLD loss scheduling
 	Same behaviour as above.
 	![[iccsvae-e2.png]]
 
-KLD loss is zero in second iter, because we only introduce KLD loss after K=10 epochs. Even then, the reconstruction loss - which is the only effective loss as this point - doesn't change much. This behaviour or recon loss is similar to non-IC case. 
+![[csvae_dsprites_after_ic_recons.png]]
+KLD loss is zero in loss scheduling, because we only introduce KLD loss after K=10 epochs. Even then, the reconstruction loss - which is the only effective loss as this point - doesn't change much. This behaviour or recon loss is similar to non-IC case. 
 This makes *some* sense. If the layers only output $\mu=0$ and $\log \sum=0$ then we will have zero KLD loss. In top layer because it is being regularized to $\mathcal{N}(0,I)$ and in 2nd layer because (...because why? - Actually I don't know this - why is 2nd layer doing bad ?) I think for this I need to check the corresponding activations in `Bottom Up` layers.
 
+Another observation is that the <u>Recon loss starts at a higher value</u> compared to Previous i.e. Before Capacity Increase (~40 vs  ~140) and the mu activations are all almost zero eventhough because of scheduling there is no regularization pressure. So it basically got even worse.
+The two phenomenon go together because if activations are zero / non-informative than we of course can't get a good reconstruction. So I should first investigate why all the activations are zero. I had already noticed these zeros when I was verifying structure of CSVAE. I should now look deeper into it.
 
 
 ### Increased Capacity Implementation
@@ -28,11 +36,13 @@ I'm also not sure on what is the best way to visualize / interpret these dense `
 CS-VAE result on DSprites with corr=0.2 epochs=30 | Ran on 31-05-2022, Stored in as`train-logs/CS_VAE_dsprites_corr02_before_IC`
 
 Observations:
-		- KLD loss for latents lower in the hierarchy is going to zero and reconstruction is very bad. White-ish circular blob in the middle with some size variation that is moslty similar to the actual sprite size. So i'd say that the network is capturing the Color and Size, but not anything else.
-		-  KLD loss doesn't change much over ~30 epochs, staying b/w 7.5 and 6.8 for layer 0 and b/w 0.15 and 0.04 for layer 1
-		-  Almost all the $\mu$ components in all latent layers are <u>very close to zero</u> from above (small positive numbers)
-		- Losses seem to be behaving erratically, going up and down.
-		- Similar trend for reconstruction loss, it doesn't change much after first 2 epochs and stays b/w 35 - 31
+	- KLD loss for latents lower in the hierarchy is going to zero and reconstruction is very bad. White-ish circular blob in the middle with some size variation that is moslty similar to the actual sprite size. So i'd say that the network is capturing the Color and Size, but not anything else.
+	-  KLD loss doesn't change much over ~30 epochs, staying b/w 7.5 and 6.8 for layer 0 and b/w 0.15 and 0.04 for layer 1
+	-  Almost all the $\mu$ components in all latent layers are <u>very close to zero</u> from above (small positive numbers)
+	- Losses seem to be behaving erratically, going up and down.
+	- Similar trend for reconstruction loss, it doesn't change much after first 2 epochs and stays b/w 35 - 31
+![[csvae_before_ic_dsprites_loss.png]]
+![[csvae_before_ic_dsprites_recons.png]]
 Note: I don't recall if in this network I used a dense root note or a single unit one. 
 **Update:** It doesn't matter because DSprites does not have a single root node to begin with. There are 4 latents in the top layer. This was also confirmed by looking at Mu plots
 

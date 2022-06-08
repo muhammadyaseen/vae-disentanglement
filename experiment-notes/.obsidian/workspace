@@ -90,14 +90,14 @@
   "active": "c29540eee5189604",
   "lastOpenFiles": [
     "CSVAE experiments.md",
-    "images/sq_diff_vs_feat_imps.png",
-    "images/iccsvae-e2.png",
-    "images/iccsvae-e1.png",
-    "ToDos 03_06_22.md",
+    "images/csvae_before_ic_dsprites_loss.png",
+    "images/csvae_dsprites_after_ic_recons.png",
+    "images/csvae_before_ic_dsprites_recons.png",
     "Correlated BetaVAE experiments.md",
+    "images/bvae_b1_s02_50_recons.png",
+    "images/bvae_b1_s02_26_loss.png",
     "ToDos 06_06_22.md",
     "ToDos 04_06_22.md",
-    "Thinking Fast and Slow.md",
-    "Russel's conjugation.md"
+    "ToDos 03_06_22.md"
   ]
 }
