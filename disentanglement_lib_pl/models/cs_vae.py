@@ -253,16 +253,17 @@ class ConceptStructuredVAE(nn.Module):
 
         loss_per_layer = dict()
         kld_loss = 0.0 
+        L = len(self.top_down_networks)
 
-        for L, (bu_param, td_param) in enumerate(dist_params):
+        for l, (bu_param, td_param) in enumerate(dist_params):
             
-            if L == 0: # for z_L
+            if l == 0: # for z_L
                 layer_loss = kl_divergence_mu0_var1(bu_param['mu_q_hat'], bu_param['sigma_q_hat'])
             else: # for all other z's i.e z_1,...,z_{L-1}
                 layer_loss = kl_divergence_diag_mu_var(td_param['mu_q'], td_param['sigma_q'], 
                                           td_param['mu_p'], td_param['sigma_p'])
             
-            loss_per_layer[f'KLD_z_{L}'] = layer_loss.detach()
+            loss_per_layer[f'KLD_z_{L - l}'] = layer_loss.detach()
             
             kld_loss += layer_loss
         
