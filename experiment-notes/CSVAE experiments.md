@@ -1,6 +1,10 @@
 - [ ] Implement classification heads and think of a more general strategy to localize information in units
 - [ ] Debug Dying units / mu problem - Sparsity or Implementation Bug ?
 - [ ] Run both nets for 5 epochs to check if correct plots are being drawn
+- [ ] Histogram and Scalar doesn't show final layer data
+- [ ] Is `detach()` that I'm doing in `_top_down_pass()` the reason for zero entries?
+
+
 
 ### Experiments with Increased Capacity 
 I did two sets of experiments on DSprites dataset

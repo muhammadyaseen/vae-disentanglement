@@ -81,7 +81,11 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         only logging mu for now
         """
         all_td_net_outs = [tso['td_net_outs'] for tso in train_step_outputs]
-        td_net_count = len(self.model.top_down_networks)
+        # We do '+1' here because if we have K latents we will have K-1 td_nets,
+        # but even then in function cs_vae._top_down_pass() we append an extra 
+        # output that comes from the last BU net and serves as input to 1st TD net
+        # That last BU net outputs the variational dist params that we want to visualize
+        td_net_count = len(self.model.top_down_networks) + 1
         
         # reverse because tdnet[0] actually corresponds to params for z_L
         for net_idx, latent_idx in zip(range(td_net_count), range(td_net_count)[::-1]):
@@ -94,7 +98,7 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
     def _log_mu_histograms(self, train_step_outputs):
         
         all_td_net_outs = [tso['td_net_outs'] for tso in train_step_outputs]
-        td_net_count = len(self.model.top_down_networks)
+        td_net_count = len(self.model.top_down_networks) + 1
         
         # Every td_net gives 1 (multidim) mu
         for net_idx, latent_idx in zip(range(td_net_count), range(td_net_count)[::-1]):

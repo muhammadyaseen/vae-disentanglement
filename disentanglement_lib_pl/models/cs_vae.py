@@ -147,9 +147,9 @@ class ConceptStructuredVAE(nn.Module):
             interm_output = {
                     'mu_p':     torch.zeros(z.shape, device=current_device),
                     'sigma_p':  torch.zeros(z.shape, device=current_device), # this is log_var, hence zero (e^0 = 1)
-                    'mu_q':     bu_net_outs[0]['mu_q_hat'].detach(),
-                    'sigma_q':  bu_net_outs[0]['sigma_q_hat'].detach(),
-                    'z': z.detach() 
+                    'mu_q':     bu_net_outs[0]['mu_q_hat'],
+                    'sigma_q':  bu_net_outs[0]['sigma_q_hat'],
+                    'z': z 
                 }
             td_net_outs.append(interm_output)
         
@@ -179,8 +179,8 @@ class ConceptStructuredVAE(nn.Module):
                 # sample for current layer
                 z = reparametrize(mu_q_L, sigma_q_L)
 
-                interm_output = {'mu_p': mu_p_L.detach(), 'sigma_p': sigma_p_L.detach(), 
-                                 'mu_q': mu_q_L.detach(), 'sigma_q': sigma_q_L.detach(), 'z': z.detach() }
+                interm_output = {'mu_p': mu_p_L, 'sigma_p': sigma_p_L, 
+                                 'mu_q': mu_q_L, 'sigma_q': sigma_q_L, 'z': z }
                 td_net_outs.append(interm_output)
 
             if mode == 'sample':
@@ -224,7 +224,7 @@ class ConceptStructuredVAE(nn.Module):
         # Aux classification heads
         if self.add_classification_loss:
             clf_outs = self._classification_heads_pass(td_net_outs)
-            fwd_pass_results["clf_outs"] = clf_outs.detach()
+            fwd_pass_results["clf_outs"] = clf_outs
         
         # concat all z's?
         interm_zs = [td_net_out['z'] for td_net_out in td_net_outs]
