@@ -32,11 +32,3 @@ I plotted Latent traversals of highest varying dimensions for $\beta=1$ and epoc
 ![[sq_diff_vs_feat_imps.png]]
 
 - [ ] Train another network for 50 or more epochs but with higher $\beta$ e.g. $\beta=2$ or more. Why? More disent pressure?
-
-
-- [x] Latent traversal experiment
-- [ ] Run expanded / high capacity CSVAE on dsprites for 50 epochs 
-	- Didn't help. Main observations are that Recon loss starts at a higher value compared to normal betaVAE architecture (~25 vs  ~140) and the mu activations are all zero.
-	- The two phenomenon go together because if activations are zero / non-informative than we of course can't get a good reconstruction.
-	- So I should first investigate why all the activations are zero. I had already noticed these zeros when I was verifying structure of CSVAE. I should now look deeper into it
-	- 

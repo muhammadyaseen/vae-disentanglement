@@ -253,7 +253,7 @@ class ConceptStructuredVAE(nn.Module):
 
         loss_per_layer = dict()
         kld_loss = 0.0 
-        L = len(self.top_down_networks)
+        L = len(self.top_down_networks) + 1
 
         for l, (bu_param, td_param) in enumerate(dist_params):
             

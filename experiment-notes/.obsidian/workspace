@@ -90,10 +90,10 @@
   "active": "c29540eee5189604",
   "lastOpenFiles": [
     "CSVAE experiments.md",
+    "Correlated BetaVAE experiments.md",
     "images/csvae_before_ic_dsprites_loss.png",
     "images/csvae_dsprites_after_ic_recons.png",
     "images/csvae_before_ic_dsprites_recons.png",
-    "Correlated BetaVAE experiments.md",
     "images/bvae_b1_s02_50_recons.png",
     "images/bvae_b1_s02_26_loss.png",
     "ToDos 06_06_22.md",
