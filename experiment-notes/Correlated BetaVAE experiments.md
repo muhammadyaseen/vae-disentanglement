@@ -1,3 +1,19 @@
+Take all samples where only one factor has been changed (Conditional Sampling), pass those samples through the network and record all latents activations. Then compute mean and variance of each latent dimension. Using Z-scores or something similar you could probably easily make them comparable
+
+- [x] Activation Histogram for each latent dim - Done: Discovered dead dims and solved the issue of strong sq_diff in non-recon relevant dimensions
+- [ ] Responsibilities for each latent dim when only 1 factor is different / changed. The problem is that because of correlation we can't guarantee that only 1 factor would be different if we sample the correlated factors
+- [x] Does the error only occur when using multiple GPUs ? No it also ocurred in 1 GPU case. Further investigation revealed that all the relevant tensors are becoming `NaN` for some reason. One suggested reason was higher LR. Trying with 1/10th LR now.
+- [x] Is Using a single GPU actually faster than 4 GPUs ? It does seem so. 1 GPU takes 5m/epoch whereas `dp` with `gps=4` took nearly 9m/epoch.
+- [ ] Verify gradient behaviour with Masks on a Toy Problem
+
+
+What should happen to the dimensions that DO show recon difference when we perturb them?
+
+
+
+
+
+
 ### $\beta$-VAE  with $\beta = 1, \sigma = 0.2$ and 26 epochs
 The eperiment follows the same protocols as CommAss paper. It seems that the network wasn't converged at this point. Recons also have a room for improvement.
 

@@ -807,8 +807,10 @@ def check_correlated_dimensions(image_batch, vae_model, current_device, perturb_
             # (dim(mu), mu)
             mus_perturbed_recon, _ = vae_model.model.encode(x_recons_perturbed, current_device=current_device)
 
+            x_recons_from_mu_perturbed_recon = vae_model.model.decode(mus_perturbed_recon, current_device=current_device)
+
             sq_diff = (mus_perturbed_recon - mus_perturbed).pow(2)
-            sq_diff_batch.append((sq_diff, mus_perturbed_recon, mus_perturbed, x_recons_perturbed))
+            sq_diff_batch.append((sq_diff, mus_perturbed_recon, mus_perturbed, x_recons_perturbed, x_recons_from_mu_perturbed_recon))
 
         return sq_diff_batch
 
