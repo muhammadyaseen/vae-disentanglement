@@ -5,6 +5,7 @@ Take all samples where only one factor has been changed (Conditional Sampling), 
 - [x] Does the error only occur when using multiple GPUs ? No it also ocurred in 1 GPU case. Further investigation revealed that all the relevant tensors are becoming `NaN` for some reason. One suggested reason was higher LR. Trying with 1/10th LR now.
 - [x] Is Using a single GPU actually faster than 4 GPUs ? It does seem so. 1 GPU takes 5m/epoch whereas `dp` with `gps=4` took nearly 9m/epoch.
 - [ ] Verify gradient behaviour with Masks on a Toy Problem
+- [ ] Find saved best model from disentlib and convert to PT
 
 
 What should happen to the dimensions that DO show recon difference when we perturb them?

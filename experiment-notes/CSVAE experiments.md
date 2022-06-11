@@ -1,3 +1,4 @@
+- [ ] Right now, the intermediate layers in `DAGInteractionLayer` use `ReLU` activation. This ignores -ve part of the activations. I should try with `Tanh` . When I tried with `ReLU` on a toy net which had -ve inputs it attained poor loss and also seemed to get very high negative and positive weights. Haven't been able to reliably reproduce it, however. But the fact that it happened is worrisome. I don't remember exactly, but i think the high value thing happened when the network structure didn't correspond to data gen / dependency structure. Should try to reproduce it.
 - [ ] Implement classification heads and think of a more general strategy to localize information in units
 - [ ] Debug Dying units / mu problem - Sparsity or Implementation Bug ?
 - [ ] Run both nets for 5 epochs to check if correct plots are being drawn

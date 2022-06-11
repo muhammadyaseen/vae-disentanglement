@@ -39,7 +39,7 @@ class InputToIntermediate(nn.Module):
         masked_input_to_interm = self.W_input_to_interm.mul(self.input_to_intermediate_mask)
         interm_out = layer_input.matmul(masked_input_to_interm)
         interm_out = interm_out + self.B_input_to_interm
-        interm_out = F.relu(interm_out)
+        interm_out = F.tanh(interm_out)
         
         return interm_out
 
@@ -78,7 +78,7 @@ class Intermediate(nn.Module):
         masked_interm_to_interm = self.W_intermediate.mul(self.intermediate_mask)
         interm_out = layer_input.matmul(masked_interm_to_interm)
         interm_out = interm_out + self.b_intermediate
-        interm_out = F.relu(interm_out)
+        interm_out = F.tanh(interm_out)
         
         return interm_out
 
@@ -120,13 +120,13 @@ class IntermediateToOutput(nn.Module):
         masked_interm_to_output_mu = self.W_out_mu.mul(self.output_mask)
         mu_out = layer_input.matmul(masked_interm_to_output_mu)
         mu_out = mu_out + self.b_out_mu        
-        mu_out = F.relu(mu_out)
+        #mu_out = F.relu(mu_out)
         
         # \sigma head
         masked_interm_to_output_sigma = self.W_out_logvar.mul(self.output_mask)
         logvar_out = layer_input.matmul(masked_interm_to_output_sigma)
         logvar_out = logvar_out + self.b_out_logvar
-        logvar_out = F.relu(logvar_out)
+        #logvar_out = F.relu(logvar_out)
         
         return mu_out, logvar_out
 
