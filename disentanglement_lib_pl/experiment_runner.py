@@ -105,7 +105,7 @@ def get_trainer_params(cmdline_args, logger):
         base_trainer_params.update({
             'strategy': 'dp',
             'accelerator': 'gpu',
-            'devices': [0, 1, 2, 3],
+            'devices': [0], #, 1, 2, 3],
             'enable_progress_bar': False,
         })
     

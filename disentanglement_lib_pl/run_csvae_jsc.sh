@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --account=hai_cs_vaes
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:1
 #SBATCH --partition=develbooster
 #SBATCH --nodes=1
 #SBATCH --output=hai_cs_vaes-gpu-out-and-err.%j
@@ -20,7 +20,8 @@ DATASET_NAME=dsprites_correlated
 LOGS_DIR=$PROJECT_ROOT/train-logs
 
 # The path after .sif refers to the path within containers
-srun --account=hai_cs_vaes --gres=gpu:4 --partition=develbooster --nodes=1 \
+#srun --account=hai_cs_vaes --gres=gpu:4 --partition=develbooster --nodes=1 \
+srun \
     apptainer exec --nv --bind $PROJECT/vae-disentanglement:/vae-disentanglement \
     ./container-file/vae-disent-v1.1-tensorboard.sif python /vae-disentanglement/disentanglement_lib_pl/experiment_runner.py \
     --name=$NAME \
@@ -35,9 +36,9 @@ srun --account=hai_cs_vaes --gres=gpu:4 --partition=develbooster --nodes=1 \
     --batch_size=64 \
     --max_epoch=50 \
     --in_channels=1 \
-    --gpus 0 1 2 3  \
+    --gpus 0  \
     --visdom_on=False \
-    --lr_G=0.0001 \
+    --lr_G=0.00001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --interm_unit_dim=3 \
     --correlation_strength=0.2 

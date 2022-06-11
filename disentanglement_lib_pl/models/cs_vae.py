@@ -276,7 +276,11 @@ class ConceptStructuredVAE(nn.Module):
         bu_net_outs = kwargs['bu_net_outs']
         global_step = kwargs['global_step']
         current_epoch = kwargs['current_epoch']
-
+        num_is_nan = torch.isnan(x_recon).sum().item()
+        
+        if num_is_nan > 0:
+            print(kwargs)
+        
         bs = self.batch_size
         layered_labels = None # ?? # needed for classification loss
 
@@ -295,7 +299,7 @@ class ConceptStructuredVAE(nn.Module):
             output_losses[c.RECON] = F.mse_loss(x_recon, x_true, reduction='sum') / bs * self.w_recon
                
         output_losses[c.TOTAL_LOSS] += output_losses[c.RECON]
-
+        #/opt/pytorch/pytorch/aten/src/ATen/native/cuda/Loss.cu
         # 2. KL-div loss 
         #-------------------------
         # KLD for our dag network 
