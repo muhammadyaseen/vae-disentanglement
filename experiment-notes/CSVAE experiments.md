@@ -1,10 +1,12 @@
+- [ ] Read NVAE paper for details on training deep hierarchical VAEs
 - [ ] Right now, the intermediate layers in `DAGInteractionLayer` use `ReLU` activation. This ignores -ve part of the activations. I should try with `Tanh` . When I tried with `ReLU` on a toy net which had -ve inputs it attained poor loss and also seemed to get very high negative and positive weights. Haven't been able to reliably reproduce it, however. But the fact that it happened is worrisome. I don't remember exactly, but i think the high value thing happened when the network structure didn't correspond to data gen / dependency structure. Should try to reproduce it.
 - [ ] Implement classification heads and think of a more general strategy to localize information in units
+- [ ] Do I need to re-think BottomUp pass for `CSVAE`  ? In `LadderVAE` we don't have DAG constraint but in `CSVAE` we do. How (should ?) this affect the bottom up pass ?
 - [ ] Debug Dying units / mu problem - Sparsity or Implementation Bug ?
-- [ ] Run both nets for 5 epochs to check if correct plots are being drawn
+- [x] Run both nets for 5 epochs to check if correct plots are being drawn
 - [x] Histogram and Scalar doesn't show final layer data - Fixed
 - [x] Is `detach()` that I'm doing in `_top_down_pass()` the reason for zero entries?
-	- It appears so. Network has started learned after I removed it. Training for 50 epochs now to see long term behaviour
+	- It appears so. Network has started learning after I removed it. But now we have NaN issue
 - [ ] Finding out responsible latent dimension by passing in two X's with maximally different latent in 1 dim with other dims fixed (Jonas' msg : Normalize / Z-score etc)
 
 

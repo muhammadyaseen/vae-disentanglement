@@ -27,7 +27,8 @@ TOTAL_VAE_EPOCH = 'total_vae_epoch'
 LEARNING_RATE = 'learning_rate'
 AUX_CLASSIFICATION = 'AuxClassification'
 # Algorithms
-ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE', 'LadderVAE', 'ConceptStructuredVAE')
+ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE', 'LadderVAE', 
+        'ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization')
 LOSS_TERMS = (FACTORVAE, DIPVAE_I, DIPVAE_II, BetaTCVAE, INFOVAE, AUX_CLASSIFICATION)
 
 # Datasets

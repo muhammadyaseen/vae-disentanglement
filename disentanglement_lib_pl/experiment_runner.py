@@ -19,7 +19,8 @@ torch.backends.cudnn.benchmark = True
 EXPERIMENT_CLASS = {
     'LadderVAE': LadderVAEExperiment,
     'BetaVAE': BVAEExperiment,
-    'ConceptStructuredVAE': ConceptStructuredVAEExperiment
+    'ConceptStructuredVAE': ConceptStructuredVAEExperiment,
+    'CSVAE_ResidualDistParameterization': ConceptStructuredVAEExperiment
 }
 
 def get_dataset_specific_params(cmdline_args):
@@ -32,7 +33,8 @@ def get_dataset_specific_params(cmdline_args):
 def get_scalar_metrics_for_alg(cmdline_args):
     
     base_metrics = ['loss','recon', 'kld_loss']
-    if cmdline_args.alg == 'ConceptStructuredVAE':
+    if cmdline_args.alg == 'ConceptStructuredVAE' or \
+        cmdline_args.alg == 'CSVAE_ResidualDistParameterization':
         return base_metrics
     
     elif cmdline_args.alg == 'LadderVAE':
@@ -65,7 +67,8 @@ def get_experiment_config_for_alg(cmdline_args):
         max_epochs = cmdline_args.max_epoch
     )
 
-    if cmdline_args.alg == 'ConceptStructuredVAE':
+    if cmdline_args.alg == 'ConceptStructuredVAE' or \
+        cmdline_args.alg == 'CSVAE_ResidualDistParameterization':
         base_experiment_config.update({
 
         })
@@ -91,7 +94,7 @@ def get_trainer_params(cmdline_args, logger):
             default_root_dir=logger.save_dir,
             min_epochs=1,
             logger=logger,
-            limit_train_batches=1.0,
+            limit_train_batches=0.01,
             limit_val_batches=0.05,
             num_sanity_val_steps=2,
             callbacks = None,

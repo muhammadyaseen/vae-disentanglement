@@ -17,14 +17,14 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --name=$NAME \
     --ckpt_dir=$LOGS_DIR \
     --expr_name=$NAME \
-    --alg=ConceptStructuredVAE \
+    --alg=CSVAE_ResidualDistParameterization \
     --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
     --dset_name=$DATASET_NAME \
     --decoder=SimpleConv64CommAss \
     --w_kld=1 \
     --num_workers=1 \
     --batch_size=64 \
-    --max_epoch=3 \
+    --max_epoch=2 \
     --in_channels=3 \
     --gpus 0  \
     --visdom_on=False \
