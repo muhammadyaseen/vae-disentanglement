@@ -13,3 +13,4 @@ disent-vaes/logs
 *.yaml
 scripts/
 models/
+!disentanglement_lib_pl/models
