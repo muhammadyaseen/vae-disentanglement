@@ -40,6 +40,8 @@ class ConceptStructuredVAE(nn.Module):
         self.add_classification_loss = c.AUX_CLASSIFICATION in network_args.loss_terms
         self.w_recon = 1.0
         self.w_kld = 1.0
+
+        self.kl_warmup_epochs = network_args.kl_warmup_epochs
         
         # DAG - 0th element is list of first level nodels, last element is list of leaves / terminal nodes
         self.dag_layer_nodes = dag_utils.get_dag_layers(self.adjacency_matrix)        
@@ -57,8 +59,8 @@ class ConceptStructuredVAE(nn.Module):
         self.top_down_networks = self._init_top_down_networks()
         nodes_in_last_dag_layer = len(self.dag_layer_nodes[-1])
         total_dag_nodes = len(self.adjacency_matrix)
-        decoder_inp = total_dag_nodes - 1 + self.root_dim if len(self.dag_layer_nodes[0]) == 1 else total_dag_nodes
-        self.decoder = decoder(decoder_inp, self.num_channels, self.image_size)
+        self.decoder_inp = total_dag_nodes - 1 + self.root_dim if len(self.dag_layer_nodes[0]) == 1 else total_dag_nodes
+        self.decoder = decoder(self.decoder_inp, self.num_channels, self.image_size)
         
         if self.add_classification_loss:
             self.classification_heads = self._init_classification_heads()
@@ -228,6 +230,7 @@ class ConceptStructuredVAE(nn.Module):
         
         # concat all z's?
         interm_zs = [td_net_out['z'] for td_net_out in td_net_outs]
+        #print(interm_zs)
         concated_zs = torch.cat(interm_zs, dim=1)
         #print(concated_zs.shape)
         # Decode
@@ -305,7 +308,7 @@ class ConceptStructuredVAE(nn.Module):
         # KLD for our dag network 
         #-------------------------
         # Since we can have arbitrary number of layers, it won't take a fixed form      
-        if current_epoch > 10:
+        if current_epoch > self.kl_warmup_epochs:
             output_losses[c.KLD_LOSS], kld_loss_per_layer = self._cs_vae_kld_loss_fn(bu_net_outs, td_net_outs)
             output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
             output_losses.update(kld_loss_per_layer)

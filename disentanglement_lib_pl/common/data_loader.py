@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 from common import constants as c
-from common.known_datasets import CorrelatedDSpritesDataset, ThreeShapesDataset, OneDimLatentDataset, ContinumDataset, PolynomialDataset, DSpritesDataset
+from common.known_datasets import CorrelatedDSpritesDataset, ThreeShapesDataset, OneDimLatentDataset, ContinumDataset, PolynomialDataset, DSpritesDataset, ToyDataset
 
 class LabelHandler(object):
     def __init__(self, labels, label_weights, class_values):
@@ -188,7 +188,7 @@ def _get_transforms_for_dataset(dataset_name, image_size):
     
     # for these datasets, we only need to convert numpy to tensors.
     if dataset_name in ["dsprites_full", "dsprites_correlated", "dsprites_colored", "dsprites_cond",  
-                        "threeshapes", "threeshapesnoisy", "onedim", "continum"]:
+                        "threeshapes", "threeshapesnoisy", "onedim", "continum", "toydata"]:
         return transforms.ToTensor()
 
     return None
@@ -337,6 +337,14 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
         
         dset = PolynomialDataset
     
+    elif dataset_name == 'toydata':
+
+        root = os.path.join(dset_dir, dataset_name)
+        
+        data_kwargs = {'root': root,
+                'train_pct': train_pct,
+                'split': split}
+        dset = ToyDataset
     else:
         raise NotImplementedError
     

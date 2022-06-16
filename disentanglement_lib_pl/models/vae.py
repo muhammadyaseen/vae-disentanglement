@@ -40,7 +40,7 @@ class VAE(nn.Module):
         self.max_c = torch.tensor(args.max_c, dtype=torch.float)
         self.iterations_c = torch.tensor(args.iterations_c, dtype=torch.float)
         self.current_c = torch.tensor(0.0)
-
+        self.kl_warmup_epochs = args.kl_warmup_epochs
         # As a little joke
         assert self.w_kld == 1.0 or self.alg != 'VAE', 'in vanilla VAE, w_kld should be 1.0. ' \
                                                        'Please use BetaVAE if intended otherwise.'
@@ -99,6 +99,8 @@ class VAE(nn.Module):
         mu, logvar = kwargs['mu'], kwargs['logvar']
         global_step = kwargs['global_step']
         bs = self.batch_size
+        current_epoch = kwargs['current_epoch']
+        
         output_losses = dict()
         
         # initialize the loss of this batch with zero.
@@ -112,9 +114,12 @@ class VAE(nn.Module):
 
         output_losses[c.TOTAL_LOSS] += output_losses[c.RECON]
 
-        output_losses[c.KLD_LOSS] = self._kld_loss_fn(mu, logvar, global_step=global_step)
-        output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
-
+        if current_epoch > self.kl_warmup_epochs:
+            output_losses[c.KLD_LOSS] = self._kld_loss_fn(mu, logvar, global_step=global_step)
+            output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
+        else:
+            output_losses[c.KLD_LOSS] = torch.Tensor([0.0]).to(device=x_recon.device)
+        
         if c.FACTORVAE in self.loss_terms:
             from models.factorvae import factorvae_loss_fn
             output_losses['vae_tc_factor'], output_losses['discriminator_tc'] = factorvae_loss_fn(

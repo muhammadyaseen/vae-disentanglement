@@ -102,6 +102,9 @@ def get_args(sys_args):
                         help='Dimension used to represent the root node')
     parser.add_argument('--interm_unit_dim', default=2, type=int,
                         help='Dimension of each intermediate layer unit for top-down / dag layer networks')
+    parser.add_argument('--kl_warmup_epochs', default=0, type=int,
+                        help='Number of epochs after which KL loss is introduced')
+
     # Dataset
     parser.add_argument('--dset_dir', default=os.getenv('DISENTANGLEMENT_LIB_DATA', './data'),
                         type=str, help='main dataset directory')
@@ -133,8 +136,10 @@ def get_args(sys_args):
     parser.add_argument('--save_every_epoch', default=False, type=str2bool, help='Save visdom environment every epoch or not (Default: save on last epoch only)')
     
     # Save/Load checkpoint
-    parser.add_argument('--ckpt_dir', default='checkpoints', type=str, help='checkpoint directory')
-    parser.add_argument('--ckpt_load', default=None, type=str, help='checkpoint name to load')
+    parser.add_argument('--ckpt_dir', default='checkpoints', type=str, help='checkpoint directory to save checkpoints.')
+    parser.add_argument('--ckpt_path', default='checkpoints', type=str, help=' When --continue_training is true' 
+    ' it is iterpreted as a checkpoint path pointing to a *.ckpt file')
+    parser.add_argument('--continue_training', default=False, type=str2bool, help='Load the given checkpoint and continue training')
     parser.add_argument('--ckpt_load_iternum', default=True, type=str2bool, help='start global iteration from ckpt')
     parser.add_argument('--ckpt_load_optim', default=True, type=str2bool, help='load the optimizer state')
 

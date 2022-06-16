@@ -88,20 +88,20 @@ class Intermediate(nn.Module):
 
 class IntermediateToOutput(nn.Module):
     
-    def __init__(self, in_out_groups, in_group_dim):
+    def __init__(self, in_groups, in_group_dim):
 
         super().__init__()
 
-        self.in_out_groups = in_out_groups
+        self.in_groups = in_groups
         self.in_group_dim = in_group_dim
         self.out_group_dim = 1
-        self.output_mask = torch.from_numpy(dag_utils.get_mask_intermediate_to_intermediate(self.out_group_dim, in_out_groups, in_group_dim))
+        self.output_mask = torch.from_numpy(dag_utils.get_mask_intermediate_to_intermediate(self.out_group_dim, in_groups, in_group_dim))
         
-        self.W_out_mu = nn.Parameter(torch.Tensor(self.in_out_groups * self.in_group_dim, self.in_out_groups))
-        self.b_out_mu = nn.Parameter(torch.Tensor(self.in_out_groups))
+        self.W_out_mu = nn.Parameter(torch.Tensor(self.in_groups * self.in_group_dim, self.in_groups))
+        self.b_out_mu = nn.Parameter(torch.Tensor(self.in_groups))
         
-        self.W_out_logvar = nn.Parameter(torch.Tensor(self.in_out_groups * self.in_group_dim, self.in_out_groups))
-        self.b_out_logvar = nn.Parameter(torch.Tensor(self.in_out_groups))
+        self.W_out_logvar = nn.Parameter(torch.Tensor(self.in_groups * self.in_group_dim, self.in_groups))
+        self.b_out_logvar = nn.Parameter(torch.Tensor(self.in_groups))
 
         self._init_params()
     
@@ -131,7 +131,7 @@ class IntermediateToOutput(nn.Module):
         return mu_out, logvar_out
 
     def __repr__(self):
-        return f"IntermediateToOutput(in_out_groups={self.in_out_groups}, in_group_dim={self.in_group_dim}, " \
+        return f"IntermediateToOutput(in_groups={self.in_groups}, in_group_dim={self.in_group_dim}, " \
                f"out_group_dim={self.out_group_dim})"
 
 class L0_Dense(nn.Module):

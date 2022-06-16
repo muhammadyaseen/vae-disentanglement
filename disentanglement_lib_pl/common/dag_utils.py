@@ -19,6 +19,7 @@ def find_child_nodes(parent_nodes, adj_mat):
         for p in parent_nodes:
             if p in node:
                 child_nodes.append(node_idx)
+                break
 
     return None if len(child_nodes) == 0 else child_nodes  
 

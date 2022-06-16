@@ -508,3 +508,76 @@ class CorrelatedDSpritesDataset(Dataset):
         # we have to index into it with [0] to return just one example
         return torch.from_numpy(np.moveaxis(observations[0], 2, 0), ).type(torch.FloatTensor), factors[0]
     
+class ToyDataset(Dataset):
+
+    FILE_NAME = 'toydata_3x3_uc.npz'
+
+    def __init__(self, root, split="train", train_pct=0.90, transforms=None):
+        """
+        Args:
+            root (string): Directory with the .npz file.
+        """
+
+        assert transforms is not None, "need to give transform"
+
+        self.root_dir = root
+        self.transforms = transforms
+        self.split = split
+
+        dataset_zip = np.load(os.path.join(self.root_dir, self.FILE_NAME),
+                              allow_pickle=True, encoding='latin1')
+
+        self.images = dataset_zip['images']
+        self.latents_values = dataset_zip['latents_values']
+        #self.latents_classes = dataset_zip['latents_classes']
+
+        metadata = dataset_zip['metadata'][()]
+        self.latents_names = metadata['latents_names']
+
+        MAX_TRAIN_IDX = int(len(self.images) * train_pct)
+        print(f"Loaded {len(self.images)} images")
+
+        # get shuffled indices of training samples
+        self.train_indices = np.random.choice(len(self.images),
+                         size=MAX_TRAIN_IDX,
+                         replace=False)
+
+        # disjoint (shuffled) validation set indices
+        self.test_indices = np.random.permutation(
+                                np.setdiff1d(
+                                    range(len(self.images)), self.train_indices
+                                )
+                            )
+
+    def __len__(self):
+
+        if self.split == "train":
+            return len(self.train_indices)
+        elif self.split == "test":
+            return len(self.test_indices)
+        else:
+            Exception("Unknown split type")
+
+
+    def __getitem__(self, idx):
+
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        if self.split == "train":
+            idx = self.train_indices[idx]
+
+        if self.split == "test":
+            idx = self.test_indices[idx]
+
+        image = self.images[idx].astype(np.float32)
+
+        # turn into a 1-D vec
+        #image = torch.Tensor(image.reshape(image.shape[0] **2 ))
+
+        if self.transforms is not None:
+            image = self.transforms(image)
+
+        latent = self.latents_values[idx]
+
+        return image, latent

@@ -85,3 +85,49 @@ class SimpleGaussianConv64CommAss(SimpleConv64CommAss):
         mu = mu_logvar[:, :self._latent_dim]
         logvar = mu_logvar[:, self._latent_dim:]
         return mu, logvar
+
+class SmallEncoder(nn.Module):
+
+    def __init__(self, latent_dim, num_channels, image_size):
+        
+        super().__init__()
+        
+        self.latent_dim = latent_dim
+        self.main = nn.Sequential(
+                        nn.Conv2d(1, 5, 2, 1, 0), # B,5,2,2
+                        nn.ReLU(True),
+                        Flatten3D(), # B,5x2x2
+                        nn.Linear(20, 10),
+                        nn.Tanh(),
+                        nn.Linear(10, self.latent_dim * 2)
+                    )
+
+    def forward(self, x):
+
+        mu_logvar = self.main(x)
+        mu = mu_logvar[:, :self.latent_dim]
+        logvar = mu_logvar[:, self.latent_dim:]
+        return mu, logvar
+
+class SmallFCEncoder(nn.Module):
+
+    def __init__(self, latent_dim, num_channels, image_size):
+        
+        super().__init__()
+        
+        self.latent_dim = latent_dim
+        self.main = nn.Sequential(
+                        Flatten3D(),
+                        nn.Linear(9, 20),
+                        nn.Tanh(),
+                        nn.Linear(20, 10),
+                        nn.Tanh(),
+                        nn.Linear(10, self.latent_dim * 2)
+        )
+
+    def forward(self, x):
+
+        mu_logvar = self.main(x)
+        mu = mu_logvar[:, :self.latent_dim]
+        logvar = mu_logvar[:, self.latent_dim:]
+        return mu, logvar

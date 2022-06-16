@@ -20,7 +20,8 @@ EXPERIMENT_CLASS = {
     'LadderVAE': LadderVAEExperiment,
     'BetaVAE': BVAEExperiment,
     'ConceptStructuredVAE': ConceptStructuredVAEExperiment,
-    'CSVAE_ResidualDistParameterization': ConceptStructuredVAEExperiment
+    'CSVAE_ResidualDistParameterization': ConceptStructuredVAEExperiment,
+    'CSVAE_Toy': ConceptStructuredVAEExperiment
 }
 
 def get_dataset_specific_params(cmdline_args):
@@ -34,7 +35,8 @@ def get_scalar_metrics_for_alg(cmdline_args):
     
     base_metrics = ['loss','recon', 'kld_loss']
     if cmdline_args.alg == 'ConceptStructuredVAE' or \
-        cmdline_args.alg == 'CSVAE_ResidualDistParameterization':
+        cmdline_args.alg == 'CSVAE_ResidualDistParameterization' or \
+        cmdline_args.alg == 'CSVAE_Toy':
         return base_metrics
     
     elif cmdline_args.alg == 'LadderVAE':
@@ -68,7 +70,8 @@ def get_experiment_config_for_alg(cmdline_args):
     )
 
     if cmdline_args.alg == 'ConceptStructuredVAE' or \
-        cmdline_args.alg == 'CSVAE_ResidualDistParameterization':
+        cmdline_args.alg == 'CSVAE_ResidualDistParameterization' or \
+        cmdline_args.alg == 'CSVAE_Toy':
         base_experiment_config.update({
 
         })
@@ -115,7 +118,15 @@ def get_trainer_params(cmdline_args, logger):
     if pl.__version__ == '1.4.4': # Local
         base_trainer_params.update({
             'accelerator': 'dp',
-            'progress_bar_refresh_rate': 0
+            'progress_bar_refresh_rate': 0,
+            'gpus': 1
+        })
+
+    # whether we are continuing training or starting from scratch
+    if cmdline_args.continue_training:
+        print("Trainer will load the saved model from: ", cmdline_args.ckpt_path)
+        base_trainer_params.update({
+            'resume_from_checkpoint': cmdline_args.ckpt_path
         })
 
     return base_trainer_params
@@ -135,10 +146,10 @@ def main(_args):
     print(model)
     
     # load checkpoint
-    if _args.ckpt_load:
-        model.load_checkpoint(_args.ckpt_load, 
-                                load_iternum=_args.ckpt_load_iternum, 
-                                load_optim=_args.ckpt_load_optim)
+    #if _args.ckpt_load:
+    #    model.load_checkpoint(_args.ckpt_load, 
+    #                            load_iternum=_args.ckpt_load_iternum, 
+    #                            load_optim=_args.ckpt_load_optim)
 
 
     # Get expr metadata and hyperparams etc

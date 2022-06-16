@@ -30,5 +30,5 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
 --in_channels=3 \
 --gpus 0 \
 --visdom_on=False \
---lr_G=0.0001 \
+--lr_G=0.001 \
 --correlation_strength=0.2

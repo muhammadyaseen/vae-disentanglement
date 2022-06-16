@@ -64,3 +64,40 @@ class SimpleConv64CommAss(BaseImageEncoder):
 
     def forward(self, x):
         return self.main(x)
+
+class SmallDecoder(nn.Module):
+
+    def __init__(self, latent_dim, num_channels, image_size):
+
+        super().__init__()
+        self.latent_dim = latent_dim
+        self.main = nn.Sequential(
+            Unsqueeze3D(),
+            nn.Conv2d(self.latent_dim, 20, 1, 1), 
+            nn.ReLU(True),
+            Reshape([5, 2, 2]),
+            nn.ConvTranspose2d(5, num_channels, 2, 1, 0)
+        )
+
+    def forward(self, x):
+
+        return self.main(x)
+
+class SmallFCDecoder(nn.Module):
+
+    def __init__(self, latent_dim, num_channels, image_size):
+
+        super().__init__()
+        self.latent_dim = latent_dim
+        self.main = nn.Sequential(
+            nn.Linear(self.latent_dim, 10), 
+            nn.Tanh(),
+            nn.Linear(10, 20),
+            nn.Tanh(),
+            nn.Linear(20, 9),
+            Reshape([1, 3, 3])
+        )
+
+    def forward(self, x):
+
+        return self.main(x)

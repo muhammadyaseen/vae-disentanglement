@@ -28,7 +28,7 @@ LEARNING_RATE = 'learning_rate'
 AUX_CLASSIFICATION = 'AuxClassification'
 # Algorithms
 ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE', 'LadderVAE', 
-        'ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization')
+        'ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization','CSVAE_Toy')
 LOSS_TERMS = (FACTORVAE, DIPVAE_I, DIPVAE_II, BetaTCVAE, INFOVAE, AUX_CLASSIFICATION)
 
 # Datasets
@@ -40,7 +40,8 @@ DATASETS = ('dsprites_cond', 'polynomial',
 # Datasets for which we have loaders in common.known_datasets and that aren't DisentLibDatasets
 KNOWN_DATASETS = (
     'celeba', 'dsprites_full', 'onedim','threeshapes','threeshapesnoisy', 
-    'continum', 'dsprites_colored', 'dsprites_cond', 'polynomial'
+    'continum', 'dsprites_colored', 'dsprites_cond', 'polynomial', 
+    'toydata'
 )
 # Datasets for which we have loaders in common.known_datasets and that ARE DisentLibDatasets
 KNOWN_DISENTLIB_DATASETS = ('dsprites_correlated',)
@@ -52,10 +53,10 @@ TEST_DATASETS = DATASETS[0:2]  # celebA, dsprites_full
 DISCRIMINATORS = ('SimpleDiscriminator', 'SimpleDiscriminatorConv64')
 TILERS = ('MultiTo2DChannel',)
 DECODERS = ('SimpleConv64', 'ShallowLinear', 'DeepLinear','SimpleFCNNDencoder',
-            'SimpleConv64CommAss')
+            'SimpleConv64CommAss', 'SmallDecoder','SmallFCDecoder')
 ENCODERS = ('SimpleConv64', 'SimpleGaussianConv64', 'PadlessConv64', 'PadlessGaussianConv64',
             'ShallowGaussianLinear', 'DeepGaussianLinear','SimpleFCNNEncoder', 
-            'SimpleGaussianConv64CommAss')
+            'SimpleGaussianConv64CommAss', 'SmallEncoder', 'SmallFCEncoder')
 
 # Evaluation Metrics
 EVALUATION_METRICS = ('dci', 'factor_vae_metric', 'sap_score', 'mig', 'irs', 'beta_vae_sklearn')
