@@ -2,7 +2,7 @@
 
 FILENAME=$(basename $0)
 FILENAME="${FILENAME%.*}"
-NAME="BetaVAE_Toy"
+NAME="BetaVAE_Toy_corr"
 echo "name=$NAME"
 
 PROJECT_ROOT=./vae-disentanglement
@@ -30,11 +30,9 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --in_channels=1 \
     --gpus 0  \
     --visdom_on=False \
-    --lr_G=0.001 \
-    --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
-    --interm_unit_dim=3 \
-    --correlation_strength=0.2 \
-    --continue_training=True \
-    --ckpt_path=$LOGS_DIR/BetaVAE_Toy/version_1/checkpoints/epoch=49-step=699.ckpt
-    
-
+    --lr_G=0.001 
+#    --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
+#    --interm_unit_dim=3 \
+#    --correlation_strength=0.2 \
+#    --continue_training=True \
+#    --ckpt_path=$LOGS_DIR/BetaVAE_Toy/version_1/checkpoints/epoch=49-step=699.ckpt

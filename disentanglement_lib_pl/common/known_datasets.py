@@ -510,7 +510,7 @@ class CorrelatedDSpritesDataset(Dataset):
     
 class ToyDataset(Dataset):
 
-    FILE_NAME = 'toydata_3x3_uc.npz'
+    FILE_NAME = 'toydata_3x3.npz'
 
     def __init__(self, root, split="train", train_pct=0.90, transforms=None):
         """

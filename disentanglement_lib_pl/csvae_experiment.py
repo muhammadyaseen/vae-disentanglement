@@ -55,7 +55,7 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
 
         # Visualize Components of mean and sigma vector for every layer
         self._log_mu_per_layer(train_step_outputs)
-        self._log_mu_histograms(train_step_outputs)
+        self._log_logvar_per_layer(train_step_outputs)
 
         # Visualize per layer weights
         self._log_per_layer_weights(train_step_outputs)
@@ -89,9 +89,42 @@ class ConceptStructuredVAEExperiment(BaseVAEExperiment):
         
         # reverse because tdnet[0] actually corresponds to params for z_L
         for net_idx, latent_idx in zip(range(td_net_count), range(td_net_count)[::-1]):
-            mus = torch.cat([tdno[net_idx]['mu_q'] for tdno in all_td_net_outs], dim=0).mean(0).tolist()
+            
+            # Histograms
+            mus = torch.cat([tdno[net_idx]['mu_q'] for tdno in all_td_net_outs], dim=0)
+            # Loop over every dim and add its histogram
+            for k in range(mus.shape[1]):
+                self.logger.experiment.add_histogram(f"Mu_q{latent_idx + 1}/Dim_{k}", mus[:, k], self.current_epoch)
+            
+            # Scalars
+            mus = mus.mean(0).tolist()
             # we do '+1' because latent indexing is 1-based, there is no Z_0
-            mu_dict = {f"mu_q_{latent_idx + 1}/component_{i}": component_val for i, component_val in enumerate(mus)}            
+            mu_dict = {f"Mu_q{latent_idx + 1}/component_{i}": component_val for i, component_val in enumerate(mus)}            
+            for k , v in mu_dict.items():
+                self.logger.experiment.add_scalar(k, v, self.current_epoch)
+    
+    def _log_logvar_per_layer(self, train_step_outputs):
+
+        all_td_net_outs = [tso['td_net_outs'] for tso in train_step_outputs]
+        # We do '+1' here because if we have K latents we will have K-1 td_nets,
+        # but even then in function cs_vae._top_down_pass() we append an extra 
+        # output that comes from the last BU net and serves as input to 1st TD net
+        # That last BU net outputs the variational dist params that we want to visualize
+        td_net_count = len(self.model.top_down_networks) + 1
+        
+        # reverse because tdnet[0] actually corresponds to params for z_L
+        for net_idx, latent_idx in zip(range(td_net_count), range(td_net_count)[::-1]):
+            
+            # Histograms
+            logvars = torch.cat([tdno[net_idx]['sigma_q'] for tdno in all_td_net_outs], dim=0)
+            # Loop over every dim and add its histogram
+            for k in range(logvars.shape[1]):
+                self.logger.experiment.add_histogram(f"LogVar_q{latent_idx + 1}/Dim_{k}", logvars[:, k], self.current_epoch)
+            
+            # Scalars
+            logvars = logvars.mean(0).tolist()
+            # we do '+1' because latent indexing is 1-based, there is no Z_0
+            mu_dict = {f"LogVar_q{latent_idx + 1}/component_{i}": component_val for i, component_val in enumerate(logvars)}            
             for k , v in mu_dict.items():
                 self.logger.experiment.add_scalar(k, v, self.current_epoch)
 

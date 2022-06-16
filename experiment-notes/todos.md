@@ -1,6 +1,7 @@
 - [ ] make notes from experiment results
-- [ ] Implement `--continue-training` and test it with `tensorboard`
-- [ ] read NVAE paper
+- [x] Implement `--continue-training` and test it with `tensorboard`
+	- PL takes care of Epoch number, it starts from n+1 and you have to supply max_epochs greater than n. But in Tensorboard logs are not merged, they are stored in a separate version folder. So to see both in single plot one has to check both versions
+- [x] read NVAE paper
 	- Residual Gaussian dist parameterization
 	- KL balancing coeffs
 	- KL warm-up
