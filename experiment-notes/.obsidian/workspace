@@ -9,7 +9,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "todos.md",
+            "file": "VACA.md",
             "mode": "source",
             "source": false
           }
@@ -70,7 +70,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "todos.md",
+                "file": "VACA.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -90,15 +90,15 @@
   },
   "active": "c29540eee5189604",
   "lastOpenFiles": [
+    "VACA.md",
     "todos.md",
-    "CSVAE experiments.md",
-    "Correlated BetaVAE experiments.md",
-    "images/sq_diff_vs_feat_imps.png",
-    "images/csvae_before_ic_dsprites_loss.png",
-    "images/csvae_dsprites_after_ic_recons.png",
-    "images/csvae_before_ic_dsprites_recons.png",
-    "images/bvae_b1_s02_50_recons.png",
-    "images/bvae_b1_s02_26_loss.png",
-    "ToDos 06_06_22.md"
+    "todos_daily.md",
+    "ToyVAE experiments.md",
+    "e100_corr-toy-recons-scalar.png.md",
+    "images/recon_kld_stable_weightedeblo_corr.png",
+    "images/e100_corr-toy-recons-scalar.png",
+    "images/e100_corr-toy-recons-scalars.png",
+    "images/e50_e100_uncorr-toy-hists.png",
+    "images/Pasted image 20220617103208.png"
   ]
 }

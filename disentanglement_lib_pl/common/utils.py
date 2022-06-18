@@ -356,7 +356,7 @@ def save_cmdline_params(args):
     os.makedirs(cmdline_params_dir, exist_ok=True)
     cmdline_params_file = os.path.join(cmdline_params_dir, "run-params.txt")
     
-    json.dump(args.__dict__, open(cmdline_params_file, 'w'))
+    json.dump(args.__dict__, open(cmdline_params_file, 'w'), indent=2)
 
 # Shamelessly copied from new matplotlib source code
 # because I'm too afraid to upgrade and mess up my dev environment.

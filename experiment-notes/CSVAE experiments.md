@@ -1,14 +1,33 @@
-- [ ] Read NVAE paper for details on training deep hierarchical VAEs
-- [ ] Right now, the intermediate layers in `DAGInteractionLayer` use `ReLU` activation. This ignores -ve part of the activations. I should try with `Tanh` . When I tried with `ReLU` on a toy net which had -ve inputs it attained poor loss and also seemed to get very high negative and positive weights. Haven't been able to reliably reproduce it, however. But the fact that it happened is worrisome. I don't remember exactly, but i think the high value thing happened when the network structure didn't correspond to data gen / dependency structure. Should try to reproduce it.
+### Experiment: Increased Capacity with KLD Scheduling over 10 epochs
+- Trained for 50 epochs in total, KLD loss is introduced after 10 epochs. 
+- Same weight for Recon and KLD loss. Both equal to 1
+- Still using LadderVAE's version of mu and sigma calculation
+
+Very poor reconstructions:
+![[EC_e50_kldsch10-csvae-recons.png]]
+Weird behaviour in the loss curve where it goes up and down
+
+![[weird_loss_csvae_r50_ks10.png]]
+- (Recon) Loss was going down until 10th epoch. Then KLD loss was introduced.
+- After 10th epoch loss behaves in a very unstable manner. This seems to be the result of "sharp gradient update" mentioned in NVAE paper.
+- No idea about this oscillatory behaviour.
+![[EC_e50_kldsch10-csvae-recons_scalars.png]]
+
+- Top latent layer $Z_2$ components go immediately towards zero as soon as KLD loss is introduced.
+
+Histograms:
+![[EC_e50_kldsch10-csvae-hists.png]]
+
+- Implementing Residual Gaussian Param didn't seem to help but I only ran it for 20 epochs.
+
+
+
+
+- [x] Right now, the intermediate layers in `DAGInteractionLayer` use `ReLU` activation. This ignores -ve part of the activations. I should try with `Tanh` . When I tried with `ReLU` on a toy net which had -ve inputs it attained poor loss and also seemed to get very high negative and positive weights. Haven't been able to reliably reproduce it, however. But the fact that it happened is worrisome. I don't remember exactly, but i think the high value thing happened when the network structure didn't correspond to data gen / dependency structure. Should try to reproduce it.
+- [ ] Verify gradient behaviour with Masks on a Toy Problem
 - [ ] Implement classification heads and think of a more general strategy to localize information in units
-- [ ] Do I need to re-think BottomUp pass for `CSVAE`  ? In `LadderVAE` we don't have DAG constraint but in `CSVAE` we do. How (should ?) this affect the bottom up pass ?
-- [ ] Debug Dying units / mu problem - Sparsity or Implementation Bug ?
-- [x] Run both nets for 5 epochs to check if correct plots are being drawn
-- [x] Histogram and Scalar doesn't show final layer data - Fixed
 - [x] Is `detach()` that I'm doing in `_top_down_pass()` the reason for zero entries?
 	- It appears so. Network has started learning after I removed it. But now we have NaN issue
-- [ ] Finding out responsible latent dimension by passing in two X's with maximally different latent in 1 dim with other dims fixed (Jonas' msg : Normalize / Z-score etc)
-
 
 ### Experiments with Increased Capacity 
 I did two sets of experiments on DSprites dataset

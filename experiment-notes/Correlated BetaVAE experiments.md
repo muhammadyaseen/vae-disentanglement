@@ -4,9 +4,8 @@ Take all samples where only one factor has been changed (Conditional Sampling), 
 - [ ] Responsibilities for each latent dim when only 1 factor is different / changed. The problem is that because of correlation we can't guarantee that only 1 factor would be different if we sample the correlated factors
 - [x] Does the error only occur when using multiple GPUs ? No it also ocurred in 1 GPU case. Further investigation revealed that all the relevant tensors are becoming `NaN` for some reason. One suggested reason was higher LR. Trying with 1/10th LR now.
 - [x] Is Using a single GPU actually faster than 4 GPUs ? It does seem so. 1 GPU takes 5m/epoch whereas `dp` with `gps=4` took nearly 9m/epoch.
-- [ ] Verify gradient behaviour with Masks on a Toy Problem
 - [ ] Find saved best model from disentlib and convert to PT
-
+- [ ] Finding out responsible latent dimension by passing in two X's with maximally different latent in 1 dim with other dims fixed (Jonas' msg : Normalize / Z-score etc)
 
 What should happen to the dimensions that DO show recon difference when we perturb them?
 
