@@ -9,7 +9,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "VACA.md",
+            "file": "CSVAE experiments.md",
             "mode": "source",
             "source": false
           }
@@ -53,8 +53,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "6b18d73fee2a0408",
@@ -70,7 +69,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "VACA.md",
+                "file": "CSVAE experiments.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -90,15 +89,15 @@
   },
   "active": "c29540eee5189604",
   "lastOpenFiles": [
-    "VACA.md",
+    "CSVAE experiments.md",
     "todos.md",
+    "VACA.md",
     "todos_daily.md",
     "ToyVAE experiments.md",
     "e100_corr-toy-recons-scalar.png.md",
     "images/recon_kld_stable_weightedeblo_corr.png",
     "images/e100_corr-toy-recons-scalar.png",
     "images/e100_corr-toy-recons-scalars.png",
-    "images/e50_e100_uncorr-toy-hists.png",
-    "images/Pasted image 20220617103208.png"
+    "images/e50_e100_uncorr-toy-hists.png"
   ]
 }

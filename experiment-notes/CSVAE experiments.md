@@ -1,3 +1,12 @@
+### GNN idea exploration
+- I can use GNNs to implement the latent structure in encoder and decoder
+- Serial nature of Ladder-like networks where values are assigned sequentially dependent on previous values vs the sync nature of GNNs in which nodes are updated at once. (This seems like a 'surface level' problem.. should be able to get around that)
+- DAG has directionality but GNNs don't afaik. I think we can simply implement it using DAG Adj. Mats.
+- In GNNs node features are multidim but I want to associate each node with a single distinct concept. How would that be achieved?
+- We can have arbitrarily complex message NN but at the end all node features need to be condensed down to same number of dims. Could this lead to a bottleneck ?
+- Implementing this in a way s.t. node features have accessed to multi-scale processed X. 
+
+
 ### Experiment: Increased Capacity with KLD Scheduling over 10 epochs
 - Trained for 50 epochs in total, KLD loss is introduced after 10 epochs. 
 - Same weight for Recon and KLD loss. Both equal to 1

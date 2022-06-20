@@ -6,13 +6,14 @@
 	- How BU and TD nets are treated ?
 - [ ] Read VACA paper https://arxiv.org/pdf/2110.14690.pdf
 - [ ] Check BUnet activations, check sigmas
-- [ ] Implement CS VAE Latent layer using GNN ? Is this a good idea?
+- [ ] Implement CS VAE Latent layer using GNN ? Is this a good idea? 
+https://pytorch-lightning.readthedocs.io/en/stable/notebooks/course_UvA-DL/06-graph-neural-networks.html
 
 Thinking about a dataset (VACA can be helpful here)
 Thinking about CNN information flow
 Spatial vs. Conceptual latents / Micro vs Macro latents
 
-
+Relating Graph Neural Networks to Structural Causal Models https://arxiv.org/abs/2109.04173
 
 
 
