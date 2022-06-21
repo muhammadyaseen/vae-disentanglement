@@ -8,6 +8,8 @@
 - How do $Z$ latents relate to $X$ semantically, if at all ?
 - How do $Z$ latents relate to $U$ semantically, if at all ?
 - On which part of the architecture do interventions take place?
+- Did they check that the nodes in decoder correspond to the concepts in the data? 
+- How do interventions work?
 
 GNN operates on nodes given by components of $X = \{x_1, \ldots, x_k\}$
 There are features associated with each node. These features depend on the node itself and its neighbours (or further down the hierarchy?)
