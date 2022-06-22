@@ -135,7 +135,8 @@ class SmallFCEncoder(nn.Module):
 
 class MultiScaleEncoder(nn.Module):
     """
-    Encoder as used in 'Challenging Common Assumptions in the Unsupervised Learning of Disentangled Representations'
+    Extracts features at multiple scales.
+    To be used in conjunction wth GNN Encoders in special_modules
     """
     def __init__(self, feature_dim, num_channels, image_size):
         super().__init__()
