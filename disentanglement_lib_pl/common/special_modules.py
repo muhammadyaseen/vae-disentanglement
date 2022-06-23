@@ -352,8 +352,9 @@ class SimplePriorGNNLayer(nn.Module):
         node_feats = node_feats / self.num_neighbours
 
         # I think this should only happen in the final layer?
+        # non-lin here ? ReLU(node_feats)
         node_feats_mu, node_feats_logvar = node_feats.chunk(2)
         eps = torch.randn(size=(node_feats[1]))
         node_feats_dist_params = node_feats_mu + eps * node_feats_logvar
-        # non-lin here ?
+        
         return node_feats
