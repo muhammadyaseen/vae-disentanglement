@@ -75,7 +75,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.decoder_dcnn = SimpleConv64CommAss(decoder_input_dim, self.num_channels, self.image_size)
         
         # Supervised reg
-        self.latents_classifier = None
+        self.latents_classifier = self._init_classification_network(in_dim=6, out_dim=5)
         self.flatten_node_features = Flatten3D()
         
         print("GNNBasedConceptStructuredVAE Model Initialized")
@@ -107,9 +107,26 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         return fwd_pass_results
 
+    def _init_classification_network(self, in_dim, out_dim):
+
+        clf_net = nn.Sequential(
+            nn.Linear(in_dim, 10),
+            nn.Tanh(),
+            nn.Linear(20, out_dim),
+        )
+
+        return clf_net
+
     def _classification_loss(self, predicted_latents, true_latents):
-        # we won't always have binary latents
-        return F.binary_cross_entropy(predicted_latents, true_latents, reduction='sum') / self.batch_size
+        
+        # TODO: impl. per node loss calc
+        per_node_loss = None
+        # we won't always have binary / mse latents - this should be dataset dependent
+        #return F.binary_cross_entropy(predicted_latents, true_latents, reduction='sum') / self.batch_size
+        
+        clf_loss =  F.mse_loss(predicted_latents, true_latents, reduction='mean')
+        
+        return clf_loss, per_node_loss
 
     def _gnn_cs_vae_kld_loss_fn(self, prior_mu, prior_logvar, posterior_mu, posterior_logvar):
         """
