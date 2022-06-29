@@ -33,6 +33,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
             self.adjacency_list = None
             raise ValueError("Unsupported format for adjacency_matrix")
 
+        self.add_classification_loss = True
         self.num_nodes = len(self.adjacency_list)
         self.adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
         self.interm_unit_dim = network_args.interm_unit_dim
@@ -83,7 +84,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
     def forward(self, x_true, **kwargs):
 
         fwd_pass_results = dict()
-        
+
         # Encode - extract multiscale feats and then pass thru posterior GNN 
         posterior_mu, posterior_logvar, posterior_z = self.encode(x_true, **kwargs)
         

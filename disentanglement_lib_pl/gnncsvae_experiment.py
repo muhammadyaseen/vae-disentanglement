@@ -24,10 +24,11 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         
         x_true, label = batch
         self.current_device = x_true.device
-        fwd_pass_results = self.forward(x_true, label=label, current_device=self.current_device)
+        fwd_pass_results = self.forward(x_true, current_device=self.current_device)
 
         fwd_pass_results.update({
             'x_true': x_true,
+            'true_latents': label,
             'optimizer_idx': optimizer_idx,
             'batch_idx': batch_idx,
             'global_step': self.global_step,
@@ -38,8 +39,10 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
 
         # We need it for visualizing per layer mean / sigma components
         train_step_outputs.update({
-            # clf loss + per latent
-            # kld loss + per node
+            "prior_mu": fwd_pass_results['prior_mu'].detach(),
+            "prior_logvar": fwd_pass_results['prior_logvar'].detach(),
+            "posterior_mu": fwd_pass_results['posterior_mu'].detach(), 
+            "posterior_logvar": fwd_pass_results['posterior_logvar'].detach(),
         })
 
         return train_step_outputs        
