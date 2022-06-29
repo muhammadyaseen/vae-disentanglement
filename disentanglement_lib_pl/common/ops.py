@@ -33,6 +33,17 @@ def kl_divergence_diag_mu_var(mu, logvar, target_mu, target_logvar):
             ).sum(1).mean()
     return kld
 
+def kl_divergence_diag_mu_var_per_node(mu, logvar, target_mu, target_logvar):
+    
+    # Calculate per node kldloss
+
+    # input have shape (Batch, V, node_feats)
+    # output has shape (V, 1)
+    kld = -0.5 * ( 1 - target_logvar + logvar -
+                  ((target_mu - mu) * target_logvar.exp().pow(-1) * (target_mu - mu)) - 
+                    (target_logvar.exp().pow(-1)*logvar.exp())
+            ).sum(2, keepdims=True).mean(0)
+    return kld
 
 def kl_divergence_var1(logvar):
     kld = -0.5 * (1 + logvar - logvar.exp()).sum(1).mean()
@@ -54,19 +65,24 @@ def entropy(x):
 
 
 class Flatten3D(nn.Module):
-    # Convert size of [batch, A, B, C] to [batch, A*B*C] e.g [2,3,4,4] to [2, 48]
-    # Used when to convert Conv2d outputs so that they can be multiplied with Linear layers
+    """
+    Convert size of [batch, A, B, C] to [batch, A*B*C] e.g [2,3,4,4] to [2, 48]
+    Used when to convert Conv2d outputs so that they can be multiplied with Linear layers.
+    Usually used at the end parts of encoders
+    """
     def forward(self, x):
-        #print(x.size())
         x = x.view(x.size()[0], -1)
         return x
 
 
 class Reshape(nn.Module):
+    """
+    `size` is a list of dimension sizes e.g. [num_channels, image_size, image_size]
+     So given a linear layer of size [Batches, image_size * image_size * num_channels] this module converts
+     it to size [Batches, num_channels, image_size, image_size]
+    """
     def __init__(self, size):
-        # size is a list of dimension sizes e.g. [num_channels, image_size, image_size]
-        # So given a linear layer of size [Batches, image_size * image_size * num_channels] this module converts
-        # it to size [Batches, num_channels, image_size, image_size]
+        
         super().__init__()
         self.size = size
 
@@ -78,9 +94,10 @@ class Reshape(nn.Module):
 
 
 class Unsqueeze3D(nn.Module):
-    # Add 2 new dimensions at the end
-    # size [A, B, C] Becomes [A, B, C, 1, 1]
-
+    """
+    Add 2 new dimensions at the end. Size [A, B, C] Becomes [A, B, C, 1, 1].
+    Usually used at the start of decoders
+    """
     def forward(self, x):
         x = x.unsqueeze(-1)
         x = x.unsqueeze(-1)

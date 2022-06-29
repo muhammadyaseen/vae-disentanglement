@@ -53,8 +53,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "6b18d73fee2a0408",
@@ -91,10 +90,10 @@
   "active": "c29540eee5189604",
   "lastOpenFiles": [
     "todos.md",
-    "CSVAE experiments.md",
-    "VACA.md",
     "todos_daily.md",
     "ToyVAE experiments.md",
+    "VACA.md",
+    "CSVAE experiments.md",
     "e100_corr-toy-recons-scalar.png.md",
     "images/recon_kld_stable_weightedeblo_corr.png",
     "images/e100_corr-toy-recons-scalar.png",

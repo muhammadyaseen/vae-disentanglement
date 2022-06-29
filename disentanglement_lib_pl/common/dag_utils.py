@@ -1,5 +1,18 @@
 import numpy as np
+import torch
 
+def get_adj_mat_from_adj_list(adjacency_list):
+    
+    num_nodes = len(adjacency_list)
+
+    # initialize with self-connections
+    A = np.zeros(shape=(num_nodes, num_nodes)) + np.eye(num_nodes)
+
+    for node_idx, parent_list in enumerate(adjacency_list):
+        for parent_node_idx in parent_list:
+            A[node_idx, parent_node_idx] = 1.0
+
+    return torch.from_numpy(A)
 
 def find_top_level_nodes(adj_mat):
     

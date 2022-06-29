@@ -138,46 +138,61 @@ class MultiScaleEncoder(nn.Module):
     Extracts features at multiple scales.
     To be used in conjunction wth GNN Encoders in special_modules
     """
-    def __init__(self, feature_dim, num_channels, image_size):
-        super().__init__()
-        assert image_size == 64, 'This model only works with image size 64x64.'
 
+    def __init__(self, feature_dim, in_channels, num_nodes):
+        """
+        feature_dim: the dimension to which multi scale features are projected to. Output dim 
+        """
+        super().__init__()
+        
+        # Number of features per scale used by each node to compute initial node features
+        # 3 means 3 features from each scale level will be used
+        self.NUM_SCALES = 3
         self.feature_dim = feature_dim
+        self.num_nodes = num_nodes
+        self.features_to_take = self.feature_dim // self.num_nodes
+        self.batch_size = None
 
         # in / out feature maps at each scale
-        self.scale_3_in, self.scale_3_out = num_channels, 32
-        self.scale_2_in, self.scale_2_out = 32, 64
-        self.scale_1_in, self.scale_1_out = 64, 128
+        self.scale_3_in, self.scale_3_out = in_channels, 32
+        self.scale_2_in, self.scale_2_out = 32, 32
+        self.scale_1_in, self.scale_1_out = 32, 64
 
         # coarsest scale - outputs maps of shape B, 
         self.scale_3 = nn.Sequential(
-            nn.Conv2d(self.scale_3_in, 32, 4, 2), # B, 32, 31 x 31
+            nn.Conv2d(self.scale_3_in, self.scale_3_out, 4, 2), # B, 32, 31 x 31
             nn.ReLU(True)
         )
         self.scale_3_feats = nn.Sequential(
             Flatten3D(),
-            nn.Linear()
+            nn.Linear(self.scale_3_out * 31 * 31, self.feature_dim),
+            nn.Tanh()
         )
         # mid scale - outputs maps of shape B, 
         self.scale_2 = nn.Sequential(
-            nn.Conv2d(self.scale_2_in, 32, 4, 2), # B, 32, 14 x 14
+            nn.Conv2d(self.scale_2_in, self.scale_2_out, 4, 2), # B, 32, 14 x 14
             nn.ReLU(True)
         )
         self.scale_2_feats = nn.Sequential(
             Flatten3D(),
-            nn.Linear()
+            nn.Linear(self.scale_2_out * 14 * 14, self.feature_dim),
+            nn.Tanh()
         )
+        
         # finest scale - outs maps of shape B,
         self.scale_1 = nn.Sequential(
-            nn.Conv2d(self.scale_1_in, 64, 4, 2), # B, 64, 6 x 6
+            nn.Conv2d(self.scale_1_in, self.scale_1_out, 4, 2), # B, 64, 6 x 6
             nn.ReLU(True)
         )
         self.scale_1_feats = nn.Sequential(
             Flatten3D(),
-            nn.Linear()
+            nn.Linear(self.scale_1_out * 6 * 6, self.feature_dim),
+            nn.Tanh()
         )
 
     def forward(self, x):
+        
+        self.batch_size = x.shape[0]
         
         scale_3_x = self.scale_3(x)
         scale_3_feats = self.scale_3_feats(scale_3_x)
@@ -188,8 +203,12 @@ class MultiScaleEncoder(nn.Module):
         scale_1_x = self.scale_1(scale_2_x)
         scale_1_feats = self.scale_1_feats(scale_1_x)
 
-        multi_scale_feats = torch.cat([scale_3_feats, scale_2_feats, scale_1_feats])
-
+        # Just stacking gives the shape (NUM_SCALES, batch_size, feature_dim). Hence, we need to permute to get 
+        # (batch_size, feature_dim, NUM_SCALES)
+        multi_scale_feats = torch.stack([scale_3_feats, scale_2_feats, scale_1_feats]).permute(1,2,0)
+        # (batch_size, V, NUM_SCALES * features_to_take)
+        multi_scale_feats = multi_scale_feats.reshape(self.batch_size, self.num_nodes, self.NUM_SCALES * self.features_to_take )
+        
         # reshape like this so that they can be associated with each latent node
         return multi_scale_feats
 

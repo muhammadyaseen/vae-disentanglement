@@ -1,3 +1,5 @@
+from pydoc import doc
+from turtle import done
 import numpy as np
 import torch
 from torch import nn
@@ -305,41 +307,16 @@ class DAGInteractionLayer(nn.Module):
         np_mask = dag_utils.get_layer_mask(self._parents, self._children, self.interm_unit_dim, self.adjacency_matrix)
         return torch.from_numpy(np_mask)
 
-class SimpleGNNEncoderLayer(nn.Module):
+class SimpleGNNLayer(nn.Module):
     """
-    Implements GNN for Q(Z|X,A)
+    Can be used to implement GNNs for P(Z|epsilon, A) or Q(Z|X,A)
     """
-    def __init__(self, in_node_feat_dim, out_node_feat_dim, adj_mat):
+    def __init__(self, in_node_feat_dim, out_node_feat_dim, adj_mat, is_final_layer=False):
         super().__init__()
 
         self.in_node_feat_dim = in_node_feat_dim
         self.out_node_feat_dim = out_node_feat_dim
-        self.A = adj_mat
-
-        self.num_neighbours = self.A.sum(dim=-1, keepdims=True)
-        self.projection = nn.Linear(self.in_node_feat_dim, self.out_node_feat_dim)
-
-    def forward(self, node_feats):
-        # Num neighbours = number of incoming edges
-        
-        # for the first layer node-feats will be multi_scale_features from encoder
-        
-        node_feats = self.projection(node_feats)
-        node_feats = torch.matmul(self.A, node_feats)
-        node_feats = node_feats / self.num_neighbours
-
-        # non-lin here ?
-        return node_feats
-
-class SimplePriorGNNLayer(nn.Module):
-    """
-    Implements GNN for P(Z|epsilon, A)
-    """
-    def __init__(self, in_node_feat_dim, out_node_feat_dim, adj_mat):
-        super().__init__()
-
-        self.in_node_feat_dim = in_node_feat_dim
-        self.out_node_feat_dim = out_node_feat_dim
+        self.is_final_layer = is_final_layer
         self.A = adj_mat
 
         self.num_neighbours = self.A.sum(dim=-1, keepdims=True)
@@ -350,11 +327,11 @@ class SimplePriorGNNLayer(nn.Module):
         node_feats = self.projection(node_feats)
         node_feats = torch.matmul(self.A, node_feats)
         node_feats = node_feats / self.num_neighbours
-
-        # I think this should only happen in the final layer?
-        # non-lin here ? ReLU(node_feats)
-        node_feats_mu, node_feats_logvar = node_feats.chunk(2)
-        eps = torch.randn(size=(node_feats[1]))
-        node_feats_dist_params = node_feats_mu + eps * node_feats_logvar
         
-        return node_feats
+        if self.is_final_layer:
+            # split into mu and sigma
+            node_feats_mu, node_feats_logvar = node_feats.chunk(2, dim=2)
+            return node_feats_mu, node_feats_logvar
+        else:
+            node_feats = torch.tanh(node_feats)
+            return node_feats
