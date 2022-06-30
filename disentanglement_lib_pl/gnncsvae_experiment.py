@@ -97,12 +97,12 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             
             # Scalars           
             # we do '+1' because latent indexing is 1-based, there is no Z_0
-            post_mu_dict = {f"Mu_q{node_idx + 1}/Dim_{i}": component_val for i, component_val in enumerate(post_mus_avgs[node_idx])}
+            post_mu_dict = {f"Mu_q{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(post_mus_avgs[node_idx])}
             #print(post_mu_dict)
             for k , v in post_mu_dict.items():
                 self.logger.experiment.add_scalar(k, v, self.current_epoch)
             
-            prior_mu_dict = {f"Mu_p{node_idx + 1}/Dim_{i}": component_val for i, component_val in enumerate(prior_mus_avgs[node_idx])}            
+            prior_mu_dict = {f"Mu_p{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(prior_mus_avgs[node_idx])}            
             for k , v in prior_mu_dict.items():
                 self.logger.experiment.add_scalar(k, v, self.current_epoch)
     
