@@ -34,7 +34,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
             self.adjacency_list = None
             raise ValueError("Unsupported format for adjacency_matrix")
 
-        self.add_classification_loss = True
+        self.add_classification_loss = False
         self.num_nodes = len(self.adjacency_list)
         self.adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
         print(self.adjacency_matrix)
@@ -82,7 +82,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.decoder_dcnn = SimpleConv64CommAss(decoder_input_dim, self.num_channels, self.image_size)
         
         # Supervised reg
-        self.latents_classifier = self._init_classification_network(in_dim=6, out_dim=5)
+        self.latents_classifier = self._init_classification_network(in_dim=6, out_dim=5) if self.add_classification_loss else None
         self.flatten_node_features = Flatten3D()
         
         print("GNNBasedConceptStructuredVAE Model Initialized")
@@ -222,7 +222,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # Encode
         #-------
         multi_scale_features = self.encoder_cnn(x_true)
-        print(multi_scale_features.shape)
+        #print(multi_scale_features.shape)
         posterior_mu, posterior_logvar = self.encoder_gnn(multi_scale_features)
         posterior_z = reparametrize(posterior_mu, posterior_logvar)
 
@@ -237,11 +237,13 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         #===== Generative part
         # Top down until X
 
-        exogen_vars_sample = torch.randn(size=(num_samples, 1), device=current_device)
+        exogen_vars_sample = torch.randn(size=(num_samples, self.num_nodes, self.encoder_cnn.out_feature_dim),
+                                         device=current_device)
         prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
         prior_z = reparametrize(prior_mu, prior_logvar)
-
+        
         # Need to reshape most likely before passing
+        prior_z = self.flatten_node_features(prior_z)
         x_sampled = self.decode(prior_z)
         return x_sampled
 
@@ -251,7 +253,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
                                          device=current_device)
         prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
         prior_z = reparametrize(prior_mu, prior_logvar)
-        latents_predicted = self.latents_classifier(prior_z)
+
+        latents_predicted = self.latents_classifier(prior_z) if self.add_classification_loss else None
 
         return prior_mu, prior_logvar, latents_predicted
 

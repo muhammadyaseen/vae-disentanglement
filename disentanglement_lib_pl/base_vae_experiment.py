@@ -121,6 +121,7 @@ class BaseVAEExperiment(pl.LightningModule):
 
         fwd_pass_results.update({
             'x_true': x_true,
+            'true_latents': labels,
             'optimizer_idx': optimizer_idx,
             'batch_idx': batch_idx,
             'global_step': self.global_step,
