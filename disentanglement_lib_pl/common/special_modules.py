@@ -324,6 +324,9 @@ class SimpleGNNLayer(nn.Module):
     
     def forward(self, node_feats):
         
+        self.A = self.A.to(node_feats.device)
+        self.num_neighbours = self.num_neighbours.to(node_feats.device)
+        
         node_feats = self.projection(node_feats)
         node_feats = torch.matmul(self.A, node_feats)
         node_feats = node_feats / self.num_neighbours

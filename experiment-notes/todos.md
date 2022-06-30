@@ -16,6 +16,4 @@ Spatial vs. Conceptual latents / Micro vs Macro latents
 Relating Graph Neural Networks to Structural Causal Models https://arxiv.org/abs/2109.04173
 
 
-
-
-
+Disentanglement / Factorization pressure in GNN based priors / posteriors

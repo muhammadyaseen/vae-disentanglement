@@ -117,7 +117,7 @@ class BaseVAEExperiment(pl.LightningModule):
 
         x_true, labels = batch
         self.current_device = x_true.device
-        fwd_pass_results  = self.forward(x_true, labels = labels, current_device=self.current_device)
+        fwd_pass_results  = self.forward(x_true, labels=labels, current_device=self.current_device)
 
         fwd_pass_results.update({
             'x_true': x_true,

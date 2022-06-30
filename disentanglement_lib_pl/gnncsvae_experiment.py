@@ -4,14 +4,14 @@ from base_vae_experiment import BaseVAEExperiment
 import matplotlib.pyplot as plt
 from matplotlib import cm as mpl_colormaps
 
-from models.cs_vae import ConceptStructuredVAE
+from models.csvae_gnn import GNNBasedConceptStructuredVAE
 from common.utils import CenteredNorm
 from common import constants as c
 
 class GNNCSVAEExperiment(BaseVAEExperiment):
 
     def __init__(self,
-                 vae_model: ConceptStructuredVAE,
+                 vae_model: GNNBasedConceptStructuredVAE,
                  params: dict,
                  dataset_params: dict) -> None:
         
@@ -22,13 +22,13 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         
         super(GNNCSVAEExperiment, self).training_step(batch, batch_idx, optimizer_idx)
         
-        x_true, label = batch
+        x_true, labels = batch
         self.current_device = x_true.device
-        fwd_pass_results = self.forward(x_true, current_device=self.current_device)
+        fwd_pass_results = self.forward(x_true, labels=labels, current_device=self.current_device)
 
         fwd_pass_results.update({
             'x_true': x_true,
-            'true_latents': label,
+            'true_latents': labels,
             'optimizer_idx': optimizer_idx,
             'batch_idx': batch_idx,
             'global_step': self.global_step,

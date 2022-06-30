@@ -151,6 +151,7 @@ class MultiScaleEncoder(nn.Module):
         self.feature_dim = feature_dim
         self.num_nodes = num_nodes
         self.features_to_take = self.feature_dim // self.num_nodes
+        self.out_feature_dim = self.NUM_SCALES * self.features_to_take
         self.batch_size = None
 
         # in / out feature maps at each scale
@@ -207,7 +208,7 @@ class MultiScaleEncoder(nn.Module):
         # (batch_size, feature_dim, NUM_SCALES)
         multi_scale_feats = torch.stack([scale_3_feats, scale_2_feats, scale_1_feats]).permute(1,2,0)
         # (batch_size, V, NUM_SCALES * features_to_take)
-        multi_scale_feats = multi_scale_feats.reshape(self.batch_size, self.num_nodes, self.NUM_SCALES * self.features_to_take )
+        multi_scale_feats = multi_scale_feats.reshape(self.batch_size, self.num_nodes, self.out_feature_dim )
         
         # reshape like this so that they can be associated with each latent node
         return multi_scale_feats

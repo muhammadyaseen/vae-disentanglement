@@ -5,6 +5,7 @@ from .fc_vae import FC_VAE
 from .ladder_vae import LadderVAE
 from .cs_vae import ConceptStructuredVAE
 from .cs_vae_residual import CSVAE_ResidualDistParameterization, CSVAE_Toy
+from .csvae_gnn import GNNBasedConceptStructuredVAE
 
 #from .cvae import CVAE
 #from .ifcvae import IFCVAE

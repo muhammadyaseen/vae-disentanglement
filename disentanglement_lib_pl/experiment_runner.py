@@ -9,6 +9,7 @@ import models
 from bvae_experiment import BVAEExperiment
 from laddervae_experiment import LadderVAEExperiment
 from csvae_experiment import ConceptStructuredVAEExperiment
+from gnncsvae_experiment import GNNCSVAEExperiment
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
@@ -21,7 +22,8 @@ EXPERIMENT_CLASS = {
     'BetaVAE': BVAEExperiment,
     'ConceptStructuredVAE': ConceptStructuredVAEExperiment,
     'CSVAE_ResidualDistParameterization': ConceptStructuredVAEExperiment,
-    'CSVAE_Toy': ConceptStructuredVAEExperiment
+    'CSVAE_Toy': ConceptStructuredVAEExperiment,
+    'GNNBasedConceptStructuredVAE': GNNCSVAEExperiment
 }
 
 def get_dataset_specific_params(cmdline_args):
@@ -34,9 +36,7 @@ def get_dataset_specific_params(cmdline_args):
 def get_scalar_metrics_for_alg(cmdline_args):
     
     base_metrics = ['loss','recon', 'kld_loss']
-    if cmdline_args.alg == 'ConceptStructuredVAE' or \
-        cmdline_args.alg == 'CSVAE_ResidualDistParameterization' or \
-        cmdline_args.alg == 'CSVAE_Toy':
+    if cmdline_args.alg in ['ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization', 'CSVAE_Toy', 'GNNBasedConceptStructuredVAE']:
         return base_metrics
     
     elif cmdline_args.alg == 'LadderVAE':
@@ -69,9 +69,7 @@ def get_experiment_config_for_alg(cmdline_args):
         max_epochs = cmdline_args.max_epoch
     )
 
-    if cmdline_args.alg == 'ConceptStructuredVAE' or \
-        cmdline_args.alg == 'CSVAE_ResidualDistParameterization' or \
-        cmdline_args.alg == 'CSVAE_Toy':
+    if cmdline_args.alg in ['ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization', 'CSVAE_Toy', 'GNNBasedConceptStructuredVAE']:
         base_experiment_config.update({
 
         })
@@ -145,13 +143,6 @@ def main(_args):
     print("Model Specification")
     print(model)
     
-    # load checkpoint
-    #if _args.ckpt_load:
-    #    model.load_checkpoint(_args.ckpt_load, 
-    #                            load_iternum=_args.ckpt_load_iternum, 
-    #                            load_optim=_args.ckpt_load_optim)
-
-
     # Get expr metadata and hyperparams etc
     experiment_config = get_experiment_config_for_alg(_args)
 

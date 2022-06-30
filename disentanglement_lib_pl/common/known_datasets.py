@@ -506,7 +506,8 @@ class CorrelatedDSpritesDataset(Dataset):
         # Convert output to CHW from HWC
         # `sample` function returns data with an extra `batch` axis for some reason so 
         # we have to index into it with [0] to return just one example
-        return torch.from_numpy(np.moveaxis(observations[0], 2, 0), ).type(torch.FloatTensor), factors[0]
+        return (torch.from_numpy(np.moveaxis(observations[0], 2, 0), ).type(torch.FloatTensor), 
+                torch.from_numpy(factors[0]).type(torch.FloatTensor))
     
 class ToyDataset(Dataset):
 

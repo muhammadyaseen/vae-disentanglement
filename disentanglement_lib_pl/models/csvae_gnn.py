@@ -6,11 +6,12 @@ import torch.nn.functional as F
 from architectures.encoders.simple_conv64 import MultiScaleEncoder
 from architectures.decoders.simple_conv64 import SimpleConv64CommAss
 
-from common.ops import kl_divergence_diag_mu_var, reparametrize, Flatten3D
+from common.ops import kl_divergence_diag_mu_var_per_node, reparametrize, Flatten3D
 from common import constants as c
 from common import dag_utils
 from common.special_modules import SimpleGNNLayer
-from disentanglement_lib_pl.common.ops import kl_divergence_diag_mu_var_per_node
+
+import pdb
 
 class GNNBasedConceptStructuredVAE(nn.Module):
     """
@@ -36,12 +37,14 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.add_classification_loss = True
         self.num_nodes = len(self.adjacency_list)
         self.adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
+        print(self.adjacency_matrix)
         self.interm_unit_dim = network_args.interm_unit_dim
         
         self.num_channels = network_args.in_channels
         self.image_size = network_args.image_size
         self.batch_size = network_args.batch_size
         self.root_dim = network_args.root_dim
+        self.z_dim = network_args.z_dim[0]
 
         self.w_recon = 1.0
         self.w_kld = 1.0
@@ -52,27 +55,30 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         # encoder and decoder
         # multiscale encoder
-        out_feature_dim = 10
-        self.encoder_cnn = MultiScaleEncoder(out_feature_dim, self.num_channels, self.image_size)
+        msenc_feature_dim = self.num_nodes * 3 # 3 feats per node
+        # MSEnc outputs features of shape (batch, V, 3 * (out_feature_dim//num_nodes))
+        # in current case it will be (b,V,9) i.e. each node gets a 9-dim feature vector
+
+        self.encoder_cnn = MultiScaleEncoder(msenc_feature_dim, self.num_channels, self.num_nodes)
         # uses multi scale features to init node feats
         in_node_feat_dim, out_node_feat_dim = 10, 10
         # Q(Z|X,A)
         self.encoder_gnn = nn.Sequential(
+            SimpleGNNLayer(self.encoder_cnn.out_feature_dim, out_node_feat_dim, self.adjacency_matrix),
             SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True),
+            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True)
         )
         # converts exogenous vars to prior latents 
         # P(Z|epsilon, A)
         self.prior_gnn = nn.Sequential(
+            SimpleGNNLayer(self.encoder_cnn.out_feature_dim, out_node_feat_dim, self.adjacency_matrix),
             SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True),
+            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True)
         )
-        # takes in encoded features and recons
-        decoder_input_dim = self.num_nodes * (out_feature_dim // 2)
+        # takes in encoded features and spits out recons
+        # we do // 2 because we split the output features into mu and logvar 
+        # but we only need mu-dim components for recon
+        decoder_input_dim = self.num_nodes * (out_node_feat_dim // 2)
         self.decoder_dcnn = SimpleConv64CommAss(decoder_input_dim, self.num_channels, self.image_size)
         
         # Supervised reg
@@ -82,6 +88,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         print("GNNBasedConceptStructuredVAE Model Initialized")
 
     def forward(self, x_true, **kwargs):
+
+        #pdb.set_trace()
 
         fwd_pass_results = dict()
 
@@ -95,7 +103,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         x_recon = self.decode(posterior_z)
 
         # Enforcing prior structure - sample from prior GNN and use it to predict latents
-        prior_mu, prior_logvar, latents_predicted = self.prior_to_latents_prediction()
+        prior_mu, prior_logvar, latents_predicted = self.prior_to_latents_prediction(x_true.device)
 
         fwd_pass_results.update({
             "x_recon": x_recon,
@@ -213,7 +221,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         #-------
         # Encode
         #-------
-        multi_scale_features = self.encoder_cnn(x_true, **kwargs)
+        multi_scale_features = self.encoder_cnn(x_true)
+        print(multi_scale_features.shape)
         posterior_mu, posterior_logvar = self.encoder_gnn(multi_scale_features)
         posterior_z = reparametrize(posterior_mu, posterior_logvar)
 
@@ -236,9 +245,10 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         x_sampled = self.decode(prior_z)
         return x_sampled
 
-    def prior_to_latents_prediction(self):
+    def prior_to_latents_prediction(self, current_device):
          
-        exogen_vars_sample = torch.randn(size=(self.batch_size, 1))
+        exogen_vars_sample = torch.randn(size=(self.batch_size, self.num_nodes, self.encoder_cnn.out_feature_dim), 
+                                         device=current_device)
         prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
         prior_z = reparametrize(prior_mu, prior_logvar)
         latents_predicted = self.latents_classifier(prior_z)

@@ -12,7 +12,7 @@ def get_adj_mat_from_adj_list(adjacency_list):
         for parent_node_idx in parent_list:
             A[node_idx, parent_node_idx] = 1.0
 
-    return torch.from_numpy(A)
+    return torch.from_numpy(A).type(torch.FloatTensor)
 
 def find_top_level_nodes(adj_mat):
     
