@@ -315,7 +315,7 @@ class SimpleGNNLayer(nn.Module):
         self.in_node_feat_dim = in_node_feat_dim
         self.out_node_feat_dim = out_node_feat_dim
         self.is_final_layer = is_final_layer
-        self.A = adj_mat
+        self.A = adj_mat.T
 
         self.num_neighbours = self.A.sum(dim=-1, keepdims=True)
         self.projection = nn.Linear(self.in_node_feat_dim, self.out_node_feat_dim)
@@ -336,3 +336,55 @@ class SimpleGNNLayer(nn.Module):
         else:
             node_feats = torch.tanh(node_feats)
             return node_feats
+
+class SupervisedRegulariser(nn.Module):
+
+    def __init__(self, num_nodes, node_type_map):
+        
+        super().__init__()
+        self.num_nodes = num_nodes
+        self.supervised_regularisers = None
+
+    def forward(self, node_features):
+        """"
+        node_features has shape (batch, V, feature_dim)
+        """
+
+        # We need to break it into V different vectors
+        # i.e. a list L which has elements of shape (batch, feature_dim) and len(L) = V
+        node_features_separated = node_features.chunk(self.num_nodes, dim=1)
+
+        # now we have a list where node_features_separate[i] gives features associated 
+        # with i-th node. But the current output shape would be (batch, 1, feature_dim)
+        # so we have to squeeze out the singleton dim
+
+        predictions_all_nodes = []
+        for node_idx in range(self.num_nodes):
+            
+            # convert (batch, 1, feature_dim) to (batch, feature_dim)
+            features_of_this_node = node_features_separated[node_idx].squeeze(dim=1)
+
+            predictions_all_nodes.append(self.supervised_regularisers[node_idx](features_of_this_node))
+
+        return predictions_all_nodes
+        
+
+    def loss(self, predictions_all_nodes, targets_all_nodes):
+        
+        loss_per_node = dict()
+        total_loss = 0.0
+        for node_idx in range(self.num_nodes):
+
+            loss_this_node = self.get_loss(node_idx)(predictions_all_nodes[node_idx, targets_all_nodes[node_idx]]).detach()
+            # Does it make sense to sum it? they're different types of losse and have different units etc
+            total_loss += loss_this_node
+            loss_per_node[f'Node_{node_idx}'] = loss_this_node.detach()
+
+
+        return loss_per_node
+
+    def get_loss(self, node_idx):
+        pass
+
+
+

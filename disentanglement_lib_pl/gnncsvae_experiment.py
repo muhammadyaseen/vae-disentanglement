@@ -91,7 +91,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             
             # Histograms
             # Loop over every dim of mu associated with this node and add its histogram
-            for k in range(post_mus.shape[1]):
+            for k in range(post_mus.shape[2]):
                 self.logger.experiment.add_histogram(f"Mu_q{node_idx + 1}/Dim_{k}", post_mus[:, node_idx, k], self.current_epoch)
                 self.logger.experiment.add_histogram(f"Mu_p{node_idx + 1}/Dim_{k}", prior_mus[:, node_idx, k], self.current_epoch)
             
@@ -107,7 +107,8 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
                 self.logger.experiment.add_scalar(k, v, self.current_epoch)
     
     def _log_logvar_per_node(self, train_step_outputs):
-
+        
+        # These should have the shape (batch, num_nodes, num_feat_dim)
         post_logvars = torch.cat([tso['posterior_logvar'] for tso in train_step_outputs], dim=0)
         prior_logvars = torch.cat([tso['prior_logvar'] for tso in train_step_outputs], dim=0)
         #print(post_logvars.shape)
@@ -119,7 +120,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             
             # Histograms
             # Loop over every dim and add its histogram
-            for k in range(post_logvars.shape[1]):
+            for k in range(post_logvars.shape[2]):
                 self.logger.experiment.add_histogram(f"LogVar_q{node_idx + 1}/Dim_{k}", post_logvars[:, node_idx, k], self.current_epoch)
                 self.logger.experiment.add_histogram(f"LogVar_p{node_idx + 1}/Dim_{k}", prior_logvars[:, node_idx, k], self.current_epoch)
             
