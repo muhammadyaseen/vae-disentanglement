@@ -38,12 +38,10 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.num_nodes = len(self.adjacency_list)
         self.adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
         print(self.adjacency_matrix)
-        self.interm_unit_dim = network_args.interm_unit_dim
         
         self.num_channels = network_args.in_channels
         self.image_size = network_args.image_size
         self.batch_size = network_args.batch_size
-        self.root_dim = network_args.root_dim
         self.z_dim = network_args.z_dim[0]
 
         self.w_recon = 1.0
@@ -61,7 +59,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
         self.encoder_cnn = MultiScaleEncoder(msenc_feature_dim, self.num_channels, self.num_nodes)
         # uses multi scale features to init node feats
-        in_node_feat_dim, out_node_feat_dim = 10, 10
+        in_node_feat_dim, out_node_feat_dim = self.z_dim * 2, self.z_dim * 2
         # Q(Z|X,A)
         self.encoder_gnn = nn.Sequential(
             SimpleGNNLayer(self.encoder_cnn.out_feature_dim, out_node_feat_dim, self.adjacency_matrix),
@@ -252,9 +250,10 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         exogen_vars_sample = torch.randn(size=(self.batch_size, self.num_nodes, self.encoder_cnn.out_feature_dim), 
                                          device=current_device)
         prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
-        prior_z = reparametrize(prior_mu, prior_logvar)
+        
+        # prior_z = reparametrize(prior_mu, prior_logvar)
 
-        latents_predicted = self.latents_classifier(prior_z) if self.add_classification_loss else None
+        latents_predicted = self.latents_classifier(prior_mu) if self.add_classification_loss else None
 
         return prior_mu, prior_logvar, latents_predicted
 

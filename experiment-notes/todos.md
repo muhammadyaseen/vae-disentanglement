@@ -29,6 +29,8 @@ I need to re-think how I visualize mu and logvae in the scalar metrics view. I t
 LogVar_p_i has same plots for all i i.e. across all nodes
 Mu_p_i has same plots for all i i.e. across all nodes
 
+Load the saved network and run a pass to check if the dims produce same values or not. this would be the quickest way to verify..
+
 Run GNN based CSVAE with small number of node feature dim to check the dying dims phenomenon
 
 

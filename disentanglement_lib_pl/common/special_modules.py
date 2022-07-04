@@ -315,7 +315,7 @@ class SimpleGNNLayer(nn.Module):
         self.in_node_feat_dim = in_node_feat_dim
         self.out_node_feat_dim = out_node_feat_dim
         self.is_final_layer = is_final_layer
-        self.A = adj_mat.T
+        self.A = adj_mat.T # this is reqd because the store mat is in from-to form but the impl needs to-from
 
         self.num_neighbours = self.A.sum(dim=-1, keepdims=True)
         self.projection = nn.Linear(self.in_node_feat_dim, self.out_node_feat_dim)
