@@ -39,10 +39,12 @@ def kl_divergence_diag_mu_var_per_node(mu, logvar, target_mu, target_logvar):
 
     # input has shape (Batch, V, node_feats)
     # output has shape (V, 1)
-    kld = -0.5 * ( 1 - target_logvar + logvar -
-                  ((target_mu - mu) * target_logvar.exp().pow(-1) * (target_mu - mu)) - 
-                    (target_logvar.exp().pow(-1)*logvar.exp())
-            ).sum(2, keepdims=True).mean(0)
+    kld = -0.5 * (
+        1 - target_logvar + logvar 
+        - ((target_mu - mu) * target_logvar.exp().pow(-1) * (target_mu - mu)) 
+        - (target_logvar.exp().pow(-1) * logvar.exp())
+    ).sum(2, keepdims=True).mean(0)
+    
     return kld
 
 def kl_divergence_var1(logvar):

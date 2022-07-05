@@ -54,11 +54,11 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         # plot this to debug the dimensions tracking behaviour
         
         # Visualize Components of mean and sigma vector for every layer
-        self._log_mu_per_node([train_step_output], step_type='global')
-        self._log_logvar_per_node([train_step_output], step_type='global')
+        #self._log_mu_per_node([train_step_output], step_type='global')
+        #self._log_logvar_per_node([train_step_output], step_type='global')
         
         # Add KLD Loss for every layer
-        self._log_kld_loss_per_node([train_step_output], step_type='global')
+        #self._log_kld_loss_per_node([train_step_output], step_type='global')
 
 
     def training_epoch_end(self, train_step_outputs):
@@ -69,11 +69,11 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         self.model.eval()
 
         # Add KLD Loss for every layer
-        #self._log_kld_loss_per_node(train_step_outputs)
+        self._log_kld_loss_per_node(train_step_outputs)
 
         # Visualize Components of mean and sigma vector for every layer
-        #self._log_mu_per_node(train_step_outputs)
-        #self._log_logvar_per_node(train_step_outputs)
+        self._log_mu_per_node(train_step_outputs)
+        self._log_logvar_per_node(train_step_outputs)
 
         if self.model.add_classification_loss:
             self._log_classification_losses(train_step_outputs)
