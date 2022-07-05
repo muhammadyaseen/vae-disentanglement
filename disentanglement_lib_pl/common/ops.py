@@ -37,7 +37,7 @@ def kl_divergence_diag_mu_var_per_node(mu, logvar, target_mu, target_logvar):
     
     # Calculate per node kldloss
 
-    # input have shape (Batch, V, node_feats)
+    # input has shape (Batch, V, node_feats)
     # output has shape (V, 1)
     kld = -0.5 * ( 1 - target_logvar + logvar -
                   ((target_mu - mu) * target_logvar.exp().pow(-1) * (target_mu - mu)) - 

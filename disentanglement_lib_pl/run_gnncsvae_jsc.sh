@@ -3,8 +3,8 @@
 #SBATCH --gres=gpu:1
 #SBATCH --partition=develbooster
 #SBATCH --nodes=1
-#SBATCH --output=hai_cs_vaes-gpu-out-and-err.%j
-#SBATCH --error=hai_cs_vaes-gpu-out-and-err.%j
+#SBATCH --output=%j-job-out-and-err.%j
+#SBATCH --error=%j-job-out-and-err.%j
 #SBATCH --job-name=hai_cs_vaes-CS-VAE
 #SBATCH --mail-user=muhammad.yaseen@cispa.de
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
@@ -40,6 +40,5 @@ srun \
     --visdom_on=False \
     --lr_G=0.00001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
-    --interm_unit_dim=3 \
     --correlation_strength=0.2 \
     --z_dim 5 

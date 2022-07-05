@@ -47,6 +47,20 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
 
         return train_step_outputs        
         
+    def training_step_end(self, train_step_output):
+        
+        super(GNNCSVAEExperiment, self).training_step_end(train_step_output)
+
+        # plot this to debug the dimensions tracking behaviour
+        
+        # Visualize Components of mean and sigma vector for every layer
+        self._log_mu_per_node(train_step_output, step_type='global')
+        self._log_logvar_per_node(train_step_output, step_type='global')
+        
+        # Add KLD Loss for every layer
+        self._log_kld_loss_per_node(train_step_output, step_type='global')
+
+
     def training_epoch_end(self, train_step_outputs):
 
         super(GNNCSVAEExperiment, self).training_epoch_end(train_step_outputs)
@@ -55,11 +69,11 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         self.model.eval()
 
         # Add KLD Loss for every layer
-        self._log_kld_loss_per_node(train_step_outputs)
+        #self._log_kld_loss_per_node(train_step_outputs)
 
         # Visualize Components of mean and sigma vector for every layer
-        self._log_mu_per_node(train_step_outputs)
-        self._log_logvar_per_node(train_step_outputs)
+        #self._log_mu_per_node(train_step_outputs)
+        #self._log_logvar_per_node(train_step_outputs)
 
         if self.model.add_classification_loss:
             self._log_classification_losses(train_step_outputs)
@@ -67,18 +81,22 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         torch.set_grad_enabled(True)
         self.model.train()
 
-    def _log_kld_loss_per_node(self, train_step_outputs):
+    def _log_kld_loss_per_node(self, train_step_outputs, step_type='epoch'):
         
+        step = self.current_epoch if step_type == 'epoch' else self.global_step
+
         all_loss_keys = train_step_outputs[0].keys()
 
         per_node_kld_keys = [key for key in all_loss_keys if 'KLD_z_' in key]
         
         for kld_loss_key in per_node_kld_keys:
             kld_loss = torch.stack([tso[kld_loss_key] for tso in train_step_outputs]).mean()
-            self.logger.experiment.add_scalar(f"KLD_Per_Node/{kld_loss_key}", kld_loss, self.current_epoch)
+            self.logger.experiment.add_scalar(f"KLD_Per_Node/{kld_loss_key}", kld_loss, step)
 
-    def _log_mu_per_node(self, train_step_outputs):
+    def _log_mu_per_node(self, train_step_outputs, step_type='epoch'):
        
+        step = self.current_epoch if step_type == 'epoch' else self.global_step
+
         post_mus = torch.cat([tso['posterior_mu'] for tso in train_step_outputs], dim=0)
         prior_mus = torch.cat([tso['prior_mu'] for tso in train_step_outputs], dim=0)
         #print(post_mus.shape)
@@ -92,22 +110,24 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             # Histograms
             # Loop over every dim of mu associated with this node and add its histogram
             for k in range(post_mus.shape[2]):
-                self.logger.experiment.add_histogram(f"Mu_q{node_idx + 1}/Dim_{k}", post_mus[:, node_idx, k], self.current_epoch)
-                self.logger.experiment.add_histogram(f"Mu_p{node_idx + 1}/Dim_{k}", prior_mus[:, node_idx, k], self.current_epoch)
+                self.logger.experiment.add_histogram(f"Mu_q{node_idx + 1}/Dim_{k}", post_mus[:, node_idx, k], step)
+                self.logger.experiment.add_histogram(f"Mu_p{node_idx + 1}/Dim_{k}", prior_mus[:, node_idx, k], step)
             
             # Scalars           
             # we do '+1' because latent indexing is 1-based, there is no Z_0
             post_mu_dict = {f"Mu_q{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(post_mus_avgs[node_idx])}
             #print(post_mu_dict)
             for k , v in post_mu_dict.items():
-                self.logger.experiment.add_scalar(k, v, self.current_epoch)
+                self.logger.experiment.add_scalar(k, v, step)
             
             prior_mu_dict = {f"Mu_p{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(prior_mus_avgs[node_idx])}            
             for k , v in prior_mu_dict.items():
-                self.logger.experiment.add_scalar(k, v, self.current_epoch)
+                self.logger.experiment.add_scalar(k, v, step)
     
-    def _log_logvar_per_node(self, train_step_outputs):
-        
+    def _log_logvar_per_node(self, train_step_outputs, step_type='epoch'):
+
+        step = self.current_epoch if step_type == 'epoch' else self.global_step
+
         # These should have the shape (batch, num_nodes, num_feat_dim)
         post_logvars = torch.cat([tso['posterior_logvar'] for tso in train_step_outputs], dim=0)
         prior_logvars = torch.cat([tso['prior_logvar'] for tso in train_step_outputs], dim=0)
@@ -121,18 +141,18 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             # Histograms
             # Loop over every dim and add its histogram
             for k in range(post_logvars.shape[2]):
-                self.logger.experiment.add_histogram(f"LogVar_q{node_idx + 1}/Dim_{k}", post_logvars[:, node_idx, k], self.current_epoch)
-                self.logger.experiment.add_histogram(f"LogVar_p{node_idx + 1}/Dim_{k}", prior_logvars[:, node_idx, k], self.current_epoch)
+                self.logger.experiment.add_histogram(f"LogVar_q{node_idx + 1}/Dim_{k}", post_logvars[:, node_idx, k], step)
+                self.logger.experiment.add_histogram(f"LogVar_p{node_idx + 1}/Dim_{k}", prior_logvars[:, node_idx, k], step)
             
             # Scalars
             # we do '+1' because latent indexing is 1-based, there is no Z_0
             post_logvar_dict = {f"LogVar_q{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(post_logvars_avgs[node_idx])}            
             for k , v in post_logvar_dict.items():
-                self.logger.experiment.add_scalar(k, v, self.current_epoch)
+                self.logger.experiment.add_scalar(k, v, step)
 
             prior_logvar_dict = {f"LogVar_p{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(prior_logvars_avgs[node_idx])}            
             for k , v in prior_logvar_dict.items():
-                self.logger.experiment.add_scalar(k, v, self.current_epoch)
+                self.logger.experiment.add_scalar(k, v, step)
             
     def _log_classification_losses(self, train_step_outputs):
         
