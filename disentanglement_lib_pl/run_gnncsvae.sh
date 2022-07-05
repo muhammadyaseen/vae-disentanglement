@@ -2,7 +2,7 @@
 
 FILENAME=$(basename $0)
 FILENAME="${FILENAME%.*}"
-NAME="GNNCSVAE_structure_test"
+NAME="dim_debug_GNNCSVAE"
 echo "name=$NAME"
 
 PROJECT_ROOT=./vae-disentanglement
@@ -32,4 +32,4 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --correlation_strength=0.2 \
     --loss_terms AuxClassification \
     --pin_memory=False \
-    --z_dim 5 
+    --z_dim 2 

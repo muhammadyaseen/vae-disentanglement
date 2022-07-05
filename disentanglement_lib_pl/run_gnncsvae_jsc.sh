@@ -3,14 +3,14 @@
 #SBATCH --gres=gpu:1
 #SBATCH --partition=develbooster
 #SBATCH --nodes=1
-#SBATCH --output=%j-job-out-and-err.%j
-#SBATCH --error=%j-job-out-and-err.%j
+#SBATCH --output=%j-job-out-and-err.txt
+#SBATCH --error=%j-job-out-and-err.txt
 #SBATCH --job-name=hai_cs_vaes-CS-VAE
 #SBATCH --mail-user=muhammad.yaseen@cispa.de
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
 #SBATCH --time=00:59:00
 
-NAME="GNN_CS_VAE_dsprites_correlated_structure_test"
+NAME="dim_debug_GNNCSVAE"
 echo "name=$NAME"
 
 # This path will work anywhere in JUWELS-Booster
@@ -41,4 +41,4 @@ srun \
     --lr_G=0.00001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --correlation_strength=0.2 \
-    --z_dim 5 
+    --z_dim 2 
