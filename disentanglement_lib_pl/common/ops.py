@@ -15,7 +15,9 @@ def _kl_independent_independent(p, q):
 
 
 def kl_divergence_mu0_var1(mu, logvar):
-    kld = -0.5 * (1 + logvar - mu ** 2 - logvar.exp()).sum(1).mean()
+    #kld = -0.5 * (1 + logvar - mu ** 2 - logvar.exp()).sum(1).mean()
+    # mult. with -1 because ELBO has E[p(X|z)] - KL(q|p)
+    kld = -0.5 * (mu**2 + logvar.exp() - 1 - logvar).sum(1).mean()
     return kld
 
 
@@ -39,12 +41,18 @@ def kl_divergence_diag_mu_var_per_node(mu, logvar, target_mu, target_logvar):
 
     # input has shape (Batch, V, node_feats)
     # output has shape (V, 1)
+    #kld = -0.5 * (
+    #    1 + logvar - target_logvar  
+    #    - ((target_mu - mu) * target_logvar.exp().pow(-1) * (target_mu - mu)) 
+    #    - (target_logvar.exp().pow(-1) * logvar.exp())
+    #).sum(2, keepdims=True).mean(0)
+    # mult. with -1 because ELBO has E[p(X|z)] - KL(q|p)
     kld = -0.5 * (
-        1 - target_logvar + logvar 
-        - ((target_mu - mu) * target_logvar.exp().pow(-1) * (target_mu - mu)) 
-        - (target_logvar.exp().pow(-1) * logvar.exp())
+        target_logvar - logvar - 1  
+        + ((mu - target_mu) * target_logvar.exp().pow(-1) * (mu - target_mu)) 
+        + (target_logvar.exp().pow(-1) * logvar.exp())
     ).sum(2, keepdims=True).mean(0)
-    
+
     return kld
 
 def kl_divergence_var1(logvar):
