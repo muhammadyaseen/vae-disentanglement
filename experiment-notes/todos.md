@@ -32,4 +32,8 @@ Run GNN based CSVAE with small number of node feature dim to check the dying dim
 
 Check the zero forcing / avoiding behaviour of KL div and compare it with out setting
 
+Given the current changing prior what's the KL behaviour going to be ?
+
+could no-attention be a reason for all features become sam ?
+
 

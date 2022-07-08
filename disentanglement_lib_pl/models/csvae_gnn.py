@@ -63,15 +63,15 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # Q(Z|X,A)
         self.encoder_gnn = nn.Sequential(
             SimpleGNNLayer(self.encoder_cnn.out_feature_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True)
+            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True),
+            #SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True)
         )
         # converts exogenous vars to prior latents 
         # P(Z|epsilon, A)
         self.prior_gnn = nn.Sequential(
             SimpleGNNLayer(self.encoder_cnn.out_feature_dim, out_node_feat_dim, self.adjacency_matrix),
             SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True)
+            #SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True)
         )
         # takes in encoded features and spits out recons
         # we do // 2 because we split the output features into mu and logvar 
