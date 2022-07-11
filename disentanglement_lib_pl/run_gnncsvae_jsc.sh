@@ -41,4 +41,4 @@ srun \
     --lr_G=0.00001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --correlation_strength=0.2 \
-    --z_dim 2 
+    --z_dim 2

@@ -385,7 +385,7 @@ class SupervisedRegulariser(nn.Module):
         for node_idx in range(self.num_nodes):
 
             #loss_this_node = self.get_loss(node_idx)(predictions_all_nodes[node_idx], targets_all_nodes[node_idx]).detach()
-            loss_this_node = F.mse_loss(predictions_all_nodes[node_idx], targets_all_nodes[node_idx])
+            loss_this_node = F.mse_loss(predictions_all_nodes[node_idx], targets_all_nodes[node_idx], reduction='mean')
             # Does it make sense to sum it? they're different types of losses and have different units etc
             total_loss += loss_this_node
             loss_per_node[f'clf_node_{node_idx}'] = loss_this_node.detach()

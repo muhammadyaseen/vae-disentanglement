@@ -2,7 +2,7 @@
 
 FILENAME=$(basename $0)
 FILENAME="${FILENAME%.*}"
-NAME="dim_debug_GNNCSVAE"
+NAME="sup_reg_test"
 echo "name=$NAME"
 
 PROJECT_ROOT=./vae-disentanglement
@@ -22,7 +22,7 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --w_kld=1 \
     --num_workers=0 \
     --batch_size=64 \
-    --max_epoch=2 \
+    --max_epoch=5 \
     --in_channels=1 \
     --gpus 0  \
     --visdom_on=False \
@@ -30,6 +30,6 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --interm_unit_dim=3 \
     --correlation_strength=0.2 \
-    --loss_terms AuxClassification \
+    --loss_terms aux_classification \
     --pin_memory=False \
     --z_dim 2 

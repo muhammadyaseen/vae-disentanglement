@@ -34,7 +34,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
             self.adjacency_list = None
             raise ValueError("Unsupported format for adjacency_matrix")
 
-        self.add_classification_loss = False
+        self.add_classification_loss = c.AUX_CLASSIFICATION in network_args.loss_terms
         self.num_nodes = len(self.adjacency_list)
         self.adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
         print(self.adjacency_matrix)
@@ -107,7 +107,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         x_recon = self.decode(posterior_z)
 
         # Enforcing prior structure - sample from prior GNN and use it to predict latents
-        prior_mu, prior_logvar, _ = self.prior_to_latents_prediction(x_true.device)
+        prior_mu, prior_logvar = self.prior_to_latents_prediction(x_true.device)
 
         fwd_pass_results.update({
             "x_recon": x_recon,
