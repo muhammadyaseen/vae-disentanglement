@@ -325,9 +325,12 @@ class SimpleGNNLayer(nn.Module):
         self.A = self.A.to(node_feats.device)
         self.num_neighbours = self.num_neighbours.to(node_feats.device)
         
+        #print("Input feats: ", node_feats)
         node_feats = self.projection(node_feats)
+        #print("Projected feats: ", node_feats)
         node_feats = torch.matmul(self.A, node_feats)
         node_feats = node_feats / self.num_neighbours
+        #print("Exchanged feats: ", node_feats)
         
         if self.is_final_layer:
             # split into mu and sigma
@@ -335,6 +338,7 @@ class SimpleGNNLayer(nn.Module):
             return node_feats_mu, node_feats_logvar
         else:
             node_feats = torch.tanh(node_feats)
+            #print("Tanh() feats: ", node_feats)
             return node_feats
 
 class SupervisedRegulariser(nn.Module):

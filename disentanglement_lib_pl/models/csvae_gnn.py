@@ -63,14 +63,14 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # Q(Z|X,A)
         self.encoder_gnn = nn.Sequential(
             SimpleGNNLayer(self.encoder_cnn.out_feature_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True)
+            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True),
             #SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True)
         )
         # converts exogenous vars to prior latents 
         # P(Z|epsilon, A)
         self.prior_gnn = nn.Sequential(
             SimpleGNNLayer(self.encoder_cnn.out_feature_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True)
+            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True),
             #SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True)
         )
         # takes in encoded features and spits out recons
@@ -247,13 +247,22 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
     def prior_to_latents_prediction(self, current_device):
          
-        exogen_vars_sample = torch.randn(size=(self.batch_size, self.num_nodes, self.encoder_cnn.out_feature_dim), 
-                                         device=current_device)
+        exogen_vars_sample = self._get_exogen_samples()
         prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
-        
-        # prior_z = reparametrize(prior_mu, prior_logvar)
-
         latents_predicted = self.latents_classifier(prior_mu) if self.add_classification_loss else None
 
         return prior_mu, prior_logvar, latents_predicted
+
+    def _get_exogen_samples(self):
+
+        exogen_samples_node = []
+        upper, lower = 2, -2
+        mus = torch.arange(lower, upper, (upper - lower) / self.num_nodes)
+        for i in range(self.num_nodes):
+            exogen_samples_node.append(
+                mus[i] + torch.randn(size=(self.batch_size, 1, self.encoder_cnn.out_feature_dim))
+            )
+
+        return torch.cat(exogen_samples_node, dim=1)
+
 
