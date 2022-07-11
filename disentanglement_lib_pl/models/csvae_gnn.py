@@ -247,20 +247,20 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
     def prior_to_latents_prediction(self, current_device):
          
-        exogen_vars_sample = self._get_exogen_samples()
+        exogen_vars_sample = self._get_exogen_samples(current_device)
         prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
         latents_predicted = self.latents_classifier(prior_mu) if self.add_classification_loss else None
 
         return prior_mu, prior_logvar, latents_predicted
 
-    def _get_exogen_samples(self):
+    def _get_exogen_samples(self, current_device):
 
         exogen_samples_node = []
         upper, lower = 2, -2
-        mus = torch.arange(lower, upper, (upper - lower) / self.num_nodes)
+        mus = torch.arange(lower, upper, (upper - lower) / self.num_nodes).to(current_device)
         for i in range(self.num_nodes):
             exogen_samples_node.append(
-                mus[i] + torch.randn(size=(self.batch_size, 1, self.encoder_cnn.out_feature_dim))
+                mus[i] + torch.randn(size=(self.batch_size, 1, self.encoder_cnn.out_feature_dim), device=current_device)
             )
 
         return torch.cat(exogen_samples_node, dim=1)
