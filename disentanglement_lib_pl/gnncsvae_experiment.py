@@ -155,6 +155,14 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
                 self.logger.experiment.add_scalar(k, v, step)
             
     def _log_classification_losses(self, train_step_outputs):
-        
+
+        # Log total sup. reg. loss        
         clf_loss = torch.stack([tso[c.AUX_CLASSIFICATION] for tso in train_step_outputs]).mean()
-        self.logger.experiment.add_scalar(f"Clf_Loss", clf_loss, self.current_epoch)
+        self.logger.experiment.add_scalar(f"SupReg/Total_Loss", clf_loss, self.current_epoch)
+
+        # Log per node sup. reg. loss
+        for c in range(self.model.num_nodes):
+            clf_loss_node = torch.stack([tso[f'clf_node_{c}'] for tso in train_step_outputs]).mean()
+            self.logger.experiment.add_scalar(f"SupReg/clf_node_{c}", clf_loss_node, self.current_epoch)
+
+            

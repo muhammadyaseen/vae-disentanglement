@@ -9,7 +9,7 @@ from architectures.decoders.simple_conv64 import SimpleConv64CommAss
 from common.ops import kl_divergence_diag_mu_var_per_node, reparametrize, Flatten3D
 from common import constants as c
 from common import dag_utils
-from common.special_modules import SimpleGNNLayer
+from common.special_modules import SimpleGNNLayer, SupervisedRegulariser
 
 import pdb
 
@@ -80,7 +80,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.decoder_dcnn = SimpleConv64CommAss(decoder_input_dim, self.num_channels, self.image_size)
         
         # Supervised reg
-        self.latents_classifier = self._init_classification_network(in_dim=6, out_dim=5) if self.add_classification_loss else None
+        self.latents_classifier = self._init_classification_network() if self.add_classification_loss else None
         self.flatten_node_features = Flatten3D()
         
         print("GNNBasedConceptStructuredVAE Model Initialized")
@@ -94,6 +94,12 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # Encode - extract multiscale feats and then pass thru posterior GNN 
         posterior_mu, posterior_logvar, posterior_z = self.encode(x_true, **kwargs)
         
+        if self.add_classification_loss:
+            latents_predicted = self.latents_classifier(posterior_z)
+            fwd_pass_results.update({
+                "latents_predicted": latents_predicted
+            })
+        
         # Decode
         # reshape posterior_z into right format for decoder dcnn
         # posterior_z is (Batches, V, node_feat_dim) and we flatten it to (Batches, V * node_feat_dim)
@@ -101,39 +107,27 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         x_recon = self.decode(posterior_z)
 
         # Enforcing prior structure - sample from prior GNN and use it to predict latents
-        prior_mu, prior_logvar, latents_predicted = self.prior_to_latents_prediction(x_true.device)
+        prior_mu, prior_logvar, _ = self.prior_to_latents_prediction(x_true.device)
 
         fwd_pass_results.update({
             "x_recon": x_recon,
             "prior_mu": prior_mu,
             "prior_logvar": prior_logvar,
             "posterior_mu": posterior_mu, 
-            "posterior_logvar": posterior_logvar,
-            "latents_predicted": latents_predicted
+            "posterior_logvar": posterior_logvar
         })
         
         return fwd_pass_results
 
-    def _init_classification_network(self, in_dim, out_dim):
+    def _init_classification_network(self):
 
-        clf_net = nn.Sequential(
-            nn.Linear(in_dim, 10),
-            nn.Tanh(),
-            nn.Linear(20, out_dim),
-        )
-
-        return clf_net
+        return SupervisedRegulariser(self.num_nodes, self.z_dim, None)
 
     def _classification_loss(self, predicted_latents, true_latents):
         
-        # TODO: impl. per node loss calc
-        per_node_loss = None
-        # we won't always have binary / mse latents - this should be dataset dependent
-        #return F.binary_cross_entropy(predicted_latents, true_latents, reduction='sum') / self.batch_size
+        total_clf_loss, per_node_loss = self.latents_classifier.loss(predicted_latents, true_latents)
         
-        clf_loss =  F.mse_loss(predicted_latents, true_latents, reduction='mean')
-        
-        return clf_loss, per_node_loss
+        return total_clf_loss, per_node_loss
 
     def _gnn_cs_vae_kld_loss_fn(self, prior_mu, prior_logvar, posterior_mu, posterior_logvar):
         """
@@ -203,7 +197,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         if self.add_classification_loss:
 
             output_losses[c.AUX_CLASSIFICATION], clf_loss_per_layer = self._classification_loss(predicted_latents, true_latents)
-
+            output_losses[c.TOTAL_LOSS] += output_losses[c.AUX_CLASSIFICATION]
+            output_losses.update(clf_loss_per_layer)
 
         # detach all losses except for the full loss
         
@@ -249,9 +244,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
          
         exogen_vars_sample = self._get_exogen_samples(current_device)
         prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
-        latents_predicted = self.latents_classifier(prior_mu) if self.add_classification_loss else None
 
-        return prior_mu, prior_logvar, latents_predicted
+        return prior_mu, prior_logvar
 
     def _get_exogen_samples(self, current_device):
 

@@ -343,11 +343,12 @@ class SimpleGNNLayer(nn.Module):
 
 class SupervisedRegulariser(nn.Module):
 
-    def __init__(self, num_nodes, node_type_map):
+    def __init__(self, num_nodes, node_features_dim, node_type_map):
         
         super().__init__()
         self.num_nodes = num_nodes
-        self.supervised_regularisers = None
+        self.node_features_dim = node_features_dim
+        self.supervised_regularisers = nn.ModuleList([nn.Linear(self.node_features_dim, 1) for n in range(self.num_nodes)])
 
     def forward(self, node_features):
         """"
@@ -374,21 +375,25 @@ class SupervisedRegulariser(nn.Module):
         
 
     def loss(self, predictions_all_nodes, targets_all_nodes):
-        
+        """
+        predictions_all_nodes: List of length `self.num_nodes`, where each element i of the list corresponds to the batch of predictions associated with i-th node 
+        targets_all_nodes: Similar as above
+        """
         loss_per_node = dict()
         total_loss = 0.0
+        targets_all_nodes = targets_all_nodes.chunk(self.num_nodes, dim=1)
         for node_idx in range(self.num_nodes):
 
-            loss_this_node = self.get_loss(node_idx)(predictions_all_nodes[node_idx, targets_all_nodes[node_idx]]).detach()
-            # Does it make sense to sum it? they're different types of losse and have different units etc
+            #loss_this_node = self.get_loss(node_idx)(predictions_all_nodes[node_idx], targets_all_nodes[node_idx]).detach()
+            loss_this_node = F.mse_loss(predictions_all_nodes[node_idx], targets_all_nodes[node_idx])
+            # Does it make sense to sum it? they're different types of losses and have different units etc
             total_loss += loss_this_node
-            loss_per_node[f'Node_{node_idx}'] = loss_this_node.detach()
+            loss_per_node[f'clf_node_{node_idx}'] = loss_this_node.detach()
 
-
-        return loss_per_node
+        return total_loss, loss_per_node
 
     def get_loss(self, node_idx):
-        pass
+        raise NotImplemented()
 
 
 

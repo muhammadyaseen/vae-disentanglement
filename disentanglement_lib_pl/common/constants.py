@@ -25,7 +25,7 @@ TOTAL_LOSS = 'loss' # required for PyTorch Lightining loss funcs
 KLD_LOSS = 'kld_loss'
 TOTAL_VAE_EPOCH = 'total_vae_epoch'
 LEARNING_RATE = 'learning_rate'
-AUX_CLASSIFICATION = 'AuxClassification'
+AUX_CLASSIFICATION = 'aux_classification'
 
 # Algorithms
 ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE', 'LadderVAE', 
