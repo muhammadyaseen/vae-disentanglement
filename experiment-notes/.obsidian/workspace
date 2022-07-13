@@ -9,7 +9,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "todos.md",
+            "file": "todos_daily.md",
             "mode": "source",
             "source": false
           }
@@ -70,7 +70,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "todos.md",
+                "file": "todos_daily.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -90,15 +90,15 @@
   },
   "active": "c29540eee5189604",
   "lastOpenFiles": [
-    "todos.md",
     "todos_daily.md",
+    "todos.md",
+    "Orthognal Subspaces Idea.md",
     "ToyVAE experiments.md",
     "VACA.md",
     "CSVAE experiments.md",
     "e100_corr-toy-recons-scalar.png.md",
     "images/recon_kld_stable_weightedeblo_corr.png",
     "images/e100_corr-toy-recons-scalar.png",
-    "images/e100_corr-toy-recons-scalars.png",
-    "images/e50_e100_uncorr-toy-hists.png"
+    "images/e100_corr-toy-recons-scalars.png"
   ]
 }

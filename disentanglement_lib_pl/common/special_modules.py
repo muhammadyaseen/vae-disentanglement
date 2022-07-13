@@ -343,12 +343,14 @@ class SimpleGNNLayer(nn.Module):
 
 class SupervisedRegulariser(nn.Module):
 
-    def __init__(self, num_nodes, node_features_dim, node_type_map):
+    def __init__(self, num_nodes, node_features_dim, labels_type="regression"):
         
         super().__init__()
         self.num_nodes = num_nodes
         self.node_features_dim = node_features_dim
-        self.supervised_regularisers = nn.ModuleList([nn.Linear(self.node_features_dim, 1) for n in range(self.num_nodes)])
+        self.labels_type = labels_type
+
+        self.supervised_regularisers = self._get_sup_reg_models()
 
     def forward(self, node_features):
         """"
@@ -384,9 +386,13 @@ class SupervisedRegulariser(nn.Module):
         targets_all_nodes = targets_all_nodes.chunk(self.num_nodes, dim=1)
         for node_idx in range(self.num_nodes):
 
-            #loss_this_node = self.get_loss(node_idx)(predictions_all_nodes[node_idx], targets_all_nodes[node_idx]).detach()
-            loss_this_node = F.mse_loss(predictions_all_nodes[node_idx], targets_all_nodes[node_idx], reduction='mean')
-            # Does it make sense to sum it? they're different types of losses and have different units etc
+            if self.labels_type == "regression":
+                loss_this_node = F.mse_loss(predictions_all_nodes[node_idx], targets_all_nodes[node_idx], reduction='mean')
+            elif self.labels_type == "binary":
+                loss_this_node = F.binary_cross_entropy(predictions_all_nodes[node_idx], targets_all_nodes[node_idx], reduction='mean')
+            else:
+                raise NotImplemented()
+            
             total_loss += loss_this_node
             loss_per_node[f'clf_node_{node_idx}'] = loss_this_node.detach()
 
@@ -394,6 +400,21 @@ class SupervisedRegulariser(nn.Module):
 
     def get_loss(self, node_idx):
         raise NotImplemented()
+    
+    def _get_sup_reg_models(self):
+
+        if self.labels_type == "regression":
+            return nn.ModuleList([nn.Linear(self.node_features_dim, 1) for n in range(self.num_nodes)])
+        
+        if self.labels_type == "binary":
+            return nn.ModuleList(
+            [ 
+                nn.Sequential(
+                    nn.Linear(self.node_features_dim, 2), 
+                    nn.Sigmoid()
+                ) for _ in range(self.num_nodes)
+            ]
+        )
 
 
 
