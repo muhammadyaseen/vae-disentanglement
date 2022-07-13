@@ -11,3 +11,10 @@
 
 
 The std of  emperical variational mu_dists have a much larger variance than that warranted by variational logvar . logvar has large negative values e.g. -6 which would mean we have bascially zero variance. that doesn't make sense. But emp. mu dist has good spread from -3 to +3
+
+Running the network on dsprites_correlated with sup reg on, mix init for prior, and 2d node feat dims for 10epochs
+
+
+what is the right protocol to train when using a learnable prior
+
+Ladder vae has learnable prior - i kinda didn't really check what was the behaviour there.. were we still getting almost 0 std there?

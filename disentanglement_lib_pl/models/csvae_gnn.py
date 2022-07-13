@@ -121,7 +121,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
     def _init_classification_network(self):
 
-        return SupervisedRegulariser(self.num_nodes, self.z_dim, None)
+        return SupervisedRegulariser(self.num_nodes, self.z_dim)
 
     def _classification_loss(self, predicted_latents, true_latents):
         

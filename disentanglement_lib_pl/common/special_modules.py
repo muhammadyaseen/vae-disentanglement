@@ -406,7 +406,7 @@ class SupervisedRegulariser(nn.Module):
         if self.labels_type == "regression":
             return nn.ModuleList([nn.Linear(self.node_features_dim, 1) for n in range(self.num_nodes)])
         
-        if self.labels_type == "binary":
+        elif self.labels_type == "binary":
             return nn.ModuleList(
             [ 
                 nn.Sequential(
@@ -415,6 +415,8 @@ class SupervisedRegulariser(nn.Module):
                 ) for _ in range(self.num_nodes)
             ]
         )
+        else:
+            raise NotImplemented()
 
 
 
