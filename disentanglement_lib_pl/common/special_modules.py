@@ -341,9 +341,13 @@ class SimpleGNNLayer(nn.Module):
             #print("Tanh() feats: ", node_feats)
             return node_feats
 
+    def __repr__(self):
+        
+        return self.projection.__repr__() + f" is_final_layer={self.is_final_layer}"
+
 class SupervisedRegulariser(nn.Module):
 
-    def __init__(self, num_nodes, node_features_dim, w_sup_reg, labels_type="regression"):
+    def __init__(self, num_nodes, node_features_dim, w_sup_reg, node_labels = None, labels_type="regression"):
         
         super().__init__()
         self.num_nodes = num_nodes
@@ -351,6 +355,7 @@ class SupervisedRegulariser(nn.Module):
         self.labels_type = labels_type
         self.w_sup_reg = w_sup_reg
         self.supervised_regularisers = self._get_sup_reg_models()
+        self.node_labels = node_labels
 
     def forward(self, node_features):
         """"
@@ -394,7 +399,7 @@ class SupervisedRegulariser(nn.Module):
                 raise NotImplemented()
             
             total_loss += loss_this_node
-            loss_per_node[f'clf_node_{node_idx}'] = loss_this_node.detach()
+            loss_per_node[f'clf_{node_idx}_{self.node_labels[node_idx]}'] = loss_this_node.detach()
 
         return total_loss * self.w_sup_reg, loss_per_node
 

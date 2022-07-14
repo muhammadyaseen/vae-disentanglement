@@ -26,12 +26,13 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         super(GNNBasedConceptStructuredVAE, self).__init__()
 
         if isinstance(network_args.adjacency_matrix, str):
-            self.adjacency_list = pickle.load(open(network_args.adjacency_matrix, 'rb'))
-        elif isinstance(network_args.adjacency_matrix, list):
-            self.adjacency_list = network_args.adjacency_matrix
-            
+            adj_mat_and_node_names = pickle.load(open(network_args.adjacency_matrix, 'rb'))
+            self.adjacency_list = adj_mat_and_node_names['adj_mat']
+            self.node_labels = adj_mat_and_node_names['node_labels']
+        elif isinstance(network_args.adjacency_matrix, dict):
+            self.adjacency_list = network_args.adjacency_matrix['adj_mat']
+            self.node_labels = network_args.adjacency_matrix['node_labels']
         else:
-            self.adjacency_list = None
             raise ValueError("Unsupported format for adjacency_matrix")
 
         self.add_classification_loss = c.AUX_CLASSIFICATION in network_args.loss_terms
@@ -59,21 +60,16 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # in current case it will be (b,V,9) i.e. each node gets a 9-dim feature vector
 
         self.encoder_cnn = MultiScaleEncoder(msenc_feature_dim, self.num_channels, self.num_nodes)
+        
         # uses multi scale features to init node feats
-        in_node_feat_dim, out_node_feat_dim = self.z_dim * 2, self.z_dim * 2
         # Q(Z|X,A)
-        self.encoder_gnn = nn.Sequential(
-            SimpleGNNLayer(self.encoder_cnn.out_feature_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True),
-            #SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True)
-        )
+        self.encoder_gnn = self._init_gnn()
+
         # converts exogenous vars to prior latents 
         # P(Z|epsilon, A)
-        self.prior_gnn = nn.Sequential(
-            SimpleGNNLayer(self.encoder_cnn.out_feature_dim, out_node_feat_dim, self.adjacency_matrix),
-            SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True),
-            #SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=True)
-        )
+        self.prior_gnn = self._init_gnn()
+
+        in_node_feat_dim, out_node_feat_dim = self.z_dim * 2, self.z_dim * 2
         # takes in encoded features and spits out recons
         # we do // 2 because we split the output features into mu and logvar 
         # but we only need mu-dim components for recon
@@ -120,9 +116,20 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         return fwd_pass_results
 
+    def _init_gnn(self):
+        
+        in_node_feat_dim, out_node_feat_dim = self.z_dim * 2, self.z_dim * 2
+        dag_levels = len(self.dag_layer_nodes)
+
+        gnn_layers = [SimpleGNNLayer(self.encoder_cnn.out_feature_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=False)]
+        for d in range(1, dag_levels):    
+            gnn_layers.append(SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer= d == dag_levels - 1))
+            
+        return nn.Sequential(*gnn_layers)
+
     def _init_classification_network(self):
 
-        return SupervisedRegulariser(self.num_nodes, self.z_dim, self.w_sup_reg)
+        return SupervisedRegulariser(self.num_nodes, self.z_dim, self.w_sup_reg, self.node_labels)
 
     def _classification_loss(self, predicted_latents, true_latents):
         
@@ -153,9 +160,6 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
         posterior_mu = kwargs['posterior_mu']
         posterior_logvar = kwargs['posterior_logvar']
-
-        predicted_latents = kwargs['latents_predicted']
-        true_latents = kwargs['true_latents']
 
         global_step = kwargs['global_step']
         current_epoch = kwargs['current_epoch']
@@ -196,7 +200,10 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         # 3. Auxiliary classification loss
         if self.add_classification_loss:
-
+            
+            predicted_latents = kwargs['latents_predicted']
+            true_latents = kwargs['true_latents']
+            
             output_losses[c.AUX_CLASSIFICATION], clf_loss_per_layer = self._classification_loss(predicted_latents, true_latents)
             output_losses[c.TOTAL_LOSS] += output_losses[c.AUX_CLASSIFICATION]
             output_losses.update(clf_loss_per_layer)
