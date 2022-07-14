@@ -72,8 +72,9 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         self._log_kld_loss_per_node(train_step_outputs)
 
         # Visualize Components of mean and sigma vector for every layer
+        #self._log_mu_per_node(train_step_outputs)
         self._log_mu_per_node(train_step_outputs)
-        self._log_logvar_per_node(train_step_outputs)
+        self._log_std_per_node(train_step_outputs)
 
         if self.model.add_classification_loss:
             self._log_classification_losses(train_step_outputs)
@@ -153,7 +154,37 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             prior_logvar_dict = {f"LogVar_p{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(prior_logvars_avgs[node_idx])}            
             for k , v in prior_logvar_dict.items():
                 self.logger.experiment.add_scalar(k, v, step)
+    
+    def _log_std_per_node(self, train_step_outputs, step_type='epoch'):
+
+        step = self.current_epoch if step_type == 'epoch' else self.global_step
+
+        # These should have the shape (batch, num_nodes, num_feat_dim)
+        # std = exp( ln(Variance) / 2) = exp( log_var / 2)
+        post_stds = torch.exp(torch.cat([tso['posterior_logvar'] for tso in train_step_outputs], dim=0) / 2.0)
+        prior_stds = torch.exp(torch.cat([tso['prior_logvar'] for tso in train_step_outputs], dim=0) / 2.0)
+
+        post_std_avgs = post_stds.mean(0).tolist()
+        prior_std_avgs = post_stds.mean(0).tolist()
+
+        for node_idx in range(self.model.num_nodes):
             
+            # Histograms
+            # Loop over every dim and add its histogram
+            for k in range(post_stds.shape[2]):
+                self.logger.experiment.add_histogram(f"Std_q{node_idx + 1}/Dim_{k}", post_stds[:, node_idx, k], step)
+                self.logger.experiment.add_histogram(f"Std_p{node_idx + 1}/Dim_{k}", prior_stds[:, node_idx, k], step)
+            
+            # Scalars
+            # we do '+1' because latent indexing is 1-based, there is no Z_0
+            post_logvar_dict = {f"Std_q{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(post_std_avgs[node_idx])}            
+            for k , v in post_logvar_dict.items():
+                self.logger.experiment.add_scalar(k, v, step)
+
+            prior_logvar_dict = {f"Std_p{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(prior_std_avgs[node_idx])}            
+            for k , v in prior_logvar_dict.items():
+                self.logger.experiment.add_scalar(k, v, step)
+        
     def _log_classification_losses(self, train_step_outputs):
         print("adding clg plots")
         # Log total sup. reg. loss        
