@@ -10,7 +10,7 @@
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
 #SBATCH --time=06:59:00
 
-NAME="dsprites_GNNCSVAE_2d_supreg_mix"
+NAME="w_dsprites_GNNCSVAE_2d_supreg_mix"
 echo "name=$NAME"
 
 # This path will work anywhere in JUWELS-Booster
@@ -31,7 +31,8 @@ srun \
     --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
     --dset_name=$DATASET_NAME \
     --decoder=SimpleConv64CommAss \
-    --w_kld=1 \
+    --w_kld=0.15 \
+    --w_recon=0.8 \
     --num_workers=48 \
     --batch_size=64 \
     --max_epoch=50 \
@@ -42,4 +43,5 @@ srun \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --correlation_strength=0.2 \
     --z_dim 2 \
-    --loss_terms aux_classification \
+    --loss_terms aux_classification
+

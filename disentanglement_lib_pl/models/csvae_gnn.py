@@ -44,8 +44,9 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.batch_size = network_args.batch_size
         self.z_dim = network_args.z_dim[0]
 
-        self.w_recon = 1.0
-        self.w_kld = 1.0
+        self.w_recon = network_args.w_recon
+        self.w_kld = network_args.w_kld
+        self.w_sup_reg = 0.05
         self.kl_warmup_epochs = network_args.kl_warmup_epochs
         
         # DAG - 0th element is list of first level nodels, last element is list of leaves / terminal nodes
@@ -121,7 +122,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
     def _init_classification_network(self):
 
-        return SupervisedRegulariser(self.num_nodes, self.z_dim)
+        return SupervisedRegulariser(self.num_nodes, self.z_dim, self.w_sup_reg)
 
     def _classification_loss(self, predicted_latents, true_latents):
         
@@ -174,10 +175,10 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # 1. REconstruction loss
         
         if loss_type == 'cross_ent':
-            output_losses[c.RECON] = F.binary_cross_entropy(x_recon, x_true, reduction='sum') / self.batch_size * self.w_recon
+            output_losses[c.RECON] = (F.binary_cross_entropy(x_recon, x_true, reduction='sum') / self.batch_size) * self.w_recon
         
         if loss_type == 'mse':
-            output_losses[c.RECON] = F.mse_loss(x_recon, x_true, reduction='sum') / self.batch_size * self.w_recon
+            output_losses[c.RECON] = (F.mse_loss(x_recon, x_true, reduction='sum') / self.batch_size) * self.w_recon
                
         output_losses[c.TOTAL_LOSS] += output_losses[c.RECON]
 

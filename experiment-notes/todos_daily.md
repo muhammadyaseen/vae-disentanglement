@@ -18,3 +18,6 @@ Running the network on dsprites_correlated with sup reg on, mix init for prior, 
 what is the right protocol to train when using a learnable prior
 
 Ladder vae has learnable prior - i kinda didn't really check what was the behaviour there.. were we still getting almost 0 std there?
+
+Taming VAEs https://arxiv.org/pdf/1810.00597.pdf 
+Hidden Talents of VAEs https://arxiv.org/pdf/1706.05148.pdf

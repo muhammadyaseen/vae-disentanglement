@@ -343,13 +343,13 @@ class SimpleGNNLayer(nn.Module):
 
 class SupervisedRegulariser(nn.Module):
 
-    def __init__(self, num_nodes, node_features_dim, labels_type="regression"):
+    def __init__(self, num_nodes, node_features_dim, w_sup_reg, labels_type="regression"):
         
         super().__init__()
         self.num_nodes = num_nodes
         self.node_features_dim = node_features_dim
         self.labels_type = labels_type
-
+        self.w_sup_reg = w_sup_reg
         self.supervised_regularisers = self._get_sup_reg_models()
 
     def forward(self, node_features):
@@ -396,7 +396,7 @@ class SupervisedRegulariser(nn.Module):
             total_loss += loss_this_node
             loss_per_node[f'clf_node_{node_idx}'] = loss_this_node.detach()
 
-        return total_loss, loss_per_node
+        return total_loss * self.w_sup_reg, loss_per_node
 
     def get_loss(self, node_idx):
         raise NotImplemented()
