@@ -161,14 +161,16 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         posterior_mu = kwargs['posterior_mu']
         posterior_logvar = kwargs['posterior_logvar']
 
-        global_step = kwargs['global_step']
-        current_epoch = kwargs['current_epoch']
+        global_step, current_epoch, max_epochs = kwargs['global_step'], kwargs['current_epoch'], kwargs['max_epochs']
         
-        num_is_nan = torch.isnan(x_recon).sum().item()
-        if num_is_nan > 0:
-            print("NaN detected during training...")
-            print(kwargs)
-            exit(1)
+        w_recon, w_kld, w_sup_reg = self._get_loss_term_weights(global_step, current_epoch, max_epochs)
+        output_losses['output_aux'] = (w_recon, w_kld, w_sup_reg)
+
+        #num_is_nan = torch.isnan(x_recon).sum().item()
+        #if num_is_nan > 0:
+        #    print("NaN detected during training...")
+        #    print(kwargs)
+        #    exit(1)
 
         output_losses = dict()
         
@@ -211,7 +213,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # detach all losses except for the full loss
         
         for loss_type in output_losses.keys():
-            if loss_type == c.LOSS:
+            if loss_type == c.LOSS or loss_type == 'ouput_aux':
                 continue
             else:
                 output_losses[loss_type] = output_losses[loss_type].detach()
@@ -266,5 +268,18 @@ class GNNBasedConceptStructuredVAE(nn.Module):
             )
 
         return torch.cat(exogen_samples_node, dim=1)
+
+    def _get_loss_term_weights(self, global_step, current_epoch, max_epochs):
+
+        start_recon, final_recon = 0.80, 0.45 
+        start_kld, final_kld = 0.20, 0.55
+        current_iter, max_iters = current_epoch, max_epochs
+
+        w_recon = max(final_recon, start_recon - (start_recon - final_recon) * (current_iter / max_iters))
+        w_kld = min(final_recon, start_kld + (final_kld - start_kld) * (current_iter / max_iters))
+        w_sup_reg = 0.0
+        
+        return w_recon, w_kld, w_sup_reg
+
 
 

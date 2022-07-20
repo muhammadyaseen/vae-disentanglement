@@ -9,7 +9,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "Orthognal Subspaces Idea.md",
+            "file": "Hidden talents VAE paper.md",
             "mode": "source",
             "source": false
           }
@@ -53,7 +53,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "6b18d73fee2a0408",
@@ -69,7 +70,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Orthognal Subspaces Idea.md",
+                "file": "Hidden talents VAE paper.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -89,9 +90,9 @@
   },
   "active": "c29540eee5189604",
   "lastOpenFiles": [
-    "Orthognal Subspaces Idea.md",
-    "todos.md",
     "todos_daily.md",
+    "todos.md",
+    "Orthognal Subspaces Idea.md",
     "ToyVAE experiments.md",
     "VACA.md",
     "CSVAE experiments.md",

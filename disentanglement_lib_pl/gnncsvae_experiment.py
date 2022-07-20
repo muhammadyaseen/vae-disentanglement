@@ -1,4 +1,3 @@
-
 import torch
 from base_vae_experiment import BaseVAEExperiment
 import matplotlib.pyplot as plt
@@ -32,7 +31,8 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             'optimizer_idx': optimizer_idx,
             'batch_idx': batch_idx,
             'global_step': self.global_step,
-            'current_epoch': self.current_epoch
+            'current_epoch': self.current_epoch,
+            'max_epochs': self.max_epochs
         })
         
         train_step_outputs = self.model.loss_function(loss_type='cross_ent', **fwd_pass_results)
@@ -76,11 +76,19 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         self._log_mu_per_node(train_step_outputs)
         self._log_std_per_node(train_step_outputs)
 
+        self._log_loss_func_weights(train_step_outputs)
+
         if self.model.add_classification_loss:
             self._log_classification_losses(train_step_outputs)
         
         torch.set_grad_enabled(True)
         self.model.train()
+
+    def _log_loss_func_weights(self, train_step_outputs):
+        
+        self.logger.experiment.add_scalar("LossTermWeights/w_recon", train_step_outputs[0]['output_aux'][0], self.current_epoch)
+        self.logger.experiment.add_scalar("LossTermWeights/w_kld", train_step_outputs[0]['output_aux'][1], self.current_epoch)
+        self.logger.experiment.add_scalar("LossTermWeights/w_sup_reg", train_step_outputs[0]['output_aux'][2], self.current_epoch)
 
     def _log_kld_loss_per_node(self, train_step_outputs, step_type='epoch'):
         

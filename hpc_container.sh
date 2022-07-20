@@ -75,7 +75,7 @@ apptainer exec --nv --bind $PROJECT/vae-disentanglement:/vae-disentanglement \
 
 # Moving files via scp
 # First move to laptop
-scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_cs_vaes/vae-disentanglement/train-logs/BetaVAE_dsprites_w1corr02/version_0/checkpoints/model.ckpt ./<etc>
+scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_cs_vaes/vae-disentanglement/train-logs/w_lr4_dsprites_GNNCSVAE_2d_supreg_mix//version_0/checkpoints/model.ckpt ./<etc>
 scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_cs_vaes/vae-disentanglement/train-logs/dim_debug_GNNCSVAE/version_1/checkpoints/epoch=42-step=495360.ckpt ./
 # Then to Cispa
 scp <etc> c01muya@gpu03:/home/c01muya/vae-disentanglement/train-logs/jscmodel_bvae_w1corr02_dsprites
