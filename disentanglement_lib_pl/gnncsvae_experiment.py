@@ -108,7 +108,6 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
 
         post_mus = torch.cat([tso['posterior_mu'] for tso in train_step_outputs], dim=0)
         prior_mus = torch.cat([tso['prior_mu'] for tso in train_step_outputs], dim=0)
-        #print(post_mus.shape)
 
         post_mus_avgs = post_mus.mean(0).tolist()
         prior_mus_avgs = prior_mus.mean(0).tolist()
@@ -119,48 +118,18 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             # Histograms
             # Loop over every dim of mu associated with this node and add its histogram
             for k in range(post_mus.shape[2]):
-                self.logger.experiment.add_histogram(f"Mu_q{node_idx + 1}/Dim_{k}", post_mus[:, node_idx, k], step)
-                self.logger.experiment.add_histogram(f"Mu_p{node_idx + 1}/Dim_{k}", prior_mus[:, node_idx, k], step)
+                self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Mu_q_Dim_{k}", post_mus[:, node_idx, k], step)
+                self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Mu_p_Dim_{k}", prior_mus[:, node_idx, k], step)
             
             # Scalars           
             # we do '+1' because latent indexing is 1-based, there is no Z_0
-            post_mu_dict = {f"Mu_q{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(post_mus_avgs[node_idx])}
+            post_mu_dict = {f"Node_{node_idx + 1}/Mu_q_comp_{i}": component_val for i, component_val in enumerate(post_mus_avgs[node_idx])}
             #print(post_mu_dict)
             for k , v in post_mu_dict.items():
                 self.logger.experiment.add_scalar(k, v, step)
             
-            prior_mu_dict = {f"Mu_p{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(prior_mus_avgs[node_idx])}            
+            prior_mu_dict = {f"Node_{node_idx + 1}/Mu_p_comp_{i}": component_val for i, component_val in enumerate(prior_mus_avgs[node_idx])}            
             for k , v in prior_mu_dict.items():
-                self.logger.experiment.add_scalar(k, v, step)
-    
-    def _log_logvar_per_node(self, train_step_outputs, step_type='epoch'):
-
-        step = self.current_epoch if step_type == 'epoch' else self.global_step
-
-        # These should have the shape (batch, num_nodes, num_feat_dim)
-        post_logvars = torch.cat([tso['posterior_logvar'] for tso in train_step_outputs], dim=0)
-        prior_logvars = torch.cat([tso['prior_logvar'] for tso in train_step_outputs], dim=0)
-        #print(post_logvars.shape)
-
-        post_logvars_avgs = post_logvars.mean(0).tolist()
-        prior_logvars_avgs = prior_logvars.mean(0).tolist()
-
-        for node_idx in range(self.model.num_nodes):
-            
-            # Histograms
-            # Loop over every dim and add its histogram
-            for k in range(post_logvars.shape[2]):
-                self.logger.experiment.add_histogram(f"LogVar_q{node_idx + 1}/Dim_{k}", post_logvars[:, node_idx, k], step)
-                self.logger.experiment.add_histogram(f"LogVar_p{node_idx + 1}/Dim_{k}", prior_logvars[:, node_idx, k], step)
-            
-            # Scalars
-            # we do '+1' because latent indexing is 1-based, there is no Z_0
-            post_logvar_dict = {f"LogVar_q{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(post_logvars_avgs[node_idx])}            
-            for k , v in post_logvar_dict.items():
-                self.logger.experiment.add_scalar(k, v, step)
-
-            prior_logvar_dict = {f"LogVar_p{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(prior_logvars_avgs[node_idx])}            
-            for k , v in prior_logvar_dict.items():
                 self.logger.experiment.add_scalar(k, v, step)
     
     def _log_std_per_node(self, train_step_outputs, step_type='epoch'):
@@ -173,24 +142,24 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         prior_stds = torch.exp(torch.cat([tso['prior_logvar'] for tso in train_step_outputs], dim=0) / 2.0)
 
         post_std_avgs = post_stds.mean(0).tolist()
-        prior_std_avgs = post_stds.mean(0).tolist()
+        prior_std_avgs = prior_stds.mean(0).tolist()
 
         for node_idx in range(self.model.num_nodes):
             
             # Histograms
             # Loop over every dim and add its histogram
             for k in range(post_stds.shape[2]):
-                self.logger.experiment.add_histogram(f"Std_q{node_idx + 1}/Dim_{k}", post_stds[:, node_idx, k], step)
-                self.logger.experiment.add_histogram(f"Std_p{node_idx + 1}/Dim_{k}", prior_stds[:, node_idx, k], step)
+                self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Std_q_Dim_{k}", post_stds[:, node_idx, k], step)
+                self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Std_p_Dim_{k}", prior_stds[:, node_idx, k], step)
             
             # Scalars
             # we do '+1' because latent indexing is 1-based, there is no Z_0
-            post_logvar_dict = {f"Std_q{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(post_std_avgs[node_idx])}            
-            for k , v in post_logvar_dict.items():
+            post_std_dict = {f"Node_{node_idx + 1}/Std_q_comp_{i}": component_val for i, component_val in enumerate(post_std_avgs[node_idx])}            
+            for k , v in post_std_dict.items():
                 self.logger.experiment.add_scalar(k, v, step)
 
-            prior_logvar_dict = {f"Std_p{node_idx + 1}/component_{i}": component_val for i, component_val in enumerate(prior_std_avgs[node_idx])}            
-            for k , v in prior_logvar_dict.items():
+            prior_std_dict = {f"Node_{node_idx + 1}/Std_p_comp_{i}": component_val for i, component_val in enumerate(prior_std_avgs[node_idx])}            
+            for k , v in prior_std_dict.items():
                 self.logger.experiment.add_scalar(k, v, step)
         
     def _log_classification_losses(self, train_step_outputs):

@@ -153,6 +153,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
     def loss_function(self, loss_type='cross_ent', **kwargs):
         
+        output_losses = dict()
+
         x_recon, x_true = kwargs['x_recon'], kwargs['x_true']
         
         prior_mu = kwargs['prior_mu']
@@ -171,8 +173,6 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         #    print("NaN detected during training...")
         #    print(kwargs)
         #    exit(1)
-
-        output_losses = dict()
         
         # initialize the loss of this batch with zero.
         output_losses[c.TOTAL_LOSS] = 0
@@ -213,7 +213,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # detach all losses except for the full loss
         
         for loss_type in output_losses.keys():
-            if loss_type == c.LOSS or loss_type == 'ouput_aux':
+            if loss_type == c.LOSS or loss_type == 'output_aux':
                 continue
             else:
                 output_losses[loss_type] = output_losses[loss_type].detach()

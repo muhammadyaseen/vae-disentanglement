@@ -563,6 +563,7 @@ body .markdown-preview-view h3 {
 }
 body .markdown-preview-view h4 {
   font-weight: 600;
+  color: var(--color-green-3); /* Yaseen modification */
 }
 body .markdown-preview-view h5 {
   font-style: italic;
@@ -592,6 +593,7 @@ body .markdown-source-view.mod-cm6 .HyperMD-header-3 {
 }
 body .markdown-source-view.mod-cm6 .HyperMD-header-4 {
   font-weight: 600;
+  color: var(--color-green-3); /* Yaseen modification */
 }
 body .markdown-source-view.mod-cm6 .HyperMD-header-5 {
   font-style: italic;
