@@ -31,17 +31,15 @@ srun \
     --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
     --dset_name=$DATASET_NAME \
     --decoder=SimpleConv64CommAss \
-    --w_kld=0.15 \
+    --w_kld=0.20 \
     --w_recon=0.8 \
     --num_workers=48 \
     --batch_size=64 \
     --max_epoch=50 \
     --in_channels=1 \
-    --gpus 0  \
+    --gpus 0 \
     --visdom_on=False \
     --lr_G=0.0001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --correlation_strength=0.2 \
-    --z_dim 2 \
-    --loss_terms aux_classification
-
+    --z_dim 2

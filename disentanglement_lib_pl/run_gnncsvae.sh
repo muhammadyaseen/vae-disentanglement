@@ -2,13 +2,13 @@
 
 FILENAME=$(basename $0)
 FILENAME="${FILENAME%.*}"
-NAME="celeba_gnncsvae"
+NAME="dsprites_correlated_gnncsvae"
 echo "name=$NAME"
 
 PROJECT_ROOT=./vae-disentanglement
 
 export DISENTANGLEMENT_LIB_DATA=$PROJECT_ROOT/datasets/
-DATASET_NAME=celeba
+DATASET_NAME=dsprites_correlated
 LOGS_DIR=$PROJECT_ROOT/train-logs
 
 python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
@@ -19,12 +19,12 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
     --dset_name=$DATASET_NAME \
     --decoder=SimpleConv64CommAss \
-    --w_kld=0.15 \
+    --w_kld=0.20 \
     --w_recon=0.8 \
     --num_workers=0 \
     --batch_size=64 \
     --max_epoch=3 \
-    --in_channels=3 \
+    --in_channels=1 \
     --gpus 0  \
     --visdom_on=False \
     --lr_G=0.0001 \

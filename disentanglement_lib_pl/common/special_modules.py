@@ -345,6 +345,96 @@ class SimpleGNNLayer(nn.Module):
         
         return self.projection.__repr__() + f" is_final_layer={self.is_final_layer}"
 
+class BifurcatedGNNLayer(nn.Module):
+    """
+    Can be used to implement GNNs for P(Z|epsilon, A) or Q(Z|X,A)
+    """
+    def __init__(self, adj_mat, in_ind_dim, out_ind_dim, in_dep_dim, out_dep_dim, layer_type=None):
+        super().__init__()
+
+        self.layer_type = layer_type
+        self.A = adj_mat.T # this is reqd because the store mat is in from-to form but the impl needs to-from
+        
+        self.in_ind_dim = in_ind_dim
+        self.out_ind_dim = out_ind_dim
+        self.in_dep_dim = in_dep_dim
+        self.out_dep_dim = out_dep_dim
+
+        self.num_neighbours = self.A.sum(dim=-1, keepdims=True)
+        self.dependent_nodes_mask = self.num_neighbours - 1
+        
+        if self.layer_type == 'first':
+            self.projection_ind = nn.Linear(in_ind_dim, out_ind_dim * 2)
+            self.projection_dep = nn.Linear(in_dep_dim, out_dep_dim * 2)
+        else:
+            self.projection_ind = nn.Linear(in_ind_dim * 2, out_ind_dim * 2)
+            self.projection_dep = nn.Linear(in_dep_dim * 2, out_dep_dim * 2)
+    
+    def forward(self, node_feats):
+        
+        node_feats_dep, node_feats_ind = node_feats
+        
+        self.A = self.A.to(node_feats_dep.device)
+        self.num_neighbours = self.num_neighbours.to(node_feats_dep.device)
+        self.dependent_nodes_mask = self.dependent_nodes_mask.to(node_feats_dep.device)
+        
+        if self.layer_type == 'first':
+            
+            # in the first layer we get combined features i.e. there's no bifurcation 
+            # b/w dependent and independent features. Since they're coming from 
+            # encoder CNN net, they're all kinda dependent
+            
+            # project to ind feat dim - prep indept features first
+            indep_node_feats = self.projection_ind(node_feats_dep)
+            indep_node_feats = torch.tanh(indep_node_feats)   
+        
+            # prep dep features
+            dep_node_feats = self.projection_dep(node_feats_dep)
+            dep_node_feats = torch.matmul(self.A, dep_node_feats)
+            dep_node_feats = dep_node_feats / self.num_neighbours
+            dep_node_feats = torch.tanh(dep_node_feats)
+            dep_node_feats = dep_node_feats * self.dependent_nodes_mask
+            
+            return dep_node_feats, indep_node_feats
+        
+        else: # if not first layer...
+            
+            # take in (dep, ind) return (dep, ind)
+            # project to ind feat dim - prep indept features first
+            indep_node_feats = self.projection_ind(node_feats_ind)
+            indep_node_feats = torch.tanh(indep_node_feats)
+
+            # prep dep features
+            dep_node_feats = self.projection_dep(node_feats_dep)
+            dep_node_feats = torch.matmul(self.A, dep_node_feats)
+            dep_node_feats = dep_node_feats / self.num_neighbours   
+            
+            if self.layer_type == 'last':
+
+                # split into mu and sigma
+                dep_node_feats = dep_node_feats * self.dependent_nodes_mask
+                dep_mu, dep_logvar = dep_node_feats.chunk(2, dim=2)
+                indep_mu, indep_logvar = indep_node_feats.chunk(2, dim=2)
+
+                # combine params
+                mu = torch.cat([indep_mu, dep_mu], dim=2)
+                logvar = torch.cat([indep_logvar, dep_logvar], dim=2)
+
+                return mu, logvar
+
+            else:
+                dep_node_feats = torch.tanh(dep_node_feats)
+                dep_node_feats = dep_node_feats * self.dependent_nodes_mask
+                return dep_node_feats, indep_node_feats
+
+    def __repr__(self):
+        
+        return self.projection_ind.__repr__() + \
+               self.projection_dep.__repr__() + \
+            f" layer_type={self.layer_type} " + \
+            f"in_ind_dim={self.in_ind_dim}, out_ind_dim={self.out_ind_dim} " + \
+            f"in_dep_dim={self.in_dep_dim}, out_dep_dim={self.out_dep_dim} "
+
 class SupervisedRegulariser(nn.Module):
 
     def __init__(self, num_nodes, node_features_dim, w_sup_reg, node_labels = None, labels_type="regression"):

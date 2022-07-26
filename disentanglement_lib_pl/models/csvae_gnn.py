@@ -9,7 +9,7 @@ from architectures.decoders.simple_conv64 import SimpleConv64CommAss
 from common.ops import kl_divergence_diag_mu_var_per_node, reparametrize, Flatten3D
 from common import constants as c
 from common import dag_utils
-from common.special_modules import SimpleGNNLayer, SupervisedRegulariser
+from common.special_modules import SimpleGNNLayer, SupervisedRegulariser, BifurcatedGNNLayer
 
 import pdb
 
@@ -44,7 +44,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.image_size = network_args.image_size
         self.batch_size = network_args.batch_size
         self.z_dim = network_args.z_dim[0]
-
+        self.d_dim = 1
+        
         self.w_recon = network_args.w_recon
         self.w_kld = network_args.w_kld
         self.w_sup_reg = 0.05
@@ -63,13 +64,13 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         # uses multi scale features to init node feats
         # Q(Z|X,A)
-        self.encoder_gnn = self._init_gnn()
+        self.encoder_gnn = self._init_bf_gnn()
 
         # converts exogenous vars to prior latents 
         # P(Z|epsilon, A)
-        self.prior_gnn = self._init_gnn()
+        self.prior_gnn = self._init_bf_gnn()
 
-        in_node_feat_dim, out_node_feat_dim = self.z_dim * 2, self.z_dim * 2
+        in_node_feat_dim, out_node_feat_dim = (self.z_dim + self.d_dim) * 2, (self.z_dim + self.d_dim) * 2
         # takes in encoded features and spits out recons
         # we do // 2 because we split the output features into mu and logvar 
         # but we only need mu-dim components for recon
@@ -125,6 +126,32 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         for d in range(1, dag_levels):    
             gnn_layers.append(SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer= d == dag_levels - 1))
             
+        return nn.Sequential(*gnn_layers)
+    
+    def _init_bf_gnn(self):
+        
+        dag_levels = len(self.dag_layer_nodes)
+
+        gnn_layers = [BifurcatedGNNLayer(
+            self.adjacency_matrix, 
+            self.encoder_cnn.out_feature_dim, 
+            self.z_dim, 
+            self.encoder_cnn.out_feature_dim,
+            self.d_dim,            
+            layer_type='first')]
+        
+        for d in range(1, dag_levels):    
+            gnn_layers.append(
+                BifurcatedGNNLayer(
+                    self.adjacency_matrix, 
+                    self.z_dim, 
+                    self.z_dim, 
+                    self.d_dim, 
+                    self.d_dim, 
+                    layer_type = 'last' if d == dag_levels - 1 else None
+                )
+            )
+        
         return nn.Sequential(*gnn_layers)
 
     def _init_classification_network(self):
@@ -226,7 +253,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         #-------
         multi_scale_features = self.encoder_cnn(x_true)
         #print(multi_scale_features.shape)
-        posterior_mu, posterior_logvar = self.encoder_gnn(multi_scale_features)
+        posterior_mu, posterior_logvar = self.encoder_gnn((multi_scale_features, None))
         posterior_z = reparametrize(posterior_mu, posterior_logvar)
 
         return posterior_mu, posterior_logvar, posterior_z
@@ -242,7 +269,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
         exogen_vars_sample = torch.randn(size=(num_samples, self.num_nodes, self.encoder_cnn.out_feature_dim),
                                          device=current_device)
-        prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
+        prior_mu, prior_logvar = self.prior_gnn((exogen_vars_sample, None))
         prior_z = reparametrize(prior_mu, prior_logvar)
         
         # Need to reshape most likely before passing
@@ -253,7 +280,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
     def prior_to_latents_prediction(self, current_device):
          
         exogen_vars_sample = self._get_exogen_samples(current_device)
-        prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
+        prior_mu, prior_logvar = self.prior_gnn((exogen_vars_sample, None))
 
         return prior_mu, prior_logvar
 

@@ -2,9 +2,9 @@ For all $z_i$ the associated features belong to a manifold in $\mathbb{R}^k$ . I
 
 This however seems to contradict the dependent nature of GNNs. Since for nodes that have parents the features are calculated as a function of features of parent nodes. How do we square this with this orth. subspaces idea ?
 
-Secondly, afaik in 2D we can have a max of 2 orthogonal subspaces (here, 2 1D subspaces aka lines), any additional subspace will be non-orthogonal to at least one of them. So if we have $k$ nodes we need the feature dimension to be at least $\mathbb{R}^{k+1}$ for this idea to work? In 3D we have 3 1D subspaces
+Secondly, afaik in 2D we can have a max of 2 orthogonal subspaces (here, 2 1D subspaces aka lines), any additional subspace will be non-orthogonal to at least one of them. So if we have $k$ nodes we need the feature dimension to be at least $\mathbb{R}^{k}$ for this idea to work? In 3D we have 3 1D subspaces so we can encode 3 inpept. concepts; one in each dim/subspace
 
-#### Orth subspaces may not be the solution
+#### Orth Sub Spaces may not be the solution
 Orth. subspaces may not directly co-incide with the concept of disentanglement. To see why consider the following:
 
 Let's assume that we have feat. dim of 3 which gives us 3 2d planes pairwise orth to each other. Namely the $xy, xz, yz$ planes.  
@@ -28,7 +28,7 @@ Similarly for the concept "Hair length":
 
 $\mu_1 + \delta_D \odot \ \epsilon  = \begin{bmatrix} 0.8 \\ 0.3 \\ 0.7 \end{bmatrix} + \begin{bmatrix} 0 \\ 1 \\ 1 \end{bmatrix} \odot \epsilon$ where $D = \{2,3\}$ for $yz$ plane.
 
-But there is an immediate problem. In both cases we are changing the $3$rd dimension. Third dim encodes the information about both Hair color and Hair length. Hence these two concepts are entangled in the 3rd dim.
+But there is an immediate problem. In _both cases we are changing the $3$rd dimension_. Third dim encodes the information about both Hair color and Hair length. Hence these two concepts are entangled in the 3rd dim.
 
 #### Can we use this to our advantage ?
 Could this "sharing" phenomenon be used to our advantage for correlated nodes?
