@@ -8,7 +8,7 @@
 #SBATCH --job-name=hai_cs_vaes-CS-VAE
 #SBATCH --mail-user=muhammad.yaseen@cispa.de
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
-#SBATCH --time=06:59:00
+#SBATCH --time=02:00:00
 
 NAME="FixedWeightDprites"
 echo "name=$NAME"
@@ -20,7 +20,6 @@ DATASET_NAME=dsprites_correlated
 LOGS_DIR=$PROJECT_ROOT/train-logs
 
 # The path after .sif refers to the path within containers
-#srun --account=hai_cs_vaes --gres=gpu:4 --partition=develbooster --nodes=1 \
 srun \
     apptainer exec --nv --bind $PROJECT/vae-disentanglement:/vae-disentanglement \
     ./container-file/vae-disent-v1.1-tensorboard.sif python /vae-disentanglement/disentanglement_lib_pl/experiment_runner.py \
@@ -44,5 +43,6 @@ srun \
     --correlation_strength=0.2 \
     --z_dim 2 \
     --use_loss_weights=False \
-    --version="FixedWeightDprites_UptoEpoch15" 
-    
+    --version="FixedWeightDprites_UptoEpoch15_ctd_Epoch30" \
+    --continue_training=True \
+    --ckpt_path=$LOGS_DIR/FixedWeightDprites/FixedWeightDprites_UptoEpoch15/checkpoints/epoch=14-step=172800.ckpt

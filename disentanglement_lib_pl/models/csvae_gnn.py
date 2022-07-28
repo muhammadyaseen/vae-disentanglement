@@ -256,7 +256,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         #-------
         multi_scale_features = self.encoder_cnn(x_true)
         #print(multi_scale_features.shape)
-        posterior_mu, posterior_logvar = self.encoder_gnn((multi_scale_features, None))
+        posterior_mu, posterior_logvar = self.encoder_gnn(multi_scale_features)
         posterior_z = reparametrize(posterior_mu, posterior_logvar)
 
         return posterior_mu, posterior_logvar, posterior_z
@@ -272,7 +272,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
         exogen_vars_sample = torch.randn(size=(num_samples, self.num_nodes, self.encoder_cnn.out_feature_dim),
                                          device=current_device)
-        prior_mu, prior_logvar = self.prior_gnn((exogen_vars_sample, None))
+        prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
         prior_z = reparametrize(prior_mu, prior_logvar)
         
         # Need to reshape most likely before passing
@@ -283,7 +283,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
     def prior_to_latents_prediction(self, current_device):
          
         exogen_vars_sample = self._get_exogen_samples(current_device)
-        prior_mu, prior_logvar = self.prior_gnn((exogen_vars_sample, None))
+        prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
 
         return prior_mu, prior_logvar
 
@@ -301,12 +301,12 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
     def _get_loss_term_weights(self, global_step, current_epoch, max_epochs):
 
-        start_recon, final_recon = 0.80, 0.40 
-        start_kld, final_kld = 0.20, 0.60
+        start_recon, final_recon = 0.80, 0.20 
+        start_kld, final_kld = 0.20, 0.80
         current_iter, max_iters = current_epoch, max_epochs
 
         w_recon = max(final_recon, start_recon - (start_recon - final_recon) * (current_iter / max_iters))
-        w_kld = min(final_recon, start_kld + (final_kld - start_kld) * (current_iter / max_iters))
+        w_kld = min(final_kld, start_kld + (final_kld - start_kld) * (current_iter / max_iters))
         w_sup_reg = 0.0
         
         return w_recon, w_kld, w_sup_reg
