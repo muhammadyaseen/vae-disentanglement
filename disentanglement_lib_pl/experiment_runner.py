@@ -133,7 +133,8 @@ def main(_args):
 
     tb_logger = TensorBoardLogger(
         save_dir = _args.ckpt_dir,
-        name = _args.expr_name
+        name = _args.expr_name, 
+        version= _args.version
     )
 
     # load the model associated with args.alg

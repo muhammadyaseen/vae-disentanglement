@@ -33,13 +33,12 @@ But there is an immediate problem. In _both cases we are changing the $3$rd dime
 #### Can we use this to our advantage ?
 Could this "sharing" phenomenon be used to our advantage for correlated nodes?
 Nodes that are correlated can be allowed to share a dimension... In doing so the correlation is elegently captured in a single dimension.
-
 Uncorrelated nodes will use or have to be encoded onto disjoint dims.
 
-Right now corrs are modelled by GNN interactions. Can we limit those messages / interactions to specific "shared" dims for correlated nodes ?
+Right now corrs are modelled by GNN interactions. Can we limit those messages / interactions to specific "shared" dims for correlated nodes ?  This is further expanded upon in [[GNN Idea Exploration#Bifurcated features in GNN nodes]]
 
 Full disent would require us to encode concepts onto disjoint set of dims. We don't have to use 1 dim per concept and could potentially use more dims if number of dims is greater than the number of concepts.
 $$ \mathcal{S} = \bigcup_i^K S_i \;\;\;\; s.t. \;\; S_i \subset \mathcal{S} , \;\;\;  S_i \cap S_j = \varnothing \forall i \neq j$$
-This K gives us the number of disjoint dims. At minimum we nee K = num of unique elems. E,g for K=4 nodes we need at least 4 disjoint subsets
+This K gives us the number of disjoint dims. At minimum we need K = num of unique elems. E,g for K=4 nodes we need at least 4 disjoint subsets
 
 

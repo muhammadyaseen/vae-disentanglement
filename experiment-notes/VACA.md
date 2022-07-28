@@ -17,7 +17,7 @@ The structure is imposed between $X$ components i.e $(x_i, x_j)$
 
 SCM $\mathcal{M}( p(\textbf{U}), \tilde{\textbf{F}} )$    
 |X| = |U| - they have same dimension
-The structure of $p(X)$ is know in the form of a DAG / Adj. Mat.
+The structure of $p(X)$ is known in the form of a DAG / Adj. Mat.
 
 X's are computed / generated directly from other X's and local exogen var U's
 $$\tilde{\textbf{F}} = \{ X_i := \tilde{f}_i( \textbf{X}_{pa(i)},U_i)\}$$ The exact parametric forms of SCM equations $\tilde{\textbf{F}}$ are not known
@@ -61,7 +61,7 @@ Relation between $Z$ and $U$
 - Decoder $p_\theta(\textbf{X}|\textbf{Z},\textbf{A})$  plays a similar role to SE $\textbf{F}$. Both take a set of vars as input and produce $X$. At the same time Decoder does not aim to approximate the causal structural equations.
 - $Z$ don't need to correspond to the true exogenous variables i.e. $p(\textbf{U}) \neq p(\textbf{Z})$ 
 - They require that there is one independent latent variable $Z_i$ for every observed variable $X_i$ capturing all the information of $X_i$ that cannot be explained by its parents. Since by definition $X_i := f_i(\text{pa}(i), U_i)$, it means that $Z_i$ captures information contributed by $U_i$.
-- Similar to the true posterior $p(U_i|X_i,\text{pa}(i))$, the distribution $p(Z_i|X_i,\text{pa}(i))$ should only depend on $X_i$ and its parents. (Should it be the variational distribution in 2nd part?)
+- Similar to the true posterior $p(U_i|X_i,\text{pa}(i))$, the distribution $p(Z_i|X_i,\text{pa}(i))$ should only depend on $X_i$ and its parents. (Shouldn't it be the variational distribution in 2nd part?)
 
 
 

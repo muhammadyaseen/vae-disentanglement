@@ -104,7 +104,7 @@ def get_args(sys_args):
                         help='Dimension of each intermediate layer unit for top-down / dag layer networks')
     parser.add_argument('--kl_warmup_epochs', default=0, type=int,
                         help='Number of epochs after which KL loss is introduced')
-
+    parser.add_argument('--use_loss_weights', default=False, type=str2bool, help="Whether to use loss terms weighting or not")
     # Dataset
     parser.add_argument('--dset_dir', default=os.getenv('DISENTANGLEMENT_LIB_DATA', './data'),
                         type=str, help='main dataset directory')
@@ -142,6 +142,7 @@ def get_args(sys_args):
     parser.add_argument('--continue_training', default=False, type=str2bool, help='Load the given checkpoint and continue training')
     parser.add_argument('--ckpt_load_iternum', default=True, type=str2bool, help='start global iteration from ckpt')
     parser.add_argument('--ckpt_load_optim', default=True, type=str2bool, help='load the optimizer state')
+    parser.add_argument('--version', default=None, type=str, help="version number or description")
 
     # Schedulers
     parser.add_argument('--lr_scheduler', default=None, type=str, choices=c.LR_SCHEDULERS,

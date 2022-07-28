@@ -14,10 +14,28 @@ The std of  emperical variational mu_dists have a much larger variance than that
 
 Running the network on dsprites_correlated with sup reg on, mix init for prior, and 2d node feat dims for 10epochs
 
-
 what is the right protocol to train when using a learnable prior
 
 Ladder vae has learnable prior - i kinda didn't really check what was the behaviour there.. were we still getting almost 0 std there?
 
 Taming VAEs https://arxiv.org/pdf/1810.00597.pdf 
 Hidden Talents of VAEs https://arxiv.org/pdf/1706.05148.pdf
+
+
+Clarify object / best case outcome
+
+When changing the indept dims only the concept corresponding to the node changes
+When changing the dept dims the concept and any child concept can change
+The changes should make semantic sense
+
+What to do with partial graphs / DAGs / latent labels
+
+Review prev experiment notes as well
+
+Figure out a way to run CelebA with all / limited DAG
+
+
+1. run from 0th to 15th epoch with fixed weight terms and then stop training. this will give us a \*.ckpt file
+2. run the ckpt file with --continue_training and still fixed weights
+3. run the ckpt file with --continue training but this time with weights changing
+

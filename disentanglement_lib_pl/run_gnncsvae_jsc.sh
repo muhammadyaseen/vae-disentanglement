@@ -10,7 +10,7 @@
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
 #SBATCH --time=06:59:00
 
-NAME="w_dsprites_GNNCSVAE_2d_supreg_mix"
+NAME="FixedWeightDprites"
 echo "name=$NAME"
 
 # This path will work anywhere in JUWELS-Booster
@@ -32,14 +32,17 @@ srun \
     --dset_name=$DATASET_NAME \
     --decoder=SimpleConv64CommAss \
     --w_kld=0.20 \
-    --w_recon=0.8 \
+    --w_recon=0.80 \
     --num_workers=48 \
     --batch_size=64 \
-    --max_epoch=50 \
+    --max_epoch=30 \
     --in_channels=1 \
     --gpus 0 \
     --visdom_on=False \
     --lr_G=0.0001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --correlation_strength=0.2 \
-    --z_dim 2
+    --z_dim 2 \
+    --use_loss_weights=False \
+    --version="FixedWeightDprites_UptoEpoch15" 
+    

@@ -44,13 +44,14 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.image_size = network_args.image_size
         self.batch_size = network_args.batch_size
         self.z_dim = network_args.z_dim[0]
-        self.d_dim = 1
+        self.d_dim = 0
         
         self.w_recon = network_args.w_recon
         self.w_kld = network_args.w_kld
-        self.w_sup_reg = 0.05
+        self.w_sup_reg = 0.0
         self.kl_warmup_epochs = network_args.kl_warmup_epochs
-        
+        self.use_loss_weights = network_args.use_loss_weights
+
         # DAG - 0th element is list of first level nodels, last element is list of leaves / terminal nodes
         self.dag_layer_nodes = dag_utils.get_dag_layers(self.adjacency_list)        
         
@@ -64,11 +65,11 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         # uses multi scale features to init node feats
         # Q(Z|X,A)
-        self.encoder_gnn = self._init_bf_gnn()
+        self.encoder_gnn = self._init_gnn()
 
         # converts exogenous vars to prior latents 
         # P(Z|epsilon, A)
-        self.prior_gnn = self._init_bf_gnn()
+        self.prior_gnn = self._init_gnn()
 
         in_node_feat_dim, out_node_feat_dim = (self.z_dim + self.d_dim) * 2, (self.z_dim + self.d_dim) * 2
         # takes in encoded features and spits out recons
@@ -192,8 +193,10 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
         global_step, current_epoch, max_epochs = kwargs['global_step'], kwargs['current_epoch'], kwargs['max_epochs']
         
-        w_recon, w_kld, w_sup_reg = self._get_loss_term_weights(global_step, current_epoch, max_epochs)
-        output_losses['output_aux'] = (w_recon, w_kld, w_sup_reg)
+        if self.use_loss_weights:
+            self.w_recon, self.w_kld, self.w_sup_reg = self._get_loss_term_weights(global_step, current_epoch, max_epochs)
+        
+        output_losses['output_aux'] = (self.w_recon, self.w_kld, self.w_sup_reg)
 
         #num_is_nan = torch.isnan(x_recon).sum().item()
         #if num_is_nan > 0:
@@ -298,8 +301,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
     def _get_loss_term_weights(self, global_step, current_epoch, max_epochs):
 
-        start_recon, final_recon = 0.80, 0.45 
-        start_kld, final_kld = 0.20, 0.55
+        start_recon, final_recon = 0.80, 0.40 
+        start_kld, final_kld = 0.20, 0.60
         current_iter, max_iters = current_epoch, max_epochs
 
         w_recon = max(final_recon, start_recon - (start_recon - final_recon) * (current_iter / max_iters))

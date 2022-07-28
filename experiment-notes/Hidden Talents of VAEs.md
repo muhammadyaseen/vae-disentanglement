@@ -54,3 +54,5 @@ It turns out that even if the latter three are severely constrained, overfitting
 2. If the VAE latent representation $z$ is larger than needed then in the extended nonlinear case we would then expect that columns of the weight matrix $W$ from the first layer of the decoder mean network should be pushed to zero, effectively pruning away the impact of any superfluous elements of $z$. First decoder layer will have zero in columns corresponding to shut-off / useless dims.
 
 3. When granted sufficient capacity in both $\mu_x ( \mu_z[x])$ and $\Sigma_x$ to model inliers and outliers respectively, the VAE should have a tendency to push elements of the encoder covariance $\Sigma_z$ to arbitrarily near zero along latent dimensions needed for representing inlier points. That is Variance of dims will be close to 1 for useless dims, and close to 0 for useful dims. This also means that if we have more dims in latent than necessary / than underlying latent manifold then we will have 1's corresponding to excess dims an 0's corresponding to useful / actual dims. 
+
+What happens when there are fewer units than true latent dim
