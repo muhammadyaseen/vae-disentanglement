@@ -9,7 +9,7 @@
         "state": {
           "type": "markdown",
           "state": {
-            "file": "todos_daily.md",
+            "file": "DEAR.md",
             "mode": "source",
             "source": false
           }
@@ -53,7 +53,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 224.5,
+    "collapsed": true
   },
   "right": {
     "id": "6b18d73fee2a0408",
@@ -69,7 +70,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "todos_daily.md",
+                "file": "DEAR.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -89,15 +90,15 @@
   },
   "active": "c29540eee5189604",
   "lastOpenFiles": [
-    "Hidden Talents of VAEs.md",
+    "DAG-GNN.md",
+    "DEAR.md",
+    "CausalVAE.md",
     "todos_daily.md",
+    "Hidden Talents of VAEs.md",
     "GNN Idea Exploration.md",
     "Orthogonal Subspaces Idea.md",
-    "DEAR.md",
     "Loss terms weighting exps.md",
     "CSVAE experiments.md",
-    "Correlated BetaVAE experiments.md",
-    "ToyVAE experiments.md",
-    "todos.md"
+    "Correlated BetaVAE experiments.md"
   ]
 }
