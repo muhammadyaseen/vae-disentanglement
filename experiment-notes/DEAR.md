@@ -104,11 +104,29 @@ $$\min_{E,G,F} \;\; L(E,G,F) := L_{gen}(E,G,F) + \lambda L_{sup}(E)$$
 - Different from their setting, the <u>prior also involves learnable parameters</u>, that is, the parameters $\beta = (f_2, f_1, A)$ of the SCM.
 
 
+### 5.1 Causal controllable generation
+"With a learned SCM as the prior, we are able to generate  images from many desired interventional distributions of the latent factors. For example, we can manipulate only the cause factor while leaving its effects unchanged."  The wording is a bit ambiguous here. What is meant by "we can manipulate only the cause factor while leaving its effects unchanged" ? They can surely intervene only on the 'cause' unit and don't touch the 'effect' units, but depending on how the network is structured / latent relationships are modeled the consequence of intervening on the cause will trickle down to the effect units.
+
+Two types of interventions:
+- Manipulate 1 dim of the latent while keeping the others fixed
+- Intervene on only one latent variable, i.e., $do(z_i = c )$, and to observe how other variables change consequently
+
+In Sec 5.1 the following statements <u>seem to contradict</u> each other:
+- We see that in each line when manipulating 1 latent dim while keeping the others fixed, the generated images of our model vary only in a single factor, indicating that our method can disentangle the causally correlated factors
+- We show the results of intervention on the latent variables representing the cause factors, which clearly show that intervening on a cause variable changes its effect variables
+
+Furthermore, from the caption of Fig 4, we have these contradictory statements:
+- We see that the traversals of DEAR vary only in a single factor `smile` with factor `mouth_open` unaffected
+- We see that intervening on `smile` affects its effect `mouth_open`, which makes sense
+
+In Appendix: intervening on an effect variable does not influence its cause
 
 
-
+#### Questions
 Do they use an encoder GNN / How do they model the variational posterior ?
 
 Does their var. posterior have or mirrors the SCM structure ?
 
 In the paper there's no explanation of why the units learn the concepts they do. There's probably an implication that they do so because they're being supervised by respective labels... but is that really enough ?
+
+I don't understand how caual controllable generation works or how they're able to change the cause w/o chaning the effect as well..

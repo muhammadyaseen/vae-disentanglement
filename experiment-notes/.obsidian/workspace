@@ -4,15 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "c29540eee5189604",
+        "id": "028db224d2e37306",
         "type": "leaf",
         "state": {
-          "type": "markdown",
-          "state": {
-            "file": "DEAR.md",
-            "mode": "source",
-            "source": false
-          }
+          "type": "empty",
+          "state": {}
         }
       }
     ],
@@ -53,8 +49,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 224.5,
-    "collapsed": true
+    "width": 224.5
   },
   "right": {
     "id": "6b18d73fee2a0408",
@@ -70,7 +65,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "DEAR.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -88,17 +82,17 @@
     "width": 300,
     "collapsed": true
   },
-  "active": "c29540eee5189604",
+  "active": "091dff956aba6eff",
   "lastOpenFiles": [
-    "DAG-GNN.md",
-    "DEAR.md",
+    "Common DEAR and CausalVAE.md",
     "CausalVAE.md",
+    "DEAR.md",
+    "Osman.md",
+    "DAG-GNN.md",
     "todos_daily.md",
     "Hidden Talents of VAEs.md",
     "GNN Idea Exploration.md",
     "Orthogonal Subspaces Idea.md",
-    "Loss terms weighting exps.md",
-    "CSVAE experiments.md",
-    "Correlated BetaVAE experiments.md"
+    "Loss terms weighting exps.md"
   ]
 }
