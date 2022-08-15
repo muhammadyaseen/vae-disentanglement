@@ -1,25 +1,30 @@
+Big Picture: Leveraging Causal Discovery for Deep Hierarchical Latent Variable Models
+
+#### Questions about GLOBE
 - How many vars can GLOBE run on / run-time ?
 - give that we can extend GLOBE to binary vars required for CelebA dataset.. what can we accomplish with it ?
 - GLOBE algo also gives the SCM i.e. functions / mechanisms relating the (latent) variables, how can this be used in our VAE models ? Could we somehow use it to regularize the learning?
-- Where do GNNs fit into all of this?
+- I want to convince myself that this GLOBE diversion is worth the time investment.
+- Decision Tree / PolyMARS for binary function learning.
+- Assuming PolyMARS works... what now ? and should I really be working on that extension?
+
+
+#### Questions about modeling decisions / outcomes in VAE
+- Where do GNNs fit into all of this? ([[GNN Idea Exploration]])
 - we might be able to learn much larger graphs and hence we can show a lot more variation / simultanous changes e.g. they learn a maximum of 4 concepts
 - they show one pair of cause,effect changes at a time for ex smile and mouth open change i.e just 2 vars changing. we can change multiple at the same time... if we intervene of several nodes at once.
 - MoG modelling for individual units ?
 
-Leveraging Causal Discovery for Deep Hierarchical Latent Variable Models
+#### Questions about CausalVAE and Indept Causal Discovery methods
 
-CausalVAE already includes a "pre-train stage" to discover the matrix with a continuous objective and DAG constraint. How would using any other method be better ?
+[[CausalVAE]] already includes a "pre-train stage" to discover the matrix with a continuous objective and DAG constraint (like NOTEARS, [[DAG-GNN]]). How would using any other method be better ? Couldn't we simply run CausalVAE on data with larger DAGs? We will probably have to do it for comparisons.
 
-Could we simply scale up CausalVAE for larger graphs ?
+<u>What do the 3 DAG constraint approaches have in common ? </u>
+NOTEARS, DAG-GNN, CausalVAE both use a continuous DAG constraint in the objective. DAG-GNN presents a different more computationally feasible formulation of constraint introduced by NOTEARS. This reformulation is then adopted by CausalVAE.
 
-I want to convince myself that this GLOBE diversion is worth the time investment.
+<u>Could this constraint / optimization be used to discover large DAGs ?</u>
 
-Decision Tree for binary function learning
-
-Assuming PolyMARS works... what now ?
-
-What do the 3 DAG constraint approaches have in common ? NOTEARS, DAG-GNN, CausalVAE both use a continuous DAG constraint in the objective. DAG-GNN presents a different more computationally feasible formulation of constraint introduced by NOTEARS. This reformulation is then adopted by CausalVAE
-
+#### Questions about connection between latent labels and latent concepts
 
 Assume we learn the structure and even mechanisms relating the <u>latent labels</u> via some algo e.g. GLOBE. Now we need to explore the <u>connection between latent label and latent feature</u>.
 

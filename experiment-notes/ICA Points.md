@@ -1,0 +1,10 @@
+- Sec 12.6 - ICA - ML Kevin Murphy pg. 407
+- Good intro slides: https://sci.utah.edu/~shireen/pdfs/tutorials/Elhabian_ICA09.pdf
+- We observe linearly mixed signals
+- The original signals themselves come from indepenent (unlike our DAG setting) non-gaussian dists. Gaussian variables are forbidden. We don't assume that these distributions are known
+- Different ways of measuring / optimizing for non-gaussianity are used.
+- Mixing matrix can be assumed to be square, but this can be relaxed
+- PCA uses upto 2nd order moments, ICA uses second and higher order moments
+- There's no ranking of ICA components like PCA
+- Two major ambiguities of ICA: (1) variances of components can't be determined (2) The order of components can't be determined
+- How to model / learn the source dists ?
