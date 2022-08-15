@@ -9,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision.datasets import ImageFolder
 from torchvision import transforms
 from common import constants as c
-from common.known_datasets import CorrelatedDSpritesDataset, ThreeShapesDataset, OneDimLatentDataset, ContinumDataset, PolynomialDataset, DSpritesDataset, ToyDataset
+from common.known_datasets import CorrelatedDSpritesDataset, ThreeShapesDataset, OneDimLatentDataset, ContinumDataset, PolynomialDataset, DSpritesDataset, ToyDataset, FlowOrPendulumDataset
 
 class LabelHandler(object):
     def __init__(self, labels, label_weights, class_values):
@@ -181,7 +181,7 @@ class DisentanglementLibDataset(Dataset):
 
 def _get_transforms_for_dataset(dataset_name, image_size):
 
-    if dataset_name == "celeba":
+    if dataset_name in ["celeba", "flow", "pendulum"]:
         return transforms.Compose([
         transforms.Resize((image_size, image_size)),
         transforms.ToTensor()])
@@ -345,6 +345,19 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
                 'train_pct': train_pct,
                 'split': split}
         dset = ToyDataset
+    
+    elif dataset_name in ["flow", "pendulum"]:
+
+        root = os.path.join(dset_dir, dataset_name)
+        
+        data_kwargs = {
+            'root': root,
+            'train_pct': train_pct,
+            'split': split
+        }
+
+        dset = FlowOrPendulumDataset
+    
     else:
         raise NotImplementedError
     

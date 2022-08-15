@@ -61,6 +61,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # MSEnc outputs features of shape (batch, V, 3 * (out_feature_dim//num_nodes))
         # in current case it will be (b,V,9) i.e. each node gets a 9-dim feature vector
 
+        # msenc_feature_dim here is the total feature dims.. so if we have 2 nodes and 3 feats per node
+        # msenc_feature_dim will / should be 6. The out_feature_dim is stored in self.out_feature_dim
         self.encoder_cnn = MultiScaleEncoder(msenc_feature_dim, self.num_channels, self.num_nodes)
         
         # uses multi scale features to init node feats

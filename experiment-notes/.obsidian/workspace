@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "CausalVAE.md",
+                "file": "Plan so far.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -112,17 +112,17 @@
     "width": 300,
     "collapsed": true
   },
-  "active": "9a06b76985bd85d8",
+  "active": "730144e96b02e819",
   "lastOpenFiles": [
-    "Plan so far.md",
-    "Diversion Around the GLOBE.md",
     "CausalVAE.md",
-    "ICA Points.md",
-    "Compare DEAR and CausalVAE.md",
-    "Osman.md",
+    "Hidden Talents of VAEs.md",
+    "todos_daily.md",
+    "Plan so far.md",
+    "todos.md",
+    "GNN Idea Exploration.md",
     "DEAR.md",
     "DAG-GNN.md",
-    "todos_daily.md",
-    "Hidden Talents of VAEs.md"
+    "CSVAE experiments.md",
+    "Correlated BetaVAE experiments.md"
   ]
 }

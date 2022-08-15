@@ -72,7 +72,6 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         self._log_kld_loss_per_node(train_step_outputs)
 
         # Visualize Components of mean and sigma vector for every layer
-        #self._log_mu_per_node(train_step_outputs)
         self._log_mu_per_node(train_step_outputs)
         self._log_std_per_node(train_step_outputs)
 
@@ -163,7 +162,8 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
                 self.logger.experiment.add_scalar(k, v, step)
         
     def _log_classification_losses(self, train_step_outputs):
-        print("adding clg plots")
+        
+        print("adding clf plots")
         # Log total sup. reg. loss        
         clf_loss = torch.stack([tso[c.AUX_CLASSIFICATION] for tso in train_step_outputs]).mean()
         self.logger.experiment.add_scalar(f"SupReg/Total_Loss", clf_loss, self.current_epoch)

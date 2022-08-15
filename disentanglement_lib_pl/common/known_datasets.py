@@ -4,6 +4,7 @@ import glob
 import gin.tf
 
 import torch
+import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 from torch.utils.data import Dataset
 from torch.distributions import normal
@@ -582,3 +583,63 @@ class ToyDataset(Dataset):
         latent = self.latents_values[idx]
 
         return image, latent
+
+class FlowOrPendulumDataset(Dataset):
+    
+    def __init__(self, root, split="train", train_pct=0.90, transforms=None):
+        """
+        Args:
+            root (string): Directory with all the images.
+            transforms (torchvision.Transforms): Since the Flow images are 96x96 by default 
+                we should pass at least a Resize trasnform
+        """
+        self.root_dir = root
+        self.files_list = glob.glob(os.path.join(self.root_dir, "*.jpg"))
+        self.transforms = transforms
+        self.split = split
+
+        MAX_TRAIN_IDX = int(len(self.files_list) * train_pct)
+        
+        # get shuffled indices of training samples
+        self.train_indices = np.random.choice(len(self.files_list),
+                         size=MAX_TRAIN_IDX,
+                         replace=False)
+
+        # disjoint (shuffled) validation set indices
+        self.test_indices = np.random.permutation(
+                                np.setdiff1d(
+                                    range(len(self.files_list)), self.train_indices
+                                )
+                            )
+
+    def __len__(self):
+
+        if self.split == "train":
+            return len(self.train_indices)
+        elif self.split == "test":
+            return len(self.test_indices)
+        else:
+            Exception("Unknown split type")
+
+    def __getitem__(self, idx):
+
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        if self.split == "train":
+            idx = self.train_indices[idx]
+
+        if self.split == "test":
+            idx = self.test_indices[idx]
+        
+        img_name = self.files_list[idx]
+        image = plt.imread(img_name)
+        
+        if self.transforms is not None:
+            image = self.transforms(image)
+        
+        # TODO: have to work on also preserving the label
+        # We can have images saved as 1.jpg, ...., K.jpg and in a different labels.npz 
+        # file we have array of shape (K, num_latent_label) to index into
+        label = np.array([0]).astype('float')
+        return image, label

@@ -1,3 +1,7 @@
+Disentanglement / Factorization pressure in GNN based priors / posteriors ?
+
+Relating Graph Neural Networks to Structural Causal Models https://arxiv.org/abs/2109.04173
+
 ### GNN idea exploration
 - I can use GNNs to implement the latent structure in encoder and decoder. (Why would this be better than current impl? I think this needs to be used in conjunction with other arch. improvements. This alone won't cut it)
 - Serial nature of Ladder-like networks where values are assigned sequentially dependent on previous values vs the sync nature of GNNs in which nodes are updated at once. (This seems like a 'surface level' problem.. should be able to get around that)

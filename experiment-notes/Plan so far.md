@@ -8,3 +8,13 @@
 - They demonstrate their interventions on 2 concepts at a time for a total of 4 concepts. We can potentially learn larger DAGs and intervene on multiple nodes / sub-graphs.
 - The Idea of Image SCM and interpretation of different variables used in modeling
 
+What to do with partial graphs / DAGs / latent labels
+Figure out a way to run CelebA with all / limited DAG
+What is the right protocol to train when using a learnable prior
+NVAE for training tricks
+Taming VAEs https://arxiv.org/pdf/1810.00597.pdf 
+Hidden Talents of VAEs https://arxiv.org/pdf/1706.05148.pdf
+Do I have any prev expr runs with gnn based prior on celeba?
+I need to get their datasets set up with my code
+
+i can probably run the code as well on them?

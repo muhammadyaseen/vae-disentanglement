@@ -16,7 +16,7 @@ echo "name=$NAME"
 # This path will work anywhere in JUWELS-Booster
 PROJECT_ROOT=/vae-disentanglement
 export DISENTANGLEMENT_LIB_DATA=$PROJECT_ROOT/datasets/
-DATASET_NAME=dsprites_correlated
+DATASET_NAME=pendulum
 LOGS_DIR=$PROJECT_ROOT/train-logs
 
 # The path after .sif refers to the path within containers
@@ -35,12 +35,11 @@ srun \
     --num_workers=48 \
     --batch_size=64 \
     --max_epoch=30 \
-    --in_channels=1 \
+    --in_channels=3 \
     --gpus 0 \
     --visdom_on=False \
     --lr_G=0.0001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
-    --correlation_strength=0.2 \
     --z_dim 2 \
     --use_loss_weights=False \
     --version="FixedWeightDprites_UptoEpoch15_ctd_Epoch30" \
