@@ -1,5 +1,8 @@
 {
   "theme": "obsidian",
   "cssTheme": "Deep Work",
-  "baseFontSize": 18
+  "baseFontSize": 18,
+  "enabledCssSnippets": [
+    "yaseen-notes-snippets"
+  ]
 }

@@ -347,16 +347,17 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
         dset = ToyDataset
     
     elif dataset_name in ["flow", "pendulum"]:
-
-        root = os.path.join(dset_dir, dataset_name)
         
-        data_kwargs = {
-            'root': root,
-            'train_pct': train_pct,
-            'split': split
-        }
-
-        dset = FlowOrPendulumDataset
+        root = os.path.join(dset_dir, dataset_name)
+        data_kwargs = {'root': root,
+                       'labels': None,
+                       'label_weights': None,
+                       'class_values': None,
+                       'num_channels': 3,
+                       'name': dataset_name,
+                       'seed': seed}
+    
+        dset = CustomImageFolder
     
     else:
         raise NotImplementedError

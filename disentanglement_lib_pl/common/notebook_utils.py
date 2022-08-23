@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from collections import defaultdict, namedtuple
-from tqdm import tqdm
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 
 import torch
@@ -12,7 +11,6 @@ import torchvision.transforms.functional as T
 from torchvision import transforms
 from torch.utils.data import DataLoader
 
-from base_vae_experiment import BaseVAEExperiment
 from bvae_experiment import BVAEExperiment
 from laddervae_experiment import LadderVAEExperiment
 
@@ -160,6 +158,22 @@ def __handle_celeba(dset_dir):
 
     return CustomImageFolder(**data_kwargs)
 
+def __handle_pendulum(dset_dir):
+    
+    root = os.path.join(dset_dir, 'pendulum')
+    data_kwargs = {'root': root,
+                'labels': None,
+                'label_weights': None,
+                'class_values': None,
+                'num_channels': 3,
+                'name': 'pendulum',
+                'seed': 123,
+                'transforms': transforms.Compose([
+                transforms.Resize((64, 64)),
+                transforms.ToTensor()])}
+
+    return CustomImageFolder(**data_kwargs)
+
 def get_configured_dataset(dset_name):
     
     dataset = None
@@ -181,6 +195,8 @@ def get_configured_dataset(dset_name):
         dataset = ThreeShapesDataset(root="../datasets/threeshapes/", split="train", transforms=transforms.ToTensor())
     elif dset_name == 'celeba':
         dataset = __handle_celeba("../datasets/")
+    elif dset_name == 'pendulum':
+        dataset = __handle_pendulum("../datasets/")
     else:
         raise NotImplementedError
 
@@ -985,3 +1001,81 @@ def laddervae_load_model_and_data_and_get_activations(dset_name, dset_path, batc
 END: Notebook + Visualization functions required for LadderVAE
 """
 
+"""
+START: special functions for visualizing internals / traversals for csvae_gnn model
+"""
+def csvaegnn_show_traversal_images(vae_model, anchor_image, limit, interp_step, dim=0, mode='relative',
+                    node_to_explore=0, nrow=10,  **kwargs):
+    
+    traversed_images, ref = csvaegnn_do_latent_traversal_scatter(vae_model, anchor_image, limit=limit, inter=interp_step, dim_to_explore=dim, mode=mode,
+                                                        node_to_explore=node_to_explore)
+
+    # every image in traversed_images has shape [1,channels,img_size, img_size] 
+    # .squeeze() removes the first dim and then stack concats the images along a new first dim
+    # to give [num_images,channels,img_size, img_size]
+
+    traversed_images_stacked = torch.stack([t_img.squeeze(0) for _ , t_img in traversed_images], dim=0)
+    img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=nrow, value_range=(0.0,1.0), pad_value=1.0)
+
+    __show(img_grid, **kwargs)
+
+def csvaegnn_do_latent_traversal_scatter(vae_model, ref_img, limit=3, inter=2/3, 
+    node_to_explore=0, dim_to_explore=0, mode='relative', 
+    lb=None, ub=None, fix_dim=None, fix_val=None):
+
+    """
+    node_to_explore: which node of GNN to explore
+    dim_to_explore: Dimension that we want to traverse for this node. This is useful because node_features can be multi-dim
+    ref_img       : Image to be used as starting point to traversal (relevant in case of mode='relative')
+    mode          : If 'relative', random image's Z is used as starting point for traversal.
+                  If 'fixed', the space is explored uniformly in the given interval
+    """
+    with torch.no_grad():
+
+        interpolation, ref = None, None
+
+        
+        dim_size_to_iter = 0
+        layer_level_to_explore = 0
+
+        # these will be of shape (Batches, V, node_feat_dim)
+        posterior_mu, posterior_logvar, posterior_z = vae_model.model.encode(ref_img)
+        num_nodes = vae_model.num_nodes            
+        random_img_z = posterior_z
+        samples = []
+
+        for node_idx in range(num_nodes):
+
+            if node_idx != node_to_explore:
+                continue
+
+            for current_dim in range(dim_size_to_iter):
+                        
+                if dim_to_explore != -1 and current_dim != dim_to_explore:
+                    continue
+
+                z = random_img_z.clone()
+                
+                if fix_dim is not None and fix_val is not None:
+                    z[:, fix_dim] = fix_val
+                
+                if mode == 'relative':
+                    ref, lim = z[:, current_dim].item(), 3
+                    lower_bound = ref - lim if lb is None else lb
+                    upper_bound = ref + lim + 0.1 if ub is None else ub
+                    if lower_bound > upper_bound:
+                        inter = -inter
+                        lim = -lim
+                    print(f"Visualizing latent space from {lower_bound:3.2f} to {upper_bound:3.2f}, with center at {(upper_bound - lower_bound)/2:3.2f}")
+                    interpolation = torch.arange(lower_bound, upper_bound, inter)
+                else:
+                    interpolation = torch.arange(-limit, limit+0.1, inter)
+                    
+                # Traverse and decode
+                for val in interpolation:
+                    z[:, current_dim] = val
+                    sample = vae_model.model.decode(z).data
+                    
+                    samples.append((z[:, current_dim].cpu().item(),sample))
+
+    return samples, ref

@@ -1,2 +1,13 @@
-
-
+- [ ] Read up on Isabel's group's work
+- [ ] Approaching Isabel
+- [x] Approacing Adrian for more in-depth info on current research and future directions he sees the group moving to in terms of topics
+- [x] Writing up a formal version of current work
+- [ ] Can I think more about my MDL + VAE idea as a possible project pitch to Isabel? [[Minimal Cost Latent Structure Search]]
+- [ ] Checkout disent lib's datasets
+	- Checked: can easily integrate MPI-toy-3d, Cars, SmallNORB datasets
+	- But all these datasets are with indept latents so they don't really help in the correlated case
+	- we can use them to test the loss weighting thing
+	- probably need to find more managable correlated datasets. I can show results on Flow, Pendulum, and CelebA etc. but for later i'll need more
+- [ ] running exp on celeba
+- [ ] thinking about bits of celeba and related datasets
+- [ ] related cross ent and mse loss for images
