@@ -36,9 +36,9 @@ class LabelHandler(object):
     def class_values(self):
         return self._class_values
 
-    def get_label(self, idx):
+    def get_label(self, idx, dtype=torch.long):
         if self.labels is not None:
-            return torch.tensor(self.labels[idx], dtype=torch.long)
+            return torch.tensor(self.labels[idx], dtype=dtype)
         return None
 
     def has_labels(self):
@@ -46,12 +46,15 @@ class LabelHandler(object):
 
 
 class CustomImageFolder(ImageFolder):
-    def __init__(self, root, transforms, labels, label_weights, name, class_values, num_channels, seed):
+    def __init__(self, root, transforms, labels, label_weights, name, class_values, num_channels, seed, dtype=torch.long):
         super(CustomImageFolder, self).__init__(root, transforms)
         self.indices = range(len(self))
         self._num_channels = num_channels
         self._name = name
         self.seed = seed
+
+        # torch.long for clf labels e.g. CelebA and torch.flaot for regression labels e.g Flow/Pendulum
+        self.dtype = dtype
 
         self.label_handler = LabelHandler(labels, label_weights, class_values)
 
@@ -82,7 +85,7 @@ class CustomImageFolder(ImageFolder):
 
         label1 = 0
         if self.label_handler.has_labels():
-            label1 = self.label_handler.get_label(index1)
+            label1 = self.label_handler.get_label(index1, self.dtype)
         return img1, label1
 
 
@@ -349,13 +352,19 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
     elif dataset_name in ["flow", "pendulum"]:
         
         root = os.path.join(dset_dir, dataset_name)
+        
+        # Saved Pendulum labels are ('image_index', 'theta', 'phi', 'shade','mid')
+        labels_file = os.path.join(root, 'pendulum_labels.csv')
+        labels_all = np.genfromtxt(labels_file, delimiter=',', names=True)
+        
         data_kwargs = {'root': root,
-                       'labels': None,
-                       'label_weights': None,
-                       'class_values': None,
+                       'labels': labels_all,
+                       'label_weights': [],
+                       'class_values': [], # We have regression labels in Pendulum and Flow
                        'num_channels': 3,
                        'name': dataset_name,
-                       'seed': seed}
+                       'seed': seed,
+                       'dtype': torch.float}
     
         dset = CustomImageFolder
     

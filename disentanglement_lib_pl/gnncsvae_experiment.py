@@ -1,6 +1,8 @@
+import os
 import torch
 from base_vae_experiment import BaseVAEExperiment
 import matplotlib.pyplot as plt
+import seaborn as sns
 from matplotlib import cm as mpl_colormaps
 
 from models.csvae_gnn import GNNBasedConceptStructuredVAE
@@ -76,6 +78,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         self._log_std_per_node(train_step_outputs)
 
         self._log_loss_func_weights(train_step_outputs)
+        self._save_2D_latent_space_plot()
 
         if self.model.add_classification_loss:
             self._log_classification_losses(train_step_outputs)
@@ -173,3 +176,52 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             clf_loss_node = torch.stack([tso[f'clf_node_{node_idx}'] for tso in train_step_outputs]).mean()
             self.logger.experiment.add_scalar(f"SupReg/clf_node_{node_idx}", clf_loss_node, self.current_epoch)
 
+    def _save_2D_latent_space_plot(self, num_batches = 200):
+
+        assert self.model.z_dim == 2, f"_save_2D_latent_space_plot() expects 2D latent space and you have {self.model.z_dim}d"
+        
+        # get latent activations for the given number of batches
+        current_device = next(self.model.parameters()).device
+        num_batches = 110 if self.params['dataset'] in ["pendulum", "flow"] else num_batches
+        hue_factors = ['theta', 'phi', 'shade','mid']
+
+        from common import notebook_utils
+
+        mus, labels = notebook_utils.csvaegnn_get_latent_activations_with_labels_for_scatter(
+            self,
+            current_device,
+            num_batches
+        )
+        print(mus.shape)
+        # Drop the first col of label batches because in this case it only stores image_index
+        labels = labels[:, 1:]
+        
+        # for each node and hue combination, plot and save
+        for node_idx in range(self.model.num_nodes):
+            for h, hue_factor in enumerate(hue_factors):
+                
+                fig, ax = plt.subplots()
+                fig.set_size_inches(11.7, 8.27)
+                print(mus[:, node_idx, 0].shape, mus[:, node_idx, 1].shape)
+                sns.scatterplot(   
+                    x=mus[:, node_idx, 0], 
+                    y=mus[:, node_idx, 1], 
+                    hue=labels[:,h], 
+                    s=15, 
+                    ax=ax
+                )
+                # for legend text
+                plt.setp(ax.get_legend().get_texts(), fontsize='10')
+
+                ax.set_xlabel(r"$Z_1$",fontsize=15)
+                ax.set_ylabel(r"$Z_2$",fontsize=15)
+                ax.set(ylim=(-5, 5))
+                ax.set(xlim=(-5, 5))
+                
+                plt.title(f"Latent Space of Node {node_idx} state at epoch={self.current_epoch}. Hue by {hue_factor}")
+                latentspace_images_path = os.path.join(
+                    self.logger.log_dir, 
+                    "latent_space_plots", 
+                    f"latentspace.node.{node_idx}.hue.{h}.epoch.{self.current_epoch}.jpg"
+                )
+                plt.savefig(latentspace_images_path)

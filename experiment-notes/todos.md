@@ -11,3 +11,8 @@
 - [ ] running exp on celeba
 - [ ] thinking about bits of celeba and related datasets
 - [ ] related cross ent and mse loss for images
+- [ ] If I implement the latent tracking thing then I can also see the effects of $\beta$ , Recon weight, KLD weight on the behaviour of latent encoding.. Basically keep all the things (batch size, LR, arch, latent dim etc) same and run several experiment with varying settings of these params and save the behaviour of latent space... Then I can visualize and compare
+- [ ] Save the recon pictures are every epoch
+
+
+Goal: After coming from lunch I should be able to see the result of the dynamics plots

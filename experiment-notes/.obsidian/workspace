@@ -6,7 +6,7 @@
       {
         "id": "1d7fa54efd47de90",
         "type": "leaf",
-        "dimension": 42.949234488315874,
+        "dimension": 34.73597359735974,
         "state": {
           "type": "markdown",
           "state": {
@@ -19,11 +19,11 @@
       {
         "id": "4000c10f2e637475",
         "type": "leaf",
-        "dimension": 28.525382755842063,
+        "dimension": 36.7986798679868,
         "state": {
           "type": "markdown",
           "state": {
-            "file": "thought-clarifying-notes/Talking to Jilles.md",
+            "file": "todos.md",
             "mode": "source",
             "source": false
           }
@@ -32,7 +32,7 @@
       {
         "id": "107fe986b9bdebe5",
         "type": "leaf",
-        "dimension": 28.525382755842063,
+        "dimension": 28.465346534653463,
         "state": {
           "type": "markdown",
           "state": {
@@ -80,8 +80,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 224.5,
-    "collapsed": true
+    "width": 224.5
   },
   "right": {
     "id": "6b18d73fee2a0408",
@@ -97,7 +96,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "thought-clarifying-notes/Talking to Jilles.md",
+                "file": "todos.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -117,9 +116,9 @@
   },
   "active": "4000c10f2e637475",
   "lastOpenFiles": [
+    "thought-clarifying-notes/Talking to Jilles.md",
     "Image SCM Idea Formalisation.md",
     "Plan so far.md",
-    "thought-clarifying-notes/Talking to Jilles.md",
     "ideas/Finding the right weightage for Loss func terms.md",
     "todos.md",
     "ideas/Minimal Cost Latent Structure Search.md",

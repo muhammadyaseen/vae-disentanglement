@@ -44,6 +44,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.image_size = network_args.image_size
         self.batch_size = network_args.batch_size
         self.z_dim = network_args.z_dim[0]
+        self.l_dim = network_args.l_dim
         self.d_dim = 0
         
         self.w_recon = network_args.w_recon

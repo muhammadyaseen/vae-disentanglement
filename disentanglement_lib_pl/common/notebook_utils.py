@@ -161,16 +161,19 @@ def __handle_celeba(dset_dir):
 def __handle_pendulum(dset_dir):
     
     root = os.path.join(dset_dir, 'pendulum')
+    labels_file = os.path.join(root, 'pendulum_labels.csv')
+    labels_all = np.genfromtxt(labels_file, delimiter=',', names=True)
     data_kwargs = {'root': root,
-                'labels': None,
-                'label_weights': None,
-                'class_values': None,
+                'labels': labels_all,
+                'label_weights': [],
+                'class_values': [],
                 'num_channels': 3,
                 'name': 'pendulum',
                 'seed': 123,
                 'transforms': transforms.Compose([
                 transforms.Resize((64, 64)),
-                transforms.ToTensor()])}
+                transforms.ToTensor()]),
+                'dtype': torch.float}
 
     return CustomImageFolder(**data_kwargs)
 
@@ -1079,3 +1082,38 @@ def csvaegnn_do_latent_traversal_scatter(vae_model, ref_img, limit=3, inter=2/3,
                     samples.append((z[:, current_dim].cpu().item(),sample))
 
     return samples, ref
+
+def csvaegnn_get_latent_activations_with_labels_for_scatter(vae_experiment, curr_dev, batches = None):
+   
+    num_nodes, batch_size = vae_experiment.model.num_nodes, vae_experiment.model.batch_size
+    z_dim, l_dim = vae_experiment.model.z_dim, vae_experiment.model.l_dim
+
+    B = batches if batches is not None else len(vae_experiment.sample_loader)
+    mu_batches = np.zeros(shape=(batch_size * B, num_nodes, z_dim))
+    label_batches = np.zeros(shape=(batch_size * B, l_dim))
+    
+    batches_processed = 0
+    with torch.no_grad():
+        
+        for x_batch, label_batch in iter(vae_experiment.sample_loader):
+            
+            if batches is not None and batches_processed >= batches:
+                break
+            
+            # First we encode this batch and get \mu and \sigma
+            x_batch = x_batch.to(curr_dev)
+            
+            # posterior_mu has shape (B, V, feat_dim)
+            posterior_mu, posterior_logvar, posterior_z = vae_experiment.model.encode(x_batch)
+            
+            # convert to numpy format so that we can easily use in matplotlib
+            posterior_mu = posterior_mu.detach().cpu().numpy()
+            label_batch = label_batch.numpy()
+            
+            for i in range(batch_size):
+                mu_batches[batches_processed * batch_size + i] = posterior_mu[i]
+                label_batches[batches_processed * batch_size + i] = label_batch[i]
+
+            batches_processed += 1
+        
+    return mu_batches, label_batches

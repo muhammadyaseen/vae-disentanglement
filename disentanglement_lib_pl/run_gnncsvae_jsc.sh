@@ -41,6 +41,7 @@ srun \
     --lr_G=0.0001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --z_dim 2 \
+    --l_dim 5 \
     --use_loss_weights=False \
     --version="FixedWeightDprites_UptoEpoch15_ctd_Epoch30" \
     --continue_training=True \

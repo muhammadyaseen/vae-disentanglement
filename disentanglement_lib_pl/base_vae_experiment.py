@@ -1,3 +1,4 @@
+import os
 import time
 import torch
 from torch import nn
@@ -94,6 +95,8 @@ class BaseVAEExperiment(pl.LightningModule):
         # 2. save recon images and generated images, histogram of latent layer activations
         recon_grid = self._get_reconstructed_images()
         self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(36), self.current_epoch)
+        recon_images_path = os.path.join(self.logger.log_dir, "recon_images", f"recon.epoch.{self.current_epoch}.jpg")
+        vutils.save_image(recon_grid, recon_images_path)
         self.logger.experiment.add_image("Reconstructed Images", recon_grid, self.current_epoch)
         
         # 3. Evaluate disent metrics
@@ -270,4 +273,3 @@ class BaseVAEExperiment(pl.LightningModule):
                     self.visdom_visualiser.visdom_instance.save([env_name])
                     print("saved...")
         
-

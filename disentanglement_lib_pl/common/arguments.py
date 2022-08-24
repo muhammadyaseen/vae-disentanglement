@@ -52,7 +52,7 @@ def get_args(sys_args):
     parser.add_argument('--z_dim', default=None, type=int, nargs='+', help='size of the encoded z space')
     parser.add_argument('--include_labels', default=None, type=str, nargs='*',
                         help='Labels (indices or names) to include in latent encoding.')
-    parser.add_argument('--l_dim', default=0, type=str, help='size of the encoded w space (for each label)')
+    parser.add_argument('--l_dim', default=0, type=int, help='size of the encoded w space (for each label)')
 
     # optimizer
     parser.add_argument('--beta1', default=0.9, type=float, help='beta1 parameter of the Adam optimizer')

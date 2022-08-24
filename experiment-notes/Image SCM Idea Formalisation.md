@@ -1,5 +1,5 @@
 ### Image SCM: Leveraging Causal Discovery for Deep Hierarchical Latent Variable Models
-
+We view the complete generative process of images as an SCM flow.
 ### 1. Generative story
 - Images $X_i$ are composed of low level features arranged in a hierarchical manner. This is similar to the motivation behind classical Parts Models, Visual Bag of Words etc.
 - At the lowest level these features represent primitive shapes e.g. (oriented) lines, color shades, simple textures etc. Because of their simple nature these features can be assumed to be independent of each other. In this formalism, we call them  <u>"primitive features"</u> or "<u>primitive latents</u>" and denote them $\epsilon_i$.  <span class="remark">(could we somehow actually sample from such "primitive" distribution? a paper by JT did something similar where the instantiated the prior from examples within the dataset)</span>
@@ -9,7 +9,7 @@
 | Variable      | Concept |
 | ----------- | ----------- |
 | $X$   | Observed image        |
-| $z$   | Semantic of conceptual latents        |
+| $z$   | Semantic or conceptual latents        |
 | $\epsilon$ | Primitive latents   |
 
 ### 2. Modeling choices
