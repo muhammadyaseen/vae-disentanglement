@@ -10,7 +10,7 @@
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
 #SBATCH --time=02:00:00
 
-NAME="FixedWeightDprites"
+NAME="pendulum_plots_test"
 echo "name=$NAME"
 
 # This path will work anywhere in JUWELS-Booster
@@ -42,7 +42,4 @@ srun \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --z_dim 2 \
     --l_dim 5 \
-    --use_loss_weights=False \
-    --version="FixedWeightDprites_UptoEpoch15_ctd_Epoch30" \
-    --continue_training=True \
-    --ckpt_path=$LOGS_DIR/FixedWeightDprites/FixedWeightDprites_UptoEpoch15/checkpoints/epoch=14-step=172800.ckpt
+    --use_loss_weights=False

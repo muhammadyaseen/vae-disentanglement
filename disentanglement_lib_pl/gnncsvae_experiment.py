@@ -180,6 +180,8 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
 
         assert self.model.z_dim == 2, f"_save_2D_latent_space_plot() expects 2D latent space and you have {self.model.z_dim}d"
         
+        # TODO: make this function more general s.t. it works for all datasets
+        
         # get latent activations for the given number of batches
         current_device = next(self.model.parameters()).device
         num_batches = 110 if self.params['dataset'] in ["pendulum", "flow"] else num_batches
@@ -192,9 +194,10 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             current_device,
             num_batches
         )
-        print(mus.shape)
+
         # Drop the first col of label batches because in this case it only stores image_index
-        labels = labels[:, 1:]
+        if self.params['dataset'] == "pendulum":
+            labels = labels[:, 1:]
         
         # for each node and hue combination, plot and save
         for node_idx in range(self.model.num_nodes):
@@ -218,10 +221,13 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
                 ax.set(ylim=(-5, 5))
                 ax.set(xlim=(-5, 5))
                 
-                plt.title(f"Latent Space of Node {node_idx} state at epoch={self.current_epoch}. Hue by {hue_factor}")
+                # need to do this to make sure gifs are properly sequenced other wise 1.jpg is followed by 10.jpg, and 100.jpg
+                padded_epoch = str(self.current_epoch).zfill(len(str(self.max_epochs)))
+                image_file_name = f"latentspace.node.{node_idx}.hue.{h}.epoch.{padded_epoch}.jpg"
+                plt.title(f"Latent Space of Node {node_idx} at epoch={padded_epoch}. Hue by {hue_factor}")
                 latentspace_images_path = os.path.join(
                     self.logger.log_dir, 
                     "latent_space_plots", 
-                    f"latentspace.node.{node_idx}.hue.{h}.epoch.{self.current_epoch}.jpg"
+                    image_file_name
                 )
                 plt.savefig(latentspace_images_path)
