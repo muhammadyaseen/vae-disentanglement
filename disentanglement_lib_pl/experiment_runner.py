@@ -137,10 +137,9 @@ def main(_args):
         version= _args.version
     )
 
-    print(os.path.join(tb_logger.log_dir, "recon_images"))
-    print(os.path.join(tb_logger.log_dir, "latent_space_plots"))
     os.makedirs(os.path.join(tb_logger.log_dir, "recon_images"), exist_ok=True)
     os.makedirs(os.path.join(tb_logger.log_dir, "latent_space_plots"), exist_ok=True)
+    #os.makedirs(os.path.join(tb_logger.log_dir, "kde_plots"), exist_ok=True)
     
     # load the model associated with args.alg
     model_cl = getattr(models, _args.alg)

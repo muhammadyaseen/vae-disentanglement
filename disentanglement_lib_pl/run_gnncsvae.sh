@@ -2,7 +2,7 @@
 
 FILENAME=$(basename $0)
 FILENAME="${FILENAME%.*}"
-NAME="pendulum_plots_test"
+NAME="pendulum_plots_test_1d"
 echo "name=$NAME"
 
 PROJECT_ROOT=../
@@ -30,6 +30,6 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --visdom_on=False \
     --lr_G=0.0001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
-    --z_dim 2 \
+    --z_dim 1 \
     --l_dim 5 \
     --use_loss_weights=False

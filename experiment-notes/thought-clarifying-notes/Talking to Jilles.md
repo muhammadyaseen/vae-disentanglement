@@ -44,4 +44,6 @@ On this note, he suggested that first we can find out a case where CausalVAE doe
 
 By next week Friday, I need to have done more experiments of Pendulum and Flow dataset. I'll think up how to handle Celeb dataset and how to compare the two approaches.
 
-Another interpretation of epsilon -> z mapping: epsilon's represent independent attributes whereas z's represent attributes that have a DAG-y structure
+He provided another interpretation of epsilon -> z mapping: epsilon's represent independent attributes whereas z's represent attributes that have a DAG-y structure
+
+

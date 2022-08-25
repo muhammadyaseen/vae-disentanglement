@@ -4,39 +4,12 @@
     "type": "split",
     "children": [
       {
-        "id": "1d7fa54efd47de90",
+        "id": "23608ff4065131ff",
         "type": "leaf",
-        "dimension": 34.73597359735974,
         "state": {
           "type": "markdown",
           "state": {
-            "file": "Image SCM Idea Formalisation.md",
-            "mode": "source",
-            "source": false
-          }
-        }
-      },
-      {
-        "id": "4000c10f2e637475",
-        "type": "leaf",
-        "dimension": 36.7986798679868,
-        "state": {
-          "type": "markdown",
-          "state": {
-            "file": "todos.md",
-            "mode": "source",
-            "source": false
-          }
-        }
-      },
-      {
-        "id": "107fe986b9bdebe5",
-        "type": "leaf",
-        "dimension": 28.465346534653463,
-        "state": {
-          "type": "markdown",
-          "state": {
-            "file": "Plan so far.md",
+            "file": "Thinking Aloud.md",
             "mode": "source",
             "source": false
           }
@@ -80,7 +53,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 224.5
+    "width": 224.5,
+    "collapsed": true
   },
   "right": {
     "id": "6b18d73fee2a0408",
@@ -96,7 +70,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "todos.md",
+                "file": "Thinking Aloud.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -114,17 +88,17 @@
     "width": 300,
     "collapsed": true
   },
-  "active": "4000c10f2e637475",
+  "active": "23608ff4065131ff",
   "lastOpenFiles": [
-    "thought-clarifying-notes/Talking to Jilles.md",
     "Image SCM Idea Formalisation.md",
+    "Thinking Aloud.md",
+    "thought-clarifying-notes/Talking to Jilles.md",
     "Plan so far.md",
-    "ideas/Finding the right weightage for Loss func terms.md",
     "todos.md",
+    "ideas/Finding the right weightage for Loss func terms.md",
     "ideas/Minimal Cost Latent Structure Search.md",
     "Urdu Test.md",
     "papers/VACA.md",
-    "experiment/ToyVAE experiments.md",
-    "experiment/Synth Data Experiment.md"
+    "experiment/ToyVAE experiments.md"
   ]
 }

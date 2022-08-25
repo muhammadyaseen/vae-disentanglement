@@ -78,7 +78,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         self._log_std_per_node(train_step_outputs)
 
         self._log_loss_func_weights(train_step_outputs)
-        self._save_2D_latent_space_plot()
+        self._save_latent_space_plot()
 
         if self.model.add_classification_loss:
             self._log_classification_losses(train_step_outputs)
@@ -176,12 +176,12 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             clf_loss_node = torch.stack([tso[f'clf_node_{node_idx}'] for tso in train_step_outputs]).mean()
             self.logger.experiment.add_scalar(f"SupReg/clf_node_{node_idx}", clf_loss_node, self.current_epoch)
 
-    def _save_2D_latent_space_plot(self, num_batches = 200):
+    def _save_latent_space_plot(self, num_batches = 200):
 
-        assert self.model.z_dim == 2, f"_save_2D_latent_space_plot() expects 2D latent space and you have {self.model.z_dim}d"
+        #assert self.model.z_dim == 2, f"_save_2D_latent_space_plot() expects 2D latent space and you have {self.model.z_dim}d"
         
         # TODO: make this function more general s.t. it works for all datasets
-        
+
         # get latent activations for the given number of batches
         current_device = next(self.model.parameters()).device
         num_batches = 110 if self.params['dataset'] in ["pendulum", "flow"] else num_batches
@@ -205,10 +205,19 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
                 
                 fig, ax = plt.subplots()
                 fig.set_size_inches(11.7, 8.27)
-                print(mus[:, node_idx, 0].shape, mus[:, node_idx, 1].shape)
+                
+                if self.model.z_dim == 1:
+                    ylim = (-1,1)
+                    y_plot = 0
+                    x_plot = mus[:, node_idx, 0]
+                else:
+                    # for 2-D
+                    ylim = (-5, 5)
+                    x_plot, y_plot = mus[:, node_idx, 0], mus[:, node_idx, 1]
+
                 sns.scatterplot(   
-                    x=mus[:, node_idx, 0], 
-                    y=mus[:, node_idx, 1], 
+                    x=x_plot, 
+                    y=y_plot, 
                     hue=labels[:,h], 
                     s=15, 
                     ax=ax
@@ -218,7 +227,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
 
                 ax.set_xlabel(r"$Z_1$",fontsize=15)
                 ax.set_ylabel(r"$Z_2$",fontsize=15)
-                ax.set(ylim=(-5, 5))
+                ax.set(ylim=ylim)
                 ax.set(xlim=(-5, 5))
                 
                 # need to do this to make sure gifs are properly sequenced other wise 1.jpg is followed by 10.jpg, and 100.jpg
