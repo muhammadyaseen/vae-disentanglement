@@ -1,15 +1,15 @@
 What can VAE do if two attributes / features seem to vary together in the images... keeping in mind the PCA interpretation and Information Theoretic interpretation...
 
-
 In initial stages/epochs it has been seen that during training VAE reconstructions look like "mode" or "average" of the images in the datase..
 1. a blurry circle in dsprites
 2. a blurred face with both feminine and masculine features in celeba
 3. a hazy pendulum in pendulum, and so on
 
-The Understanding Paper took the approach to interpret the latent layer as channels...
-If we continue with that then in my case it will mean that we're working with cascaded channels.. channels that feed into each other in a strictly ordered hierarchy..
+The Understanding Paper took the approach to interpret the latent layer as noisy channels which transmit information about image $X$ via latents $z_i$
+If we continue with that interpretation then in my case it will mean that we're working with cascaded channels.. channels that feed into each other in a strictly ordered hierarchy..
 
-I need to see to what extent the explanation in UdBetaVAE paper DEPENDS on the factors being independent and how can it be tweaked / modified for correlated case. What is the most reasonable thing that should happen in correlated case
+- [ ] I need to see to what extent the explanation in UdBetaVAE paper DEPENDS on the factors being independent and how can it be tweaked / modified for correlated case. What is the most reasonable thing that should happen in correlated case
+- [ ] How can this cascaded channels idea help if at all?
 
 The capacity of the latent channels can only be increased by (these two things both increase the KL term w.r.t N(0,I) prior):
 1. Dispersing the posterior means across the data points, or
@@ -36,3 +36,13 @@ Intuitively, when optimising a pixel-wise decoder log likelihood, information ab
 <span class="remark">A corollary of this might also be that some factors just might not be worth (the increase in lkd) to encode because of the price (inc in KL) we have to pay.. so we might miss on some fine details. This will also be affected by how the terms have been weighted</span>
 <span class="remark">Think how correlated features would be affected by this. Should they be encoded 'at the same time'.. in a way they should share equal contibution to the lkd / recon, no?</span>
 
+
+Need to get a bit more technical about what exactly do i want to see here in the experiments and the goal
+When I go to Jilles what do I want to show him ?
+
+Can my architecture preserve the DAG relationships? --- and where exactly are these enforced?
+Right now it seems that the network just encodes both factors in 1dim.. as a combination... it has no concept of 'relatedness via causation'. It just understands relatedness via co-occurence. I need to verify and test this.
+
+- [ ] clarification of semantics and role of $\epsilon$ and their use for creating $z$ with the GNN
+- [ ] thinking on what concrete progress can be made wrt Friday meeting - what experiments can be done and what stuff can be implemented and tested
+- [ ] clarify again the intervention section and what exactly are they doing with it

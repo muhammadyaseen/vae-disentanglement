@@ -141,7 +141,8 @@ class MultiScaleEncoder(nn.Module):
 
     def __init__(self, feature_dim, in_channels, num_nodes):
         """
-        feature_dim: the dimension to which multi scale features are projected to. Output dim 
+        feature_dim: the dimension to which multi scale features are projected to. Output dim.
+                    It should be num_nodes * node_feature_dim.
         """
         super().__init__()
         

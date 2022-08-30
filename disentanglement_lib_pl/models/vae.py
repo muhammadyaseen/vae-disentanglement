@@ -41,9 +41,6 @@ class VAE(nn.Module):
         self.iterations_c = torch.tensor(args.iterations_c, dtype=torch.float)
         self.current_c = torch.tensor(0.0)
         self.kl_warmup_epochs = args.kl_warmup_epochs
-        # As a little joke
-        assert self.w_kld == 1.0 or self.alg != 'VAE', 'in vanilla VAE, w_kld should be 1.0. ' \
-                                                       'Please use BetaVAE if intended otherwise.'
         
         # FactorVAE & BetaTCVAE args
         self.w_tc = args.w_tc

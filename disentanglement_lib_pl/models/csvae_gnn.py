@@ -53,6 +53,12 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.kl_warmup_epochs = network_args.kl_warmup_epochs
         self.use_loss_weights = network_args.use_loss_weights
 
+        # KL capacity annealing stuff
+        self.controlled_capacity_increase = network_args.controlled_capacity_increase
+        self.max_capacity_iters = torch.tensor(network_args.iterations_c, dtype=torch.float)
+        self.max_capacity = torch.tensor(network_args.max_capacity, dtype=torch.float)
+        self.current_capacity = torch.tensor(0.0)
+
         # DAG - 0th element is list of first level nodels, last element is list of leaves / terminal nodes
         self.dag_layer_nodes = dag_utils.get_dag_layers(self.adjacency_list)        
         
@@ -168,7 +174,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         return total_clf_loss, per_node_loss
 
-    def _gnn_cs_vae_kld_loss_fn(self, prior_mu, prior_logvar, posterior_mu, posterior_logvar):
+    def _gnn_cs_vae_kld_loss_fn(self, prior_mu, prior_logvar, posterior_mu, posterior_logvar, **kwargs):
         """
         All the arguments have shape (batch, num_nodes, node_feat_dim)
         """
@@ -180,7 +186,14 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         for node_idx, node_kld_loss in enumerate(kld_per_node):
             loss_per_node[f'KLD_z_{node_idx}'] = node_kld_loss.detach()
         
-        return kld_per_node.sum() * self.w_kld, loss_per_node
+        if self.controlled_capacity_increase:
+            global_iter = kwargs['global_step']
+            self.current_capacity = torch.min(self.max_capacity, self.max_capacity * torch.tensor(global_iter) / self.max_capacity_iters)
+            kld_loss = (kld_per_node.sum() - self.current_capacity).abs()
+        else:
+            kld_loss = kld_per_node.sum()
+        
+        return  kld_loss * self.w_kld, loss_per_node
 
     def loss_function(self, loss_type='cross_ent', **kwargs):
         
@@ -227,7 +240,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         #-------------------------
         # Since we can have arbitrary number of layers, it won't take a fixed form      
         if current_epoch > self.kl_warmup_epochs:
-            output_losses[c.KLD_LOSS], kld_loss_per_layer = self._gnn_cs_vae_kld_loss_fn(prior_mu, prior_logvar, posterior_mu, posterior_logvar)
+            output_losses[c.KLD_LOSS], kld_loss_per_layer = self._gnn_cs_vae_kld_loss_fn(prior_mu, prior_logvar, posterior_mu, posterior_logvar, global_step=global_step)
             output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
             output_losses.update(kld_loss_per_layer)
         else:

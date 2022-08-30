@@ -1007,24 +1007,26 @@ END: Notebook + Visualization functions required for LadderVAE
 """
 START: special functions for visualizing internals / traversals for csvae_gnn model
 """
-def csvaegnn_show_traversal_images(vae_model, anchor_image, limit, interp_step, dim=0, mode='relative',
+def csvaegnn_show_traversal_images(vae_model, anchor_image, limit, interp_step, dim_to_explore=0, mode='relative',
                     node_to_explore=0, nrow=10,  **kwargs):
     
-    traversed_images, ref = csvaegnn_do_latent_traversal_scatter(vae_model, anchor_image, limit=limit, inter=interp_step, dim_to_explore=dim, mode=mode,
-                                                        node_to_explore=node_to_explore)
+    traversed_images, ref = csvaegnn_do_latent_traversal_scatter(vae_model, anchor_image, 
+                                                                limit=limit, inter=interp_step, 
+                                                                dim_to_explore=dim_to_explore, mode=mode,
+                                                                node_to_explore=node_to_explore)
 
     # every image in traversed_images has shape [1,channels,img_size, img_size] 
     # .squeeze() removes the first dim and then stack concats the images along a new first dim
     # to give [num_images,channels,img_size, img_size]
 
-    traversed_images_stacked = torch.stack([t_img.squeeze(0) for _ , t_img in traversed_images], dim=0)
+    traversed_images_stacked = torch.stack([t_img.squeeze(0) for t_img in traversed_images], dim=0)
     img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=nrow, value_range=(0.0,1.0), pad_value=1.0)
 
     __show(img_grid, **kwargs)
 
 def csvaegnn_do_latent_traversal_scatter(vae_model, ref_img, limit=3, inter=2/3, 
-    node_to_explore=0, dim_to_explore=0, mode='relative', 
-    lb=None, ub=None, fix_dim=None, fix_val=None):
+                                        node_to_explore=0, dim_to_explore=0, mode='relative', 
+                                        lb=None, ub=None, fix_dim=None, fix_val=None):
 
     """
     node_to_explore: which node of GNN to explore
@@ -1035,14 +1037,12 @@ def csvaegnn_do_latent_traversal_scatter(vae_model, ref_img, limit=3, inter=2/3,
     """
     with torch.no_grad():
 
-        interpolation, ref = None, None
-
-        
-        dim_size_to_iter = 0
+        interpolation, ref = None, None       
+        dim_size_to_iter = vae_model.z_dim
         layer_level_to_explore = 0
 
         # these will be of shape (Batches, V, node_feat_dim)
-        posterior_mu, posterior_logvar, posterior_z = vae_model.model.encode(ref_img)
+        posterior_mu, posterior_logvar, posterior_z = vae_model.encode(ref_img)
         num_nodes = vae_model.num_nodes            
         random_img_z = posterior_z
         samples = []
@@ -1076,26 +1076,27 @@ def csvaegnn_do_latent_traversal_scatter(vae_model, ref_img, limit=3, inter=2/3,
                     
                 # Traverse and decode
                 for val in interpolation:
-                    z[:, current_dim] = val
-                    sample = vae_model.model.decode(z).data
+                    z[:, node_idx, current_dim] = val
+                    z_flattened = vae_model.flatten_node_features(z)
+                    sample = vae_model.decode(z_flattened).data
                     
-                    samples.append((z[:, current_dim].cpu().item(),sample))
+                    samples.append(sample)
 
     return samples, ref
 
-def csvaegnn_get_latent_activations_with_labels_for_scatter(vae_experiment, curr_dev, batches = None):
+def csvaegnn_get_latent_activations_with_labels_for_scatter(vae_model, dataset_loader, curr_dev, batches = None):
    
-    num_nodes, batch_size = vae_experiment.model.num_nodes, vae_experiment.model.batch_size
-    z_dim, l_dim = vae_experiment.model.z_dim, vae_experiment.model.l_dim
+    num_nodes, batch_size = vae_model.num_nodes, vae_model.batch_size
+    z_dim, l_dim = vae_model.z_dim, vae_model.l_dim
 
-    B = batches if batches is not None else len(vae_experiment.sample_loader)
+    B = batches if batches is not None else len(dataset_loader)
     mu_batches = np.zeros(shape=(batch_size * B, num_nodes, z_dim))
     label_batches = np.zeros(shape=(batch_size * B, l_dim))
     
     batches_processed = 0
     with torch.no_grad():
         
-        for x_batch, label_batch in iter(vae_experiment.sample_loader):
+        for x_batch, label_batch in iter(dataset_loader):
             
             if batches is not None and batches_processed >= batches:
                 break
@@ -1104,7 +1105,7 @@ def csvaegnn_get_latent_activations_with_labels_for_scatter(vae_experiment, curr
             x_batch = x_batch.to(curr_dev)
             
             # posterior_mu has shape (B, V, feat_dim)
-            posterior_mu, posterior_logvar, posterior_z = vae_experiment.model.encode(x_batch)
+            posterior_mu, posterior_logvar, posterior_z = vae_model.encode(x_batch)
             
             # convert to numpy format so that we can easily use in matplotlib
             posterior_mu = posterior_mu.detach().cpu().numpy()

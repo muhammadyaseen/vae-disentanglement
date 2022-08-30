@@ -83,6 +83,10 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         if self.model.add_classification_loss:
             self._log_classification_losses(train_step_outputs)
         
+        if self.model.controlled_capacity_increase:
+            self.logger.experiment.add_scalar("Controlled_Capacity/Current_Capacity", self.model.current_capacity, self.global_step)
+            self.logger.experiment.add_scalar("Controlled_Capacity/Max_Capacity", self.model.max_capacity, self.global_step)
+        
         torch.set_grad_enabled(True)
         self.model.train()
 

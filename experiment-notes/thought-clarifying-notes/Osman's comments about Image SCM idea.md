@@ -1,0 +1,4 @@
+In the following I use symbol $\eta$ to represent "primitive features" (as opposed to $\epsilon$ done previously)
+
+- What will be the dimensionality of $\eta$ vector (i.e. how many primitive features do we consider)? and how do we know that it is the correct dimensionality. I think this info  is important to make causal claims (the way it is implemented right now... dim of init node feature vectors can be anything. The more imp q is that they need to be the same in number e.g. 4 primitive features if we have 4 semantic features... this is a bit problematic to argue for.. we can get away with saying that we can play with dimensions and have as many primitive feats we want.. but it is still sloppy)
+- 
