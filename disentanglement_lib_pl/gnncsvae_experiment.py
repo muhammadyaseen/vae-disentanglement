@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib import cm as mpl_colormaps
 
+
 from models.csvae_gnn import GNNBasedConceptStructuredVAE
-from common.utils import CenteredNorm
+from common import utils
 from common import constants as c
 
 class GNNCSVAEExperiment(BaseVAEExperiment):
@@ -194,7 +195,8 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         from common import notebook_utils
 
         mus, labels = notebook_utils.csvaegnn_get_latent_activations_with_labels_for_scatter(
-            self,
+            self.model,
+            self.sample_loader,
             current_device,
             num_batches
         )
@@ -205,42 +207,17 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         
         # for each node and hue combination, plot and save
         for node_idx in range(self.model.num_nodes):
-            for h, hue_factor in enumerate(hue_factors):
-                
-                fig, ax = plt.subplots()
-                fig.set_size_inches(11.7, 8.27)
-                
-                if self.model.z_dim == 1:
-                    ylim = (-1,1)
-                    y_plot = 0
-                    x_plot = mus[:, node_idx, 0]
-                else:
-                    # for 2-D
-                    ylim = (-5, 5)
-                    x_plot, y_plot = mus[:, node_idx, 0], mus[:, node_idx, 1]
-
-                sns.scatterplot(   
-                    x=x_plot, 
-                    y=y_plot, 
-                    hue=labels[:,h], 
-                    s=15, 
-                    ax=ax
-                )
-                # for legend text
-                plt.setp(ax.get_legend().get_texts(), fontsize='10')
-
-                ax.set_xlabel(r"$Z_1$",fontsize=15)
-                ax.set_ylabel(r"$Z_2$",fontsize=15)
-                ax.set(ylim=ylim)
-                ax.set(xlim=(-5, 5))
+            for hue_idx, hue_factor in enumerate(hue_factors):
                 
                 # need to do this to make sure gifs are properly sequenced other wise 1.jpg is followed by 10.jpg, and 100.jpg
                 padded_epoch = str(self.current_epoch).zfill(len(str(self.max_epochs)))
-                image_file_name = f"latentspace.node.{node_idx}.hue.{h}.epoch.{padded_epoch}.jpg"
-                plt.title(f"Latent Space of Node {node_idx} at epoch={padded_epoch}. Hue by {hue_factor}")
+                image_file_name = f"latentspace.node.{node_idx}.hue.{hue_idx}.epoch.{padded_epoch}.jpg"
+                
                 latentspace_images_path = os.path.join(
                     self.logger.log_dir, 
                     "latent_space_plots", 
                     image_file_name
                 )
-                plt.savefig(latentspace_images_path)
+
+                utils.plot_1d_latent_space(mus, labels, hue_factors, node_idx, 
+                                        hue_idx, hue_idx, latentspace_images_path)

@@ -12,6 +12,9 @@ import torch.nn
 import torch.nn.init as init
 from torch.autograd import Variable
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 from common import constants as c
 
 
@@ -452,3 +455,38 @@ class CenteredNorm(mpl_colors.Normalize):
             # enforce symmetry, reset vmin and vmax
             self._set_vmin_vmax()
         return super().__call__(value, clip=clip)
+
+
+def plot_1d_latent_space(latent_act_batches, label_batches, hue_factors, 
+                                 node_idx, label_idx, hue_idx, save_path):
+    """
+    latent_act_batches: Should have the dimension (b, num_nodes, 1)
+    """
+    fig, ax = plt.subplots()
+    fig.set_size_inches(11.7, 4.1)
+
+    x_plot = latent_act_batches[:, node_idx, 0]
+    y_plot = 0 if label_idx is None else label_batches[:, label_idx]
+    hue_factor = hue_factors[hue_idx]
+
+    ylim = (-1,1) if label_idx is None else (-5,5)
+    ylabel = "Fixed" if label_idx is None else hue_factor
+
+    sns.scatterplot(   
+        x=x_plot, 
+        y=y_plot, 
+        hue=label_batches[:, hue_idx], 
+        s=15, 
+        ax=ax
+    )
+    
+    # for legend text
+    plt.setp(ax.get_legend().get_texts(), fontsize='10')
+    ax.set_xlabel(r"$Z_1$ - latent activation",fontsize=15)
+    ax.set_ylabel(r"$Z_2$ - " + ylabel ,fontsize=15)
+    ax.set(ylim=ylim)
+    ax.set(xlim=(-5, 5))
+
+    plt.title(f"Node {node_idx}. Hue by {hue_factor}")
+    plt.savefig(save_path)
+     

@@ -307,6 +307,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
         exogen_samples_node = []
         upper, lower = 2, -2
+
+        # nodes are being init with gaussians slightly offest from each other
         mus = torch.arange(lower, upper, (upper - lower) / self.num_nodes).to(current_device)
         for i in range(self.num_nodes):
             exogen_samples_node.append(
