@@ -2,7 +2,7 @@
 
 FILENAME=$(basename $0)
 FILENAME="${FILENAME%.*}"
-NAME="pendulum_plots_test_1d"
+NAME="pendulum_cc_test"
 echo "name=$NAME"
 
 PROJECT_ROOT=../
@@ -20,8 +20,8 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
     --dset_name=$DATASET_NAME \
     --decoder=SimpleConv64CommAss \
-    --w_kld=1.0 \
-    --w_recon=10.0 \
+    --w_kld=10.0 \
+    --w_recon=1.0 \
     --num_workers=0 \
     --batch_size=64 \
     --max_epoch=100 \
@@ -32,4 +32,8 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --z_dim 1 \
     --l_dim 5 \
-    --use_loss_weights=False
+    --use_loss_weights=False \
+    --controlled_capacity_increase=True \
+    --max_capacity=15 \
+    --iterations_c=22000 
+
