@@ -10,7 +10,7 @@
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
 #SBATCH --time=02:00:00
 
-NAME="pendulum_plots_test"
+NAME="pendulum_cc"
 echo "name=$NAME"
 
 # This path will work anywhere in JUWELS-Booster
@@ -30,11 +30,11 @@ srun \
     --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
     --dset_name=$DATASET_NAME \
     --decoder=SimpleConv64CommAss \
-    --w_kld=0.20 \
-    --w_recon=0.80 \
+    --w_kld=10.0 \
+    --w_recon=1.0 \
     --num_workers=48 \
     --batch_size=64 \
-    --max_epoch=30 \
+    --max_epoch=200 \
     --in_channels=3 \
     --gpus 0 \
     --visdom_on=False \
@@ -42,4 +42,9 @@ srun \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --z_dim 2 \
     --l_dim 5 \
-    --use_loss_weights=False
+    --use_loss_weights=False \
+    --controlled_capacity_increase=True \
+    --max_capacity=15 \
+    --iterations_c=22000 
+
+
