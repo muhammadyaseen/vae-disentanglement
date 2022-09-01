@@ -21,7 +21,6 @@ def get_args(sys_args):
 
     # name
     parser.add_argument('--alg', type=str, help='the disentanglement algorithm', choices=c.ALGS)
-    parser.add_argument('--controlled_capacity_increase', help='to use controlled capacity increase', default=False)
     parser.add_argument('--loss_terms', help='loss terms to be incldued in the objective', nargs='*',
                         default=list(), choices=c.LOSS_TERMS)
     parser.add_argument('--name', default='unknown_experiment', type=str, help='name of the experiment')
@@ -70,9 +69,10 @@ def get_args(sys_args):
     parser.add_argument('--l_zero_reg', default=False, type=str2bool, help='Whether L0-regularization is used or not')
 
     # Loss weights and parameters for [CapacityVAE]
-    parser.add_argument('--max_c', default=25.0, type=float, help='maximum value of control parameter in CapacityVAE')
-    parser.add_argument('--iterations_c', default=100000, type=int, help='how many iterations to reach max_c')
-
+    parser.add_argument('--max_capacity', default=25.0, type=float, help='maximum value of control parameter in CapacityVAE')
+    parser.add_argument('--iterations_c', default=100000, type=int, help='how many iterations to reach max_capacity')
+    parser.add_argument('--controlled_capacity_increase', help='to use controlled capacity increase', default=False)
+    
     # Loss weights and parameters for [FactorVAE & BetaTCVAE]
     parser.add_argument('--w_tc', default=1.0, type=float,
                         help='total correlation loss weight (e.g. in FactorVAE and BetaTCVAE)')
