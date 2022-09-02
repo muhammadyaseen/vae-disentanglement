@@ -29,7 +29,8 @@ AUX_CLASSIFICATION = 'aux_classification'
 
 # Algorithms
 ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE', 'LadderVAE', 
-        'ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization','CSVAE_Toy', 'GNNBasedConceptStructuredVAE')
+        'ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization','CSVAE_Toy', 'GNNBasedConceptStructuredVAE',
+        'LatentToImage')
 
 LOSS_TERMS = (FACTORVAE, DIPVAE_I, DIPVAE_II, BetaTCVAE, INFOVAE, AUX_CLASSIFICATION)
 

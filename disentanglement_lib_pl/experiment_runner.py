@@ -4,12 +4,14 @@ import os
 
 from common.utils import setup_logging, initialize_seeds, save_cmdline_params
 from common.arguments import get_args
+
 import models
 
 from bvae_experiment import BVAEExperiment
 from laddervae_experiment import LadderVAEExperiment
 from csvae_experiment import ConceptStructuredVAEExperiment
 from gnncsvae_experiment import GNNCSVAEExperiment
+from base_latent_to_image_experiment import BaseLatentToImageExperiment
 
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers.tensorboard import TensorBoardLogger
@@ -23,7 +25,8 @@ EXPERIMENT_CLASS = {
     'ConceptStructuredVAE': ConceptStructuredVAEExperiment,
     'CSVAE_ResidualDistParameterization': ConceptStructuredVAEExperiment,
     'CSVAE_Toy': ConceptStructuredVAEExperiment,
-    'GNNBasedConceptStructuredVAE': GNNCSVAEExperiment
+    'GNNBasedConceptStructuredVAE': GNNCSVAEExperiment,
+    'LatentToImage': BaseLatentToImageExperiment
 }
 
 def get_dataset_specific_params(cmdline_args):
@@ -36,7 +39,8 @@ def get_dataset_specific_params(cmdline_args):
 def get_scalar_metrics_for_alg(cmdline_args):
     
     base_metrics = ['loss','recon', 'kld_loss']
-    if cmdline_args.alg in ['ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization', 'CSVAE_Toy', 'GNNBasedConceptStructuredVAE']:
+    if cmdline_args.alg in ['ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization', 'CSVAE_Toy', 
+                            'GNNBasedConceptStructuredVAE', 'LatentToImage']:
         return base_metrics
     
     elif cmdline_args.alg == 'LadderVAE':
@@ -69,7 +73,8 @@ def get_experiment_config_for_alg(cmdline_args):
         max_epochs = cmdline_args.max_epoch
     )
 
-    if cmdline_args.alg in ['ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization', 'CSVAE_Toy', 'GNNBasedConceptStructuredVAE']:
+    if cmdline_args.alg in ['ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization', 'CSVAE_Toy', 
+                            'GNNBasedConceptStructuredVAE', 'LatentToImage']:
         base_experiment_config.update({
 
         })
@@ -81,7 +86,7 @@ def get_experiment_config_for_alg(cmdline_args):
 
     elif cmdline_args.alg == 'BetaVAE':
         base_experiment_config.update({
-            'max_c': cmdline_args.max_c
+            'max_capacity': cmdline_args.max_capacity
         })
 
     else:
@@ -139,7 +144,6 @@ def main(_args):
 
     os.makedirs(os.path.join(tb_logger.log_dir, "recon_images"), exist_ok=True)
     os.makedirs(os.path.join(tb_logger.log_dir, "latent_space_plots"), exist_ok=True)
-    #os.makedirs(os.path.join(tb_logger.log_dir, "kde_plots"), exist_ok=True)
     
     # load the model associated with args.alg
     model_cl = getattr(models, _args.alg)

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-FILENAME=$(basename $0)
-FILENAME="${FILENAME%.*}"
 NAME="pendulum_cc_test"
 echo "name=$NAME"
 

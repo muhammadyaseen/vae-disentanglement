@@ -202,8 +202,8 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         )
 
         # Drop the first col of label batches because in this case it only stores image_index
-        if self.params['dataset'] == "pendulum":
-            labels = labels[:, 1:]
+        #if self.params['dataset'] == "pendulum":
+        #    labels = labels[:, 1:]
         
         # for each node and hue combination, plot and save
         for node_idx in range(self.model.num_nodes):

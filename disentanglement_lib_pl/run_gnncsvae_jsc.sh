@@ -40,8 +40,8 @@ srun \
     --visdom_on=False \
     --lr_G=0.0001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
-    --z_dim 2 \
-    --l_dim 5 \
+    --z_dim 1 \
+    --l_dim 4 \
     --use_loss_weights=False \
     --controlled_capacity_increase=True \
     --max_capacity=15 \

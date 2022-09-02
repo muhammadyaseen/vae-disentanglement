@@ -37,7 +37,7 @@ class VAE(nn.Module):
         # Beta-vae and Annealed Beta-VAE args
         self.w_kld = args.w_kld
         self.controlled_capacity_increase = args.controlled_capacity_increase
-        self.max_c = torch.tensor(args.max_c, dtype=torch.float)
+        self.max_capacity = torch.tensor(args.max_c, dtype=torch.float)
         self.iterations_c = torch.tensor(args.iterations_c, dtype=torch.float)
         self.current_c = torch.tensor(0.0)
         self.kl_warmup_epochs = args.kl_warmup_epochs
