@@ -1,3 +1,4 @@
+from ctypes import util
 import os
 import torch
 from base_vae_experiment import BaseVAEExperiment
@@ -38,7 +39,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             'max_epochs': self.max_epochs
         })
         
-        train_step_outputs = self.model.loss_function(loss_type='cross_ent', **fwd_pass_results)
+        train_step_outputs = self.model.loss_function(**fwd_pass_results)
 
         # We need it for visualizing per layer mean / sigma components
         train_step_outputs.update({

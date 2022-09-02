@@ -10,7 +10,7 @@ from torch import optim
 from models.vae import VAE
 from common import constants as c
 from common import data_loader
-#from common.visdom_visualiser import VisdomVisualiser
+from common import utils
 from evaluation import evaluation_utils
 
 
@@ -135,7 +135,7 @@ class BaseVAEExperiment(pl.LightningModule):
             'max_epochs': self.max_epochs
         })
         
-        val_losses = self.model.loss_function(loss_type='cross_ent', **fwd_pass_results)
+        val_losses = self.model.loss_function(**fwd_pass_results)
         
         return val_losses
 

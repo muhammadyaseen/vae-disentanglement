@@ -9,6 +9,7 @@ from architectures.decoders.simple_conv64 import SimpleConv64CommAss
 from common.ops import kl_divergence_diag_mu_var_per_node, reparametrize, Flatten3D
 from common import constants as c
 from common import dag_utils
+from common import utils
 from common.special_modules import SimpleGNNLayer, SupervisedRegulariser, BifurcatedGNNLayer
 
 import pdb
@@ -24,6 +25,9 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         adjacency_matrix: str or list . If str, it is interpreted as path to pickled list
         """
         super(GNNBasedConceptStructuredVAE, self).__init__()
+
+        self.dataset = network_args.dset_name
+        self.loss_type = utils.get_loss_type_for_dataset(self.dataset)
 
         if isinstance(network_args.adjacency_matrix, str):
             adj_mat_and_node_names = pickle.load(open(network_args.adjacency_matrix, 'rb'))
@@ -195,7 +199,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         return  kld_loss * self.w_kld, loss_per_node
 
-    def loss_function(self, loss_type='cross_ent', **kwargs):
+    def loss_function(self, **kwargs):
         
         output_losses = dict()
 
@@ -213,23 +217,17 @@ class GNNBasedConceptStructuredVAE(nn.Module):
             self.w_recon, self.w_kld, self.w_sup_reg = self._get_loss_term_weights(global_step, current_epoch, max_epochs)
         
         output_losses['output_aux'] = (self.w_recon, self.w_kld, self.w_sup_reg)
-
-        #num_is_nan = torch.isnan(x_recon).sum().item()
-        #if num_is_nan > 0:
-        #    print("NaN detected during training...")
-        #    print(kwargs)
-        #    exit(1)
-        
+       
         # initialize the loss of this batch with zero.
         output_losses[c.TOTAL_LOSS] = 0
         
         #===== Calculating ELBO components
         # 1. REconstruction loss
         
-        if loss_type == 'cross_ent':
+        if self.loss_type == 'cross_ent':
             output_losses[c.RECON] = (F.binary_cross_entropy(x_recon, x_true, reduction='sum') / self.batch_size) * self.w_recon
         
-        if loss_type == 'mse':
+        if self.loss_type == 'mse':
             output_losses[c.RECON] = (F.mse_loss(x_recon, x_true, reduction='sum') / self.batch_size) * self.w_recon
                
         output_losses[c.TOTAL_LOSS] += output_losses[c.RECON]
@@ -279,7 +277,10 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
     def decode(self, z, **kwargs):
 
-        return torch.sigmoid(self.decoder_dcnn(z))
+        if self.loss_type == 'cross_ent':
+            return torch.sigmoid(self.decoder_dcnn(z))
+        else:
+            return self.decoder_dcnn(z)
 
     def sample(self, num_samples, current_device):
 

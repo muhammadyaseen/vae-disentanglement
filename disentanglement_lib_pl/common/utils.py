@@ -489,4 +489,14 @@ def plot_1d_latent_space(latent_act_batches, label_batches, hue_factors,
 
     plt.title(f"Node {node_idx}. Hue by {hue_factor}")
     plt.savefig(save_path)
-     
+
+def get_loss_type_for_dataset(dataset_name):
+
+    mapping = {
+        "pendulum": "mse",
+        "celeba": "mse",
+        "dsprites_full": "cross_ent",
+        "dsprites_correlated": "cross_ent",
+    }    
+
+    return mapping[dataset_name] 
