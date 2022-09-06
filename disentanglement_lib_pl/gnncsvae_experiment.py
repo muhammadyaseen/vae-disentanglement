@@ -190,9 +190,10 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
 
         # get latent activations for the given number of batches
         current_device = next(self.model.parameters()).device
-        num_batches = 110 if self.params['dataset'] in ["pendulum", "flow"] else num_batches
+        num_batches = len(self.sample_loader) if self.params['dataset'] in ["pendulum", "flow"] else num_batches
         hue_factors = ['theta', 'phi', 'shade','mid']
-
+        padded_epoch = str(self.current_epoch).zfill(len(str(self.max_epochs)))
+        
         from common import notebook_utils
 
         mus, labels = notebook_utils.csvaegnn_get_latent_activations_with_labels_for_scatter(
@@ -201,17 +202,13 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             current_device,
             num_batches
         )
-
-        # Drop the first col of label batches because in this case it only stores image_index
-        #if self.params['dataset'] == "pendulum":
-        #    labels = labels[:, 1:]
         
         # for each node and hue combination, plot and save
         for node_idx in range(self.model.num_nodes):
             for hue_idx, hue_factor in enumerate(hue_factors):
                 
                 # need to do this to make sure gifs are properly sequenced other wise 1.jpg is followed by 10.jpg, and 100.jpg
-                padded_epoch = str(self.current_epoch).zfill(len(str(self.max_epochs)))
+                
                 image_file_name = f"latentspace.node.{node_idx}.hue.{hue_idx}.epoch.{padded_epoch}.jpg"
                 
                 latentspace_images_path = os.path.join(
@@ -222,3 +219,14 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
 
                 utils.plot_1d_latent_space(mus, labels, hue_factors, node_idx, 
                                         hue_idx, hue_idx, self.current_epoch, latentspace_images_path)
+
+        # pairwise activation plot of each node 
+        # this can become incomprehensible if there are too many nodes
+        image_file_name = f"pairplot.epoch.{padded_epoch}.jpg"
+        pairplot_images_path = os.path.join(
+                    self.logger.log_dir, 
+                    "latent_space_plots", 
+                    image_file_name
+                )
+        
+        utils.pairwise_node_activation_plots(mus, pairplot_images_path)

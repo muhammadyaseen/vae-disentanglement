@@ -12,12 +12,11 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 
 from bvae_experiment import BVAEExperiment
-from disentanglement_lib_pl.common.ops import reparametrize
+from common.ops import reparametrize
 from laddervae_experiment import LadderVAEExperiment
 
 from common.data_loader import CustomImageFolder
 from common.known_datasets import DSpritesDataset, CorrelatedDSpritesDataset, ThreeShapesDataset, ContinumDataset 
-from common.utils import reparametrize
 
 from experiment_runner import get_dataset_specific_params
 

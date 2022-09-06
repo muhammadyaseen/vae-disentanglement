@@ -14,7 +14,7 @@ from torch.autograd import Variable
 
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import pandas as pd
 from common import constants as c
 
 
@@ -492,6 +492,21 @@ def plot_1d_latent_space(latent_act_batches, label_batches, hue_factors,
     
     if save_path is not None:
         plt.savefig(save_path)
+
+def pairwise_node_activation_plots(mu_batches, save_path=None):
+    """
+    mu_batches is of shape (b, V, feat_dim)
+    """
+    # suppress the feat_dim dimension, (assuming it has only 1-dim)
+    activations = mu_batches.squeeze(2)
+    # col names by number of nodes
+    columns=[f"node{i}" for i in range(mu_batches.shape[1])]
+    activations_df = pd.DataFrame(activations, columns=columns)
+    
+    sns_pair_plot = sns.pairplot(activations_df, markers=".", height=3.0)
+    
+    if save_path is not None:
+        sns_pair_plot.savefig(save_path)
 
 def get_loss_type_for_dataset(dataset_name):
 
