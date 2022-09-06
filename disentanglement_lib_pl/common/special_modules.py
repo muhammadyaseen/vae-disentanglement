@@ -489,7 +489,7 @@ class SupervisedRegulariser(nn.Module):
                 raise NotImplemented()
             
             total_loss += loss_this_node
-            loss_per_node[f'clf_{node_idx}_{self.node_labels[node_idx]}'] = loss_this_node.detach()
+            loss_per_node[f'clf_{self.node_labels[node_idx]}'] = loss_this_node.detach()
 
         return total_loss * self.w_sup_reg, loss_per_node
 

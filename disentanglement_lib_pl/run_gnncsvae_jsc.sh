@@ -32,6 +32,7 @@ srun \
     --decoder=SimpleConv64CommAss \
     --w_kld=10.0 \
     --w_recon=1.0 \
+    --w_sup_reg=1.0 \
     --num_workers=48 \
     --batch_size=64 \
     --max_epoch=200 \
@@ -43,8 +44,6 @@ srun \
     --z_dim 1 \
     --l_dim 4 \
     --use_loss_weights=False \
-    --controlled_capacity_increase=True \
-    --max_capacity=15 \
-    --iterations_c=22000 
+    --loss_terms aux_classification 
 
 

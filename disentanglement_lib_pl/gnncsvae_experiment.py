@@ -1,12 +1,7 @@
-from ctypes import util
 import os
 import torch
+
 from base_vae_experiment import BaseVAEExperiment
-import matplotlib.pyplot as plt
-import seaborn as sns
-from matplotlib import cm as mpl_colormaps
-
-
 from models.csvae_gnn import GNNBasedConceptStructuredVAE
 from common import utils
 from common import constants as c
@@ -179,8 +174,9 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
 
         # Log per node sup. reg. loss
         for node_idx in range(self.model.num_nodes):
-            clf_loss_node = torch.stack([tso[f'clf_node_{node_idx}'] for tso in train_step_outputs]).mean()
-            self.logger.experiment.add_scalar(f"SupReg/clf_node_{node_idx}", clf_loss_node, self.current_epoch)
+            node_name = self.model.node_labels[node_idx]
+            clf_loss_node = torch.stack([tso[f'clf_{node_name}'] for tso in train_step_outputs]).mean()
+            self.logger.experiment.add_scalar(f"SupReg/clf_{node_name}", clf_loss_node, self.current_epoch)
 
     def _save_latent_space_plot(self, num_batches = 200):
 

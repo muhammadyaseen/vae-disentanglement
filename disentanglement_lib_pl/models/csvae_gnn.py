@@ -53,7 +53,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         self.w_recon = network_args.w_recon
         self.w_kld = network_args.w_kld
-        self.w_sup_reg = 0.0
+        self.w_sup_reg = network_args.w_sup_reg
         self.kl_warmup_epochs = network_args.kl_warmup_epochs
         self.use_loss_weights = network_args.use_loss_weights
 
