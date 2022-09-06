@@ -493,7 +493,7 @@ def plot_1d_latent_space(latent_act_batches, label_batches, hue_factors,
     if save_path is not None:
         plt.savefig(save_path)
 
-def pairwise_node_activation_plots(mu_batches, save_path=None):
+def pairwise_node_activation_plots(mu_batches, epoch=None, save_path=None):
     """
     mu_batches is of shape (b, V, feat_dim)
     """
@@ -504,6 +504,8 @@ def pairwise_node_activation_plots(mu_batches, save_path=None):
     activations_df = pd.DataFrame(activations, columns=columns)
     
     sns_pair_plot = sns.pairplot(activations_df, markers=".", height=3.0)
+    sns_pair_plot.fig.suptitle(f"Pairwise node activation plots. Epoch={epoch}")
+    sns_pair_plot.fig.subplots_adjust(top=0.9)
     
     if save_path is not None:
         sns_pair_plot.savefig(save_path)

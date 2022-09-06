@@ -225,4 +225,4 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
                     image_file_name
                 )
         
-        utils.pairwise_node_activation_plots(mus, pairplot_images_path)
+        utils.pairwise_node_activation_plots(mus, padded_epoch, pairplot_images_path)

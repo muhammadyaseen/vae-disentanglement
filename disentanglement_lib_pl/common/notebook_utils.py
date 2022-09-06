@@ -17,6 +17,7 @@ from laddervae_experiment import LadderVAEExperiment
 
 from common.data_loader import CustomImageFolder
 from common.known_datasets import DSpritesDataset, CorrelatedDSpritesDataset, ThreeShapesDataset, ContinumDataset 
+from common import utils
 
 from experiment_runner import get_dataset_specific_params
 
@@ -1171,16 +1172,41 @@ def intervene_upper_layers(vae_model, x, intervention_level, intervention_nodes,
     Function assumes 1-d latent space for node features
 
     """
-
-    assert intervention_level < vae_model.encoder_gnn, f"GNN depth has {vae_model.encoder_gnn} layers, can't intervene on {intervention_level} layer"
     
-    z = vae_model.encoder_cnn(x)
-
-    for g, gnn_layer in enumerate(vae_model.encoder_gnn):
-
-        if g == intervention_level:
-            z[:, intervention_nodes, 0] = intervention_values
+    gnn_levels = len(vae_model.encoder_gnn)
+    assert intervention_level < gnn_levels, f"GNN depth has {gnn_levels} layers, can't intervene on {intervention_level} layer"
+    mu, logvar = None, None
+    samples = []
+    
+    with torch.no_grad():
         
-        z = gnn_layer(z)
+        mse = vae_model.encoder_cnn(x)
 
-    return reparametrize(*z)
+        for intervention_value in intervention_values:
+            
+            z = mse.clone()
+            
+            for g, gnn_layer in enumerate(vae_model.encoder_gnn):
+            
+                # compute activations at this GNN level
+                z = gnn_layer(z)
+
+                # if this is the intervention level we have to replace the computed 
+                # value for nodes on which we're intervening to the given intervention_values
+                if g == intervention_level:
+                    if g == gnn_levels - 1:
+                        mu, logvar = z
+                        mu[:, intervention_nodes, 0] = intervention_value
+                        z = mu, logvar
+                    else:
+                        z[:, intervention_nodes, 0] = intervention_value
+
+            # intervention has propagated, now we can recon
+            z_sample = reparametrize(*z)
+            z_flattened = vae_model.flatten_node_features(z_sample)
+            sample = vae_model.decode(z_flattened).data
+
+            samples.append(sample)
+
+    return samples
+    
