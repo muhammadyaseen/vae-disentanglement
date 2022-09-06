@@ -458,7 +458,8 @@ class CenteredNorm(mpl_colors.Normalize):
 
 
 def plot_1d_latent_space(latent_act_batches, label_batches, hue_factors, 
-                                 node_idx, label_idx, hue_idx, save_path):
+                                 node_idx, label_idx, hue_idx, 
+                                 epoch=-1, save_path=None):
     """
     latent_act_batches: Should have the dimension (b, num_nodes, 1)
     """
@@ -487,8 +488,10 @@ def plot_1d_latent_space(latent_act_batches, label_batches, hue_factors,
     ax.set(ylim=ylim)
     ax.set(xlim=(-5, 5))
 
-    plt.title(f"Node {node_idx}. Hue by {hue_factor}")
-    plt.savefig(save_path)
+    plt.title(f"Node={node_idx}. Hue={hue_factor}, Epoch={epoch}")
+    
+    if save_path is not None:
+        plt.savefig(save_path)
 
 def get_loss_type_for_dataset(dataset_name):
 

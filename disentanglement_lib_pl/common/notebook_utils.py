@@ -12,10 +12,12 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 
 from bvae_experiment import BVAEExperiment
+from disentanglement_lib_pl.common.ops import reparametrize
 from laddervae_experiment import LadderVAEExperiment
 
 from common.data_loader import CustomImageFolder
 from common.known_datasets import DSpritesDataset, CorrelatedDSpritesDataset, ThreeShapesDataset, ContinumDataset 
+from common.utils import reparametrize
 
 from experiment_runner import get_dataset_specific_params
 
@@ -1007,13 +1009,25 @@ END: Notebook + Visualization functions required for LadderVAE
 """
 START: special functions for visualizing internals / traversals for csvae_gnn model
 """
-def csvaegnn_show_traversal_images(vae_model, anchor_image, limit, interp_step, dim_to_explore=0, mode='relative',
-                    node_to_explore=0, nrow=10,  **kwargs):
+def csvaegnn_show_traversal_images(vae_model, anchor_image, limit, interp_step, current_device=None,
+                                    dim_to_explore=0, mode='relative',
+                                    nodes_to_explore=[], datapoints=None, nrow=10, **kwargs):
     
-    traversed_images, ref = csvaegnn_do_latent_traversal_scatter(vae_model, anchor_image, 
+    traversed_images = None
+    
+    if len(nodes_to_explore) == 1:
+        
+        traversed_images = csvaegnn_do_latent_traversal_scatter(vae_model, anchor_image, 
                                                                 limit=limit, inter=interp_step, 
                                                                 dim_to_explore=dim_to_explore, mode=mode,
-                                                                node_to_explore=node_to_explore)
+                                                                nodes_to_explore=nodes_to_explore)
+
+    if len(nodes_to_explore) == 2:
+        
+        traversed_images = csvaegnn_do_latent_traversal_multiple(vae_model, anchor_image, inter=interp_step, 
+                                                                    nodes_to_explore=nodes_to_explore,
+                                                                    datapoints=datapoints, 
+                                                                    current_device=current_device)
 
     # every image in traversed_images has shape [1,channels,img_size, img_size] 
     # .squeeze() removes the first dim and then stack concats the images along a new first dim
@@ -1060,10 +1074,10 @@ def csvaegnn_do_latent_traversal_scatter(vae_model, ref_img, limit=3, inter=2/3,
                 z = random_img_z.clone()
                 
                 if fix_dim is not None and fix_val is not None:
-                    z[:, fix_dim] = fix_val
+                    z[:, node_idx, fix_dim] = fix_val
                 
                 if mode == 'relative':
-                    ref, lim = z[:, current_dim].item(), 3
+                    ref, lim = z[:, node_idx, current_dim].item(), 3
                     lower_bound = ref - lim if lb is None else lb
                     upper_bound = ref + lim + 0.1 if ub is None else ub
                     if lower_bound > upper_bound:
@@ -1082,7 +1096,40 @@ def csvaegnn_do_latent_traversal_scatter(vae_model, ref_img, limit=3, inter=2/3,
                     
                     samples.append(sample)
 
-    return samples, ref
+    return samples
+
+def csvaegnn_do_latent_traversal_multiple(vae_model, ref_img, 
+                                    inter=2/3, nodes_to_explore=[], datapoints=None, 
+                                    current_device=None):
+
+    """
+    node_to_explore: which node of GNN to explore
+    dim_to_explore: Dimension that we want to traverse for this node. This is useful because node_features can be multi-dim
+    ref_img       : Image to be used as starting point to traversal (relevant in case of mode='relative')
+    """
+    with torch.no_grad():
+
+        # these will be of shape (Batches, V, node_feat_dim)
+        posterior_mu, posterior_logvar, posterior_z = vae_model.encode(ref_img)
+        samples = []
+        z = posterior_z.clone()
+
+        if z.size(2) > 1:
+            print("This func was written with 1d latents in min. Behaviour for >1d latents not guaranteed")
+        
+        #interpolation = torch.arange(-3., 3.1, inter).to(current_device)
+
+        # Traverse and decode
+        for point in datapoints:
+            # the the values of all nodes in `nodes_to_explore` to the same value
+            # we are exploring along the diagonal
+            z[:, nodes_to_explore, 0] = point.reshape(1,2)
+            z_flattened = vae_model.flatten_node_features(z)
+            sample = vae_model.decode(z_flattened).data
+            
+            samples.append(sample)
+
+    return samples
 
 def csvaegnn_get_latent_activations_with_labels_for_scatter(vae_model, dataset_loader, curr_dev, batches = None):
    
@@ -1118,3 +1165,23 @@ def csvaegnn_get_latent_activations_with_labels_for_scatter(vae_model, dataset_l
             batches_processed += 1
         
     return mu_batches, label_batches
+
+
+def intervene_upper_layers(vae_model, x, intervention_level, intervention_nodes, intervention_values):
+    """
+    Function assumes 1-d latent space for node features
+
+    """
+
+    assert intervention_level < vae_model.encoder_gnn, f"GNN depth has {vae_model.encoder_gnn} layers, can't intervene on {intervention_level} layer"
+    
+    z = vae_model.encoder_cnn(x)
+
+    for g, gnn_layer in enumerate(vae_model.encoder_gnn):
+
+        if g == intervention_level:
+            z[:, intervention_nodes, 0] = intervention_values
+        
+        z = gnn_layer(z)
+
+    return reparametrize(*z)

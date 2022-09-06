@@ -221,4 +221,4 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
                 )
 
                 utils.plot_1d_latent_space(mus, labels, hue_factors, node_idx, 
-                                        hue_idx, hue_idx, latentspace_images_path)
+                                        hue_idx, hue_idx, self.current_epoch, latentspace_images_path)
