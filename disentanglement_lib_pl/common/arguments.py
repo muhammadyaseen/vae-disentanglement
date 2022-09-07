@@ -99,6 +99,8 @@ def get_args(sys_args):
     # For CS VAE
     parser.add_argument('--adjacency_matrix', type=str, default=None, 
                         help='Path to pickled Adjacency Matrix file for dataset' )
+    parser.add_argument('--num_indept_nodes', default=0, type=int,
+                        help='How many nodes in GNN to use to model latents w/o labels or DAG entires')
     parser.add_argument('--root_dim', default=10, type=int,
                         help='Dimension used to represent the root node')
     parser.add_argument('--interm_unit_dim', default=2, type=int,

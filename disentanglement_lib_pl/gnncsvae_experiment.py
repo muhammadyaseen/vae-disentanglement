@@ -122,7 +122,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             # Loop over every dim of mu associated with this node and add its histogram
             for k in range(post_mus.shape[2]):
                 self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Mu_q_Dim_{k}", post_mus[:, node_idx, k], step)
-                self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Mu_p_Dim_{k}", prior_mus[:, node_idx, k], step)
+                #self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Mu_p_Dim_{k}", prior_mus[:, node_idx, k], step)
             
             # Scalars           
             # we do '+1' because latent indexing is 1-based, there is no Z_0
@@ -131,10 +131,21 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             for k , v in post_mu_dict.items():
                 self.logger.experiment.add_scalar(k, v, step)
             
-            prior_mu_dict = {f"Node_{node_idx + 1}/Mu_p_comp_{i}": component_val for i, component_val in enumerate(prior_mus_avgs[node_idx])}            
+            #prior_mu_dict = {f"Node_{node_idx + 1}/Mu_p_comp_{i}": component_val for i, component_val in enumerate(prior_mus_avgs[node_idx])}            
+            #for k , v in prior_mu_dict.items():
+            #    self.logger.experiment.add_scalar(k, v, step)
+            
+        #TODO: log posterior indept nodes
+        for iter_idx, node_idx in enumerate(range(self.model.num_dept_nodes, self.model.num_nodes)):
+            # Histograms
+            # Loop over every dim and add its histogram
+            for k in range(prior_mus.shape[2]):
+                self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Mu_p_Dim_{k}", prior_mus[:, iter_idx, k], step)
+            
+            prior_mu_dict = {f"Node_{node_idx + 1}/Mu_p_comp_{i}": component_val for i, component_val in enumerate(prior_mus_avgs[iter_idx])}            
             for k , v in prior_mu_dict.items():
                 self.logger.experiment.add_scalar(k, v, step)
-    
+
     def _log_std_per_node(self, train_step_outputs, step_type='epoch'):
 
         step = self.current_epoch if step_type == 'epoch' else self.global_step
@@ -153,7 +164,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             # Loop over every dim and add its histogram
             for k in range(post_stds.shape[2]):
                 self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Std_q_Dim_{k}", post_stds[:, node_idx, k], step)
-                self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Std_p_Dim_{k}", prior_stds[:, node_idx, k], step)
+                #self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Std_p_Dim_{k}", prior_stds[:, node_idx, k], step)
             
             # Scalars
             # we do '+1' because latent indexing is 1-based, there is no Z_0
@@ -161,9 +172,21 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             for k , v in post_std_dict.items():
                 self.logger.experiment.add_scalar(k, v, step)
 
-            prior_std_dict = {f"Node_{node_idx + 1}/Std_p_comp_{i}": component_val for i, component_val in enumerate(prior_std_avgs[node_idx])}            
+            #prior_std_dict = {f"Node_{node_idx + 1}/Std_p_comp_{i}": component_val for i, component_val in enumerate(prior_std_avgs[node_idx])}            
+            #for k , v in prior_std_dict.items():
+            #    self.logger.experiment.add_scalar(k, v, step)
+        
+        #TODO: log posterior indept nodes
+        for iter_idx, node_idx in enumerate(range(self.model.num_dept_nodes, self.model.num_nodes)):
+            # Histograms
+            # Loop over every dim and add its histogram
+            for k in range(prior_stds.shape[2]):
+                self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Std_p_Dim_{k}", prior_stds[:, iter_idx, k], step)
+            
+            prior_std_dict = {f"Node_{node_idx + 1}/Std_p_comp_{i}": component_val for i, component_val in enumerate(prior_std_avgs[iter_idx])}            
             for k , v in prior_std_dict.items():
                 self.logger.experiment.add_scalar(k, v, step)
+
         
     def _log_classification_losses(self, train_step_outputs):
         
@@ -173,7 +196,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         self.logger.experiment.add_scalar(f"SupReg/Total_Loss", clf_loss, self.current_epoch)
 
         # Log per node sup. reg. loss
-        for node_idx in range(self.model.num_nodes):
+        for node_idx in range(self.model.num_dept_nodes):
             node_name = self.model.node_labels[node_idx]
             clf_loss_node = torch.stack([tso[f'clf_{node_name}'] for tso in train_step_outputs]).mean()
             self.logger.experiment.add_scalar(f"SupReg/clf_{node_name}", clf_loss_node, self.current_epoch)
@@ -200,7 +223,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         )
         
         # for each node and hue combination, plot and save
-        for node_idx in range(self.model.num_nodes):
+        for node_idx in range(self.model.num_dept_nodes):
             for hue_idx, hue_factor in enumerate(hue_factors):
                 
                 # need to do this to make sure gifs are properly sequenced other wise 1.jpg is followed by 10.jpg, and 100.jpg

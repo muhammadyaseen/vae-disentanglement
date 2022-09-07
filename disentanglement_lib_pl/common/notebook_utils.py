@@ -1020,7 +1020,7 @@ def csvaegnn_show_traversal_images(vae_model, anchor_image, limit, interp_step, 
         traversed_images = csvaegnn_do_latent_traversal_scatter(vae_model, anchor_image, 
                                                                 limit=limit, inter=interp_step, 
                                                                 dim_to_explore=dim_to_explore, mode=mode,
-                                                                nodes_to_explore=nodes_to_explore)
+                                                                node_to_explore=nodes_to_explore[0])
 
     if len(nodes_to_explore) == 2:
         

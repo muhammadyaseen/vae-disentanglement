@@ -18,6 +18,10 @@ def kl_divergence_mu0_var1(mu, logvar):
     kld = 0.5 * (mu**2 + logvar.exp() - 1 - logvar).sum(1).mean()
     return kld
 
+def kl_divergence_mu0_var1_per_node(mu, logvar):  
+    
+    return kl_divergence_diag_mu_var_per_node(mu, logvar, 0., 0.)
+
 
 def kl_divergence_mu_var1(mu, logvar, target_mu):
     kld = -0.5 * (1 + logvar - (mu - target_mu) ** 2 - logvar.exp()).sum(1).mean()

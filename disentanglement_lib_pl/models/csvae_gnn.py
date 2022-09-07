@@ -1,4 +1,6 @@
 import pickle
+import numpy as np
+
 import torch
 from torch import nn
 import torch.nn.functional as F
@@ -6,7 +8,7 @@ import torch.nn.functional as F
 from architectures.encoders.simple_conv64 import MultiScaleEncoder
 from architectures.decoders.simple_conv64 import SimpleConv64CommAss
 
-from common.ops import kl_divergence_diag_mu_var_per_node, reparametrize, Flatten3D
+from common.ops import kl_divergence_diag_mu_var_per_node, kl_divergence_mu0_var1_per_node, reparametrize, Flatten3D
 from common import constants as c
 from common import dag_utils
 from common import utils
@@ -40,15 +42,27 @@ class GNNBasedConceptStructuredVAE(nn.Module):
             raise ValueError("Unsupported format for adjacency_matrix")
 
         self.add_classification_loss = c.AUX_CLASSIFICATION in network_args.loss_terms
-        self.num_nodes = len(self.adjacency_list)
-        self.adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
-        print(self.adjacency_matrix)
+        self.dept_adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
         
+        print(self.dept_adjacency_matrix)
+        
+        # Model latents for which we do have labels / DAG connections 
+        self.num_dept_nodes = len(self.dept_adjacency_matrix)
+        # Model latents for which we don't have labels / DAG connections 
+        self.num_indept_nodes = network_args.num_indept_nodes
+                
+        if self.num_indept_nodes > 0:
+            self.adjacency_matrix = self._extend_adj_mat_with_indept_nodes(self.dept_adjacency_matrix, self.num_indept_nodes)
+
+        # total nodes in GNN (z + v latents)
+        self.num_nodes = self.num_dept_nodes + self.num_indept_nodes
+
         self.num_channels = network_args.in_channels
         self.image_size = network_args.image_size
         self.batch_size = network_args.batch_size
         self.z_dim = network_args.z_dim[0]
         self.l_dim = network_args.l_dim
+        # 'dependent' feature dims.. not using this idea anymore
         self.d_dim = 0
         
         self.w_recon = network_args.w_recon
@@ -68,7 +82,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         # encoder and decoder
         # multiscale encoder
-        msenc_feature_dim = self.num_nodes * 3 # 3 feats per node
+        # TODO: currently uses 3 feats per node, but this should be adjustable
+        msenc_feature_dim = self.num_nodes * 3
         # MSEnc outputs features of shape (batch, V, 3 * (out_feature_dim//num_nodes))
         # in current case it will be (b,V,9) i.e. each node gets a 9-dim feature vector
 
@@ -77,12 +92,13 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.encoder_cnn = MultiScaleEncoder(msenc_feature_dim, self.num_channels, self.num_nodes)
         
         # uses multi scale features to init node feats
-        # Q(Z|X,A)
-        self.encoder_gnn = self._init_gnn()
+        # Q(Z|X,A) and Q(V|X)
+        self.encoder_gnn = self._init_gnn(gnn_function="posterior")
 
         # converts exogenous vars to prior latents 
         # P(Z|epsilon, A)
-        self.prior_gnn = self._init_gnn()
+        # TODO: revisit after introduction of indept nodes
+        self.prior_gnn = self._init_gnn(gnn_function="prior")
 
         in_node_feat_dim, out_node_feat_dim = (self.z_dim + self.d_dim) * 2, (self.z_dim + self.d_dim) * 2
         # takes in encoded features and spits out recons
@@ -131,14 +147,16 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         return fwd_pass_results
 
-    def _init_gnn(self):
+    def _init_gnn(self, gnn_function="posterior"):
         
         in_node_feat_dim, out_node_feat_dim = self.z_dim * 2, self.z_dim * 2
         dag_levels = len(self.dag_layer_nodes)
+        
+        A = self.adjacency_matrix if gnn_function == "posterior" else self.dept_adjacency_matrix
 
-        gnn_layers = [SimpleGNNLayer(self.encoder_cnn.out_feature_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer=False)]
+        gnn_layers = [SimpleGNNLayer(self.encoder_cnn.out_feature_dim, out_node_feat_dim, A, is_final_layer=False)]
         for d in range(1, dag_levels):    
-            gnn_layers.append(SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, self.adjacency_matrix, is_final_layer= d == dag_levels - 1))
+            gnn_layers.append(SimpleGNNLayer(in_node_feat_dim, out_node_feat_dim, A, is_final_layer= d == dag_levels - 1))
             
         return nn.Sequential(*gnn_layers)
     
@@ -168,9 +186,30 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         return nn.Sequential(*gnn_layers)
 
+    def _extend_adj_mat_with_indept_nodes(self, adjacency_matrix, num_dept_nodes, num_indept_nodes):
+        """
+        Takes is an adj. mat. A and number of independent nodes to add to it and returns 
+        a new adj mat of the form
+        [A, 0,
+         0, I ]
+        This allows us to model latents for which we don't have explicit labals / connections etc as indept latents
+        """
+        
+        zeros_upper_right = torch.zeros(size=(num_dept_nodes, num_indept_nodes))
+        zeros_lower_left = torch.zeros(size=(num_indept_nodes, num_dept_nodes))
+        I = torch.eye(num_indept_nodes)
+
+        upper_rows = torch.cat([adjacency_matrix, zeros_upper_right], dim=1) # along columns
+        lower_rows = torch.cat([zeros_lower_left, I], dim=1) # along rows
+
+        extended_adj_mat = torch.cat([upper_rows, lower_rows], dim=0) # along rows
+        
+        return extended_adj_mat
+
+
     def _init_classification_network(self):
 
-        return SupervisedRegulariser(self.num_nodes, self.z_dim, self.w_sup_reg, self.node_labels)
+        return SupervisedRegulariser(self.num_dept_nodes, self.z_dim, self.w_sup_reg, self.node_labels)
 
     def _classification_loss(self, predicted_latents, true_latents):
         
@@ -184,9 +223,43 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         """
         loss_per_node = dict()
         
+        # KL(Q(Z|X,A)||P(Z|A))
         kld_per_node = kl_divergence_diag_mu_var_per_node(posterior_mu, posterior_logvar, 
                                                           prior_mu, prior_logvar)
 
+        for node_idx, node_kld_loss in enumerate(kld_per_node):
+            loss_per_node[f'KLD_z_{node_idx}'] = node_kld_loss.detach()
+        
+        if self.controlled_capacity_increase:
+            global_iter = kwargs['global_step']
+            self.current_capacity = torch.min(self.max_capacity, self.max_capacity * torch.tensor(global_iter) / self.max_capacity_iters)
+            kld_loss = (kld_per_node.sum() - self.current_capacity).abs()
+        else:
+            kld_loss = kld_per_node.sum()
+        
+        return  kld_loss * self.w_kld, loss_per_node
+
+    def _gnn_cs_vae_kld_loss_fn_dep_and_indept(self, prior_mu, prior_logvar, posterior_mu, posterior_logvar, **kwargs):
+        """
+        All the arguments have shape (batch, num_nodes, node_feat_dim)
+        prior_mu, prior_logvar: Contain learnable prior dist params for p(Z|A) only
+        posterior_mu, posterior_logvar: Contain posterior params for q(Z|A,X) and q(V|X) both
+        so they have to be appropriately sliced and passed into correct KLD calc function 
+        """
+        loss_per_node = dict()
+        
+        # KL(Q(Z|X,A)||P(Z|A))
+        kld_per_node_dep = kl_divergence_diag_mu_var_per_node(posterior_mu[:, :self.num_dept_nodes, :], 
+                                                          posterior_logvar[:, :self.num_dept_nodes, :], 
+                                                          prior_mu, prior_logvar)
+
+        # KL(Q(V|X)||P(V))
+        kld_per_node_indep = kl_divergence_mu0_var1_per_node(posterior_mu[:, self.num_dept_nodes:, :], 
+                                                          posterior_logvar[:, self.num_dept_nodes:, :])
+
+        # concat along node dim
+        kld_per_node = torch.cat([kld_per_node_dep, kld_per_node_indep], dim=0)
+        
         for node_idx, node_kld_loss in enumerate(kld_per_node):
             loss_per_node[f'KLD_z_{node_idx}'] = node_kld_loss.detach()
         
@@ -311,7 +384,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
         # nodes are being init with gaussians slightly offest from each other
         mus = torch.arange(lower, upper, (upper - lower) / self.num_nodes).to(current_device)
-        for i in range(self.num_nodes):
+        for i in range(self.num_dept_nodes):
             exogen_samples_node.append(
                 mus[i] + torch.randn(size=(self.batch_size, 1, self.encoder_cnn.out_feature_dim), device=current_device)
             )
