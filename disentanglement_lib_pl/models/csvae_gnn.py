@@ -248,17 +248,25 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         """
         loss_per_node = dict()
         
-        # KL(Q(Z|X,A)||P(Z|A))
-        kld_per_node_dep = kl_divergence_diag_mu_var_per_node(posterior_mu[:, :self.num_dept_nodes, :], 
+        if self.num_indept_nodes > 0:
+            
+            # KL(Q(Z|X,A)||P(Z|A))
+            kld_per_node_dep = kl_divergence_diag_mu_var_per_node(posterior_mu[:, :self.num_dept_nodes, :], 
                                                           posterior_logvar[:, :self.num_dept_nodes, :], 
                                                           prior_mu, prior_logvar)
-
-        # KL(Q(V|X)||P(V))
-        kld_per_node_indep = kl_divergence_mu0_var1_per_node(posterior_mu[:, self.num_dept_nodes:, :], 
+            
+            # KL(Q(V|X)||P(V))
+            kld_per_node_indep = kl_divergence_mu0_var1_per_node(posterior_mu[:, self.num_dept_nodes:, :], 
                                                           posterior_logvar[:, self.num_dept_nodes:, :])
 
-        # concat along node dim
-        kld_per_node = torch.cat([kld_per_node_dep, kld_per_node_indep], dim=0)
+            # concat along node dim
+            kld_per_node = torch.cat([kld_per_node_dep, kld_per_node_indep], dim=0)
+        
+        else:
+            # we don't have indept nodes
+            # KL(Q(Z|X,A)||P(Z|A))
+            kld_per_node = kl_divergence_diag_mu_var_per_node(posterior_mu, posterior_logvar, 
+                                                          prior_mu, prior_logvar)
         
         for node_idx, node_kld_loss in enumerate(kld_per_node):
             loss_per_node[f'KLD_z_{node_idx}'] = node_kld_loss.detach()
@@ -311,7 +319,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         #-------------------------
         # Since we can have arbitrary number of layers, it won't take a fixed form      
         if current_epoch > self.kl_warmup_epochs:
-            output_losses[c.KLD_LOSS], kld_loss_per_layer = self._gnn_cs_vae_kld_loss_fn(prior_mu, prior_logvar, posterior_mu, posterior_logvar, global_step=global_step)
+            output_losses[c.KLD_LOSS], kld_loss_per_layer = self._gnn_cs_vae_kld_loss_fn_dep_and_indept(prior_mu, prior_logvar, posterior_mu, posterior_logvar, global_step=global_step)
             output_losses[c.TOTAL_LOSS] += output_losses[c.KLD_LOSS]
             output_losses.update(kld_loss_per_layer)
         else:
