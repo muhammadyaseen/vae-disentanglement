@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NAME="pendulum_cc_test_sup"
+NAME="pendulum_indept"
 echo "name=$NAME"
 
 PROJECT_ROOT=../
@@ -32,4 +32,6 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --z_dim 1 \
     --l_dim 4 \
     --use_loss_weights=False \
-    --loss_terms aux_classification 
+    --loss_terms aux_classification \
+    --num_indept_nodes=3 
+

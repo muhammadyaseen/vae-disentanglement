@@ -52,7 +52,9 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.num_indept_nodes = network_args.num_indept_nodes
                 
         if self.num_indept_nodes > 0:
-            self.adjacency_matrix = self._extend_adj_mat_with_indept_nodes(self.dept_adjacency_matrix, self.num_indept_nodes)
+            self.adjacency_matrix = self._extend_adj_mat_with_indept_nodes(self.dept_adjacency_matrix, self.num_dept_nodes, self.num_indept_nodes)
+
+        print(self.adjacency_matrix)
 
         # total nodes in GNN (z + v latents)
         self.num_nodes = self.num_dept_nodes + self.num_indept_nodes
@@ -123,7 +125,12 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         posterior_mu, posterior_logvar, posterior_z = self.encode(x_true, **kwargs)
         
         if self.add_classification_loss:
-            latents_predicted = self.latents_classifier(posterior_z)
+            
+            if self.num_indept_nodes > 0:
+                latents_predicted = self.latents_classifier(posterior_z[:,:self.num_dept_nodes, :])
+            else:
+                latents_predicted = self.latents_classifier(posterior_z)
+            
             fwd_pass_results.update({
                 "latents_predicted": latents_predicted
             })
@@ -256,8 +263,10 @@ class GNNBasedConceptStructuredVAE(nn.Module):
                                                           prior_mu, prior_logvar)
             
             # KL(Q(V|X)||P(V))
-            kld_per_node_indep = kl_divergence_mu0_var1_per_node(posterior_mu[:, self.num_dept_nodes:, :], 
-                                                          posterior_logvar[:, self.num_dept_nodes:, :])
+            kld_per_node_indep = kl_divergence_diag_mu_var_per_node(posterior_mu[:, self.num_dept_nodes:, :], 
+                                                          posterior_logvar[:, self.num_dept_nodes:, :],
+                                                           torch.Tensor([0.]).to(prior_mu.device),
+                                                           torch.Tensor([0.]).to(prior_mu.device))
 
             # concat along node dim
             kld_per_node = torch.cat([kld_per_node_dep, kld_per_node_indep], dim=0)
@@ -368,11 +377,17 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         #===== Generative part
         # Top down until X
 
-        exogen_vars_sample = torch.randn(size=(num_samples, self.num_nodes, self.encoder_cnn.out_feature_dim),
+        exogen_vars_sample = torch.randn(size=(num_samples, self.num_dept_nodes, self.encoder_cnn.out_feature_dim),
                                          device=current_device)
         prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
         prior_z = reparametrize(prior_mu, prior_logvar)
-        
+        #print(prior_z.shape)
+        if self.num_indept_nodes > 0:
+            indept_sample = torch.normal(0, 1, size=(num_samples, self.num_indept_nodes, self.z_dim), device=current_device)
+            #print(indept_sample.shape)
+            # this gives the shape (b, Z+V, feat_dim)
+            prior_z = torch.cat([prior_z, indept_sample], dim=1)
+
         # Need to reshape most likely before passing
         prior_z = self.flatten_node_features(prior_z)
         x_sampled = self.decode(prior_z)
