@@ -115,7 +115,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         post_mus_avgs = post_mus.mean(0).tolist()
         prior_mus_avgs = prior_mus.mean(0).tolist()
 
-        #print(post_mus)
+        # log posterior mus
         for node_idx in range(self.model.num_nodes):
             
             # Histograms
@@ -135,14 +135,14 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             #for k , v in prior_mu_dict.items():
             #    self.logger.experiment.add_scalar(k, v, step)
             
-        #TODO: log posterior indept nodes
-        for iter_idx, node_idx in enumerate(range(self.model.num_dept_nodes, self.model.num_nodes)):
+        #TODO: log learnable prior of dept nodes
+        for node_idx in range(self.model.num_dept_nodes):
             # Histograms
             # Loop over every dim and add its histogram
             for k in range(prior_mus.shape[2]):
-                self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Mu_p_Dim_{k}", prior_mus[:, iter_idx, k], step)
+                self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Mu_p_Dim_{k}", prior_mus[:, node_idx, k], step)
             
-            prior_mu_dict = {f"Node_{node_idx + 1}/Mu_p_comp_{i}": component_val for i, component_val in enumerate(prior_mus_avgs[iter_idx])}            
+            prior_mu_dict = {f"Node_{node_idx + 1}/Mu_p_comp_{i}": component_val for i, component_val in enumerate(prior_mus_avgs[node_idx])}            
             for k , v in prior_mu_dict.items():
                 self.logger.experiment.add_scalar(k, v, step)
 
@@ -158,6 +158,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         post_std_avgs = post_stds.mean(0).tolist()
         prior_std_avgs = prior_stds.mean(0).tolist()
 
+        # log posterior stds
         for node_idx in range(self.model.num_nodes):
             
             # Histograms
@@ -176,14 +177,14 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             #for k , v in prior_std_dict.items():
             #    self.logger.experiment.add_scalar(k, v, step)
         
-        #TODO: log posterior indept nodes
-        for iter_idx, node_idx in enumerate(range(self.model.num_dept_nodes, self.model.num_nodes)):
+        #TODO: log learnable prior of dept nodes
+        for node_idx in range(self.model.num_dept_nodes):
             # Histograms
             # Loop over every dim and add its histogram
             for k in range(prior_stds.shape[2]):
-                self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Std_p_Dim_{k}", prior_stds[:, iter_idx, k], step)
+                self.logger.experiment.add_histogram(f"Node_{node_idx + 1}/Std_p_Dim_{k}", prior_stds[:, node_idx, k], step)
             
-            prior_std_dict = {f"Node_{node_idx + 1}/Std_p_comp_{i}": component_val for i, component_val in enumerate(prior_std_avgs[iter_idx])}            
+            prior_std_dict = {f"Node_{node_idx + 1}/Std_p_comp_{i}": component_val for i, component_val in enumerate(prior_std_avgs[node_idx])}            
             for k , v in prior_std_dict.items():
                 self.logger.experiment.add_scalar(k, v, step)
 

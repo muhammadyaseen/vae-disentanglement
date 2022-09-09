@@ -43,6 +43,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
         self.add_classification_loss = c.AUX_CLASSIFICATION in network_args.loss_terms
         self.dept_adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
+        self.adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
         
         print(self.dept_adjacency_matrix)
         
@@ -53,8 +54,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
                 
         if self.num_indept_nodes > 0:
             self.adjacency_matrix = self._extend_adj_mat_with_indept_nodes(self.dept_adjacency_matrix, self.num_dept_nodes, self.num_indept_nodes)
-
-        print(self.adjacency_matrix)
+            print(self.adjacency_matrix)
 
         # total nodes in GNN (z + v latents)
         self.num_nodes = self.num_dept_nodes + self.num_indept_nodes

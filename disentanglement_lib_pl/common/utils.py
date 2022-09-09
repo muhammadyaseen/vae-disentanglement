@@ -493,6 +493,8 @@ def plot_1d_latent_space(latent_act_batches, label_batches, hue_factors,
     if save_path is not None:
         plt.savefig(save_path)
 
+    fig.close()
+
 def pairwise_node_activation_plots(mu_batches, epoch=None, save_path=None):
     """
     mu_batches is of shape (b, V, feat_dim)
