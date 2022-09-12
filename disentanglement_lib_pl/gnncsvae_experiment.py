@@ -187,8 +187,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             prior_std_dict = {f"Node_{node_idx + 1}/Std_p_comp_{i}": component_val for i, component_val in enumerate(prior_std_avgs[node_idx])}            
             for k , v in prior_std_dict.items():
                 self.logger.experiment.add_scalar(k, v, step)
-
-        
+       
     def _log_classification_losses(self, train_step_outputs):
         
         print("adding clf plots")

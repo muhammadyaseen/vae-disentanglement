@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NAME="pendulum_indept"
+NAME="pendulum_gt_prior"
 echo "name=$NAME"
 
 PROJECT_ROOT=../
@@ -19,11 +19,11 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --dset_name=$DATASET_NAME \
     --decoder=SimpleConv64CommAss \
     --w_kld=1.0 \
-    --w_recon=10.0 \
+    --w_recon=1.0 \
     --w_sup_reg=1.0 \
     --num_workers=0 \
     --batch_size=64 \
-    --max_epoch=5 \
+    --max_epoch=2 \
     --in_channels=3 \
     --gpus 0  \
     --visdom_on=False \
@@ -33,5 +33,5 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --l_dim 4 \
     --use_loss_weights=False \
     --loss_terms aux_classification \
-    --num_indept_nodes=3 
+    --num_indept_nodes=0 
 

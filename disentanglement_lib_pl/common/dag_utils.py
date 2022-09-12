@@ -1,8 +1,10 @@
 import numpy as np
 import torch
 
-def get_adj_mat_from_adj_list(adjacency_list):
-    
+def get_adj_mat_from_adj_list(adjacency_list, return_type="torch"):
+    """
+    type: 'torch' or 'numpy'
+    """
     num_nodes = len(adjacency_list)
 
     # initialize with self-connections
@@ -12,7 +14,39 @@ def get_adj_mat_from_adj_list(adjacency_list):
         for parent_node_idx in parent_list:
             A[node_idx, parent_node_idx] = 1.0
 
-    return torch.from_numpy(A).type(torch.FloatTensor)
+    return torch.from_numpy(A).type(torch.FloatTensor) if return_type == 'torch' else A
+
+def adjust_adj_mat_for_prior(A):
+    
+    num_neighbours = A.sum(dim=-1, keepdims=True)
+    A_adj = A.clone()
+
+    for node in range(A_adj.shape[0]):
+        if num_neighbours[node] > 1:
+            # if the node has parents, remove the self-connection
+            A_adj[node][node] = 0
+    
+    return A_adj.numpy()
+
+def extend_adj_mat_with_indept_nodes(adjacency_matrix, num_dept_nodes, num_indept_nodes):
+        """
+        Takes is an adj. mat. A and number of independent nodes to add to it and returns 
+        a new adj mat of the form
+        [A, 0,
+         0, I ]
+        This allows us to model latents for which we don't have explicit labals / connections etc as indept latents
+        """
+        
+        zeros_upper_right = torch.zeros(size=(num_dept_nodes, num_indept_nodes))
+        zeros_lower_left = torch.zeros(size=(num_indept_nodes, num_dept_nodes))
+        I = torch.eye(num_indept_nodes)
+
+        upper_rows = torch.cat([adjacency_matrix, zeros_upper_right], dim=1) # along columns
+        lower_rows = torch.cat([zeros_lower_left, I], dim=1) # along rows
+
+        extended_adj_mat = torch.cat([upper_rows, lower_rows], dim=0) # along rows
+        
+        return extended_adj_mat
 
 def find_top_level_nodes(adj_mat):
     

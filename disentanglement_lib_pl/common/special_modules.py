@@ -1,3 +1,4 @@
+from turtle import forward
 import numpy as np
 import torch
 from torch import nn
@@ -315,7 +316,7 @@ class SimpleGNNLayer(nn.Module):
         self.in_node_feat_dim = in_node_feat_dim
         self.out_node_feat_dim = out_node_feat_dim
         self.is_final_layer = is_final_layer
-        self.A = adj_mat.T # this is reqd because the store mat is in from-to form but the impl needs to-from
+        self.A = adj_mat.T # this is reqd because the stored mat is in from-to form but the impl needs to-from
 
         self.num_neighbours = self.A.sum(dim=-1, keepdims=True)
         self.projection = nn.Linear(self.in_node_feat_dim, self.out_node_feat_dim)
@@ -344,6 +345,45 @@ class SimpleGNNLayer(nn.Module):
     def __repr__(self):
         
         return self.projection.__repr__() + f" is_final_layer={self.is_final_layer}"
+
+class PriorGNNLayer(nn.Module):
+    """
+    For now in this impl. all prior nodes have 1-D features 
+    """
+    def __init__(self, num_nodes, adj_mat, is_final_layer=False):
+        super().__init__()
+
+        self.num_nodes = num_nodes
+        self.is_final_layer = is_final_layer
+        self.A = adj_mat.T # this is reqd because the stored mat is in from-to form but the impl needs to-from
+
+        self.num_neighbours = self.A.sum(dim=-1, keepdims=True)
+
+        # Represents a diagonal weight matrix W so that all dims can be 
+        # multiplied by a unique scalar i.e. z = Wg + b
+        # Features are 1-D
+        self.projection_W = nn.Parameter(torch.Tensor(self.num_nodes))
+        self.projection_b = nn.Parameter(torch.Tensor(self.num_nodes))
+
+        self._init_params()
+    
+    def _init_params(self):
+        
+        init.kaiming_normal_(self.projection_W, mode='fan_in')
+        self.projection_b.data.fill_(0)
+    
+    def forward(self, node_feats):
+        
+        self.A = self.A.to(node_feats.device)
+        self.num_neighbours = self.num_neighbours.to(node_feats.device)
+        self.projection_W = self.projection_W.to(node_feats.device)
+        self.projection_b = self.projection_b.to(node_feats.device)
+
+        node_feats = self.projection_W.mul(node_feats) + self.projection_b
+        node_feats = torch.matmul(self.A, node_feats)
+        node_feats = node_feats / self.num_neighbours
+
+        return node_feats if self.is_final_layer else torch.tanh(node_feats)
 
 class BifurcatedGNNLayer(nn.Module):
     """
@@ -514,4 +554,67 @@ class SupervisedRegulariser(nn.Module):
             raise NotImplemented()
 
 
+class GroundTruthBasedPriorNetwork(nn.Module):
 
+    def __init__(self, num_nodes, adj_mat):
+        
+        super().__init__()
+
+        # transpose is reqd because the stored mat is in from-to form but the impl needs to-from.
+        # unlike other modules, here we need a numpy mat because we have to use nonzero()
+        self.A = adj_mat
+        self.num_nodes = num_nodes
+        self.num_neighbours = self.A.sum(axis=-1, keepdims=True)
+        print(self.A)
+        print(self.num_neighbours)
+        self.dist_param_nets = self._get_dist_param_nets()
+        
+
+    def forward(self, gt_labels):
+        
+        """"
+        gt_labels has shape (batch, l_dim)
+        """
+        all_mus = []
+        
+        for node_idx, prior_module in enumerate(self.dist_param_nets):
+            
+            # get non-zero index
+            parents_idx = self.A[node_idx].nonzero()[0]
+            #print("parents_idx")
+            #print(parents_idx)
+            parents_values = gt_labels[:, parents_idx]
+            mu_given_pa = prior_module(parents_values)
+
+            all_mus.append(mu_given_pa)
+
+        # mu_given_pa has shape (batch, 1) so we concat all of them together
+        # Return shape is again (batch, l_dim)
+        # I'm using fixed Std=1 here, hence zeros in 2nd return val
+        # change (B, l_dim) into (B, l_dim, 1) which represents l_dim nodes with 1d feature
+        node_aligned_shape = (*gt_labels.size(), 1)
+        mus = torch.cat(all_mus, dim=1).reshape(node_aligned_shape)
+        logvars = torch.zeros(size=node_aligned_shape).to(mus.device)
+        
+        return mus, logvars
+    
+    def _get_dist_param_nets(self):
+
+        modules_list = []
+
+        for node_idx in range(self.num_nodes):
+            
+            # for each node we figure out how many parents does it have.
+            # This helps us determine the intermediate layer value
+            num_parents = int(self.num_neighbours[node_idx])
+            #print(num_parents)
+            # this module produces prior gt based \mu for this node given gt values of the parents 
+            modules_list.append(
+                    nn.Sequential(
+                        nn.Linear(num_parents, num_parents * 2), 
+                        nn.Tanh(),
+                        nn.Linear(num_parents * 2, 1)
+                    )
+            )
+        
+        return nn.ModuleList(modules_list)

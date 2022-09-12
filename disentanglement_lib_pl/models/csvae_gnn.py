@@ -8,13 +8,11 @@ import torch.nn.functional as F
 from architectures.encoders.simple_conv64 import MultiScaleEncoder
 from architectures.decoders.simple_conv64 import SimpleConv64CommAss
 
-from common.ops import kl_divergence_diag_mu_var_per_node, kl_divergence_mu0_var1_per_node, reparametrize, Flatten3D
+from common.ops import kl_divergence_diag_mu_var_per_node, reparametrize, Flatten3D
 from common import constants as c
 from common import dag_utils
 from common import utils
-from common.special_modules import SimpleGNNLayer, SupervisedRegulariser, BifurcatedGNNLayer
-
-import pdb
+from common.special_modules import SimpleGNNLayer, GroundTruthBasedPriorNetwork, SupervisedRegulariser, BifurcatedGNNLayer
 
 class GNNBasedConceptStructuredVAE(nn.Module):
     """
@@ -44,8 +42,10 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.add_classification_loss = c.AUX_CLASSIFICATION in network_args.loss_terms
         self.dept_adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
         self.adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
+        self.np_A = dag_utils.adjust_adj_mat_for_prior(self.dept_adjacency_matrix)
         
         print(self.dept_adjacency_matrix)
+        print(self.np_A)
         
         # Model latents for which we do have labels / DAG connections 
         self.num_dept_nodes = len(self.dept_adjacency_matrix)
@@ -53,7 +53,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.num_indept_nodes = network_args.num_indept_nodes
                 
         if self.num_indept_nodes > 0:
-            self.adjacency_matrix = self._extend_adj_mat_with_indept_nodes(self.dept_adjacency_matrix, self.num_dept_nodes, self.num_indept_nodes)
+            self.adjacency_matrix = dag_utils.extend_adj_mat_with_indept_nodes(self.dept_adjacency_matrix, self.num_dept_nodes, self.num_indept_nodes)
             print(self.adjacency_matrix)
 
         # total nodes in GNN (z + v latents)
@@ -100,8 +100,9 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # converts exogenous vars to prior latents 
         # P(Z|epsilon, A)
         # TODO: revisit after introduction of indept nodes
-        self.prior_gnn = self._init_gnn(gnn_function="prior")
-
+        #self.prior_gnn = self._init_gnn(gnn_function="prior")
+        self.prior_gnn = self.init_gt_prior_network(self.num_nodes, self.np_A)
+        
         in_node_feat_dim, out_node_feat_dim = (self.z_dim + self.d_dim) * 2, (self.z_dim + self.d_dim) * 2
         # takes in encoded features and spits out recons
         # we do // 2 because we split the output features into mu and logvar 
@@ -116,8 +117,6 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         print("GNNBasedConceptStructuredVAE Model Initialized")
 
     def forward(self, x_true, **kwargs):
-
-        #pdb.set_trace()
 
         fwd_pass_results = dict()
 
@@ -142,7 +141,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         x_recon = self.decode(posterior_z)
 
         # Enforcing prior structure - sample from prior GNN and use it to predict latents
-        prior_mu, prior_logvar = self.prior_to_latents_prediction(x_true.device)
+        prior_mu, prior_logvar = self.prior_to_latents_prediction(x_true.device, gt_labels=kwargs['labels'])
 
         fwd_pass_results.update({
             "x_recon": x_recon,
@@ -167,6 +166,10 @@ class GNNBasedConceptStructuredVAE(nn.Module):
             
         return nn.Sequential(*gnn_layers)
     
+    def init_gt_prior_network(self, num_nodes, A):
+    
+        return GroundTruthBasedPriorNetwork(num_nodes, A)
+
     def _init_bf_gnn(self):
         
         dag_levels = len(self.dag_layer_nodes)
@@ -192,27 +195,6 @@ class GNNBasedConceptStructuredVAE(nn.Module):
             )
         
         return nn.Sequential(*gnn_layers)
-
-    def _extend_adj_mat_with_indept_nodes(self, adjacency_matrix, num_dept_nodes, num_indept_nodes):
-        """
-        Takes is an adj. mat. A and number of independent nodes to add to it and returns 
-        a new adj mat of the form
-        [A, 0,
-         0, I ]
-        This allows us to model latents for which we don't have explicit labals / connections etc as indept latents
-        """
-        
-        zeros_upper_right = torch.zeros(size=(num_dept_nodes, num_indept_nodes))
-        zeros_lower_left = torch.zeros(size=(num_indept_nodes, num_dept_nodes))
-        I = torch.eye(num_indept_nodes)
-
-        upper_rows = torch.cat([adjacency_matrix, zeros_upper_right], dim=1) # along columns
-        lower_rows = torch.cat([zeros_lower_left, I], dim=1) # along rows
-
-        extended_adj_mat = torch.cat([upper_rows, lower_rows], dim=0) # along rows
-        
-        return extended_adj_mat
-
 
     def _init_classification_network(self):
 
@@ -379,6 +361,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
         exogen_vars_sample = torch.randn(size=(num_samples, self.num_dept_nodes, self.encoder_cnn.out_feature_dim),
                                          device=current_device)
+        # TODO: update for gt based prior
         prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
         prior_z = reparametrize(prior_mu, prior_logvar)
         #print(prior_z.shape)
@@ -393,10 +376,14 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         x_sampled = self.decode(prior_z)
         return x_sampled
 
-    def prior_to_latents_prediction(self, current_device):
-         
-        exogen_vars_sample = self._get_exogen_samples(current_device)
-        prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
+    def prior_to_latents_prediction(self, current_device, gt_labels=None):
+        
+        if gt_labels is not None:
+            prior_mu, prior_logvar = self.prior_gnn(gt_labels)
+        
+        else:
+            exogen_vars_sample = self._get_exogen_samples(current_device)
+            prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
 
         return prior_mu, prior_logvar
 

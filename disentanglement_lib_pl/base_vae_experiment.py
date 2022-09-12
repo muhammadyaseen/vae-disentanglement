@@ -100,7 +100,7 @@ class BaseVAEExperiment(pl.LightningModule):
         vutils.save_image(recon_grid, recon_images_path)
         self.logger.experiment.add_image("Reconstructed Images", recon_grid, self.current_epoch)
         
-        self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(36), self.current_epoch)
+        #self.logger.experiment.add_image("Sampled Images", self._get_sampled_images(36), self.current_epoch)
         
         # 3. Evaluate disent metrics
         if self.params["evaluation_metrics"]:
@@ -246,7 +246,8 @@ class BaseVAEExperiment(pl.LightningModule):
         current_device = next(self.model.parameters()).device
         test_input, test_label = next(iter(self.sample_loader))
         test_input = test_input.to(current_device)
-
+        test_label = test_label.to(current_device)
+        
         fwd_pass_results = self.model.forward(test_input, current_device=current_device, labels = test_label)
         recons = fwd_pass_results['x_recon']
         inputs_and_reconds_side_by_side = torch.cat([test_input, recons], dim = 3)
