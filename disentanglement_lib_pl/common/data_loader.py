@@ -184,7 +184,7 @@ class DisentanglementLibDataset(Dataset):
 
 def _get_transforms_for_dataset(dataset_name, image_size):
 
-    if dataset_name in ["celeba", "flow", "pendulum"]:
+    if dataset_name in ["celeba", "flow", "pendulum", "pendulum_switch"]:
         return transforms.Compose([
         transforms.Resize((image_size, image_size)),
         transforms.ToTensor()])
@@ -349,7 +349,7 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
                 'split': split}
         dset = ToyDataset
     
-    elif dataset_name in ["flow", "pendulum"]:
+    elif dataset_name in ["flow", "pendulum", "pendulum_switch"]:
         
         root = os.path.join(dset_dir, dataset_name)
         
