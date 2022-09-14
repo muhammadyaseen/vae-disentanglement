@@ -219,7 +219,7 @@ class BaseVAEExperiment(pl.LightningModule):
         
         self.sample_loader = data_loader.get_dataloader(self.params['dataset'],
                                             self.params['datapath'],
-                                            shuffle=False,
+                                            shuffle=True,
                                             batch_size=self.params['batch_size'],
                                             droplast=self.params['droplast'],
                                             num_workers=self.params['num_workers'],

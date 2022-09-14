@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NAME="pendulum_gt_prior"
+NAME="pendulum_switch"
 echo "name=$NAME"
 
 PROJECT_ROOT=../
@@ -19,7 +19,7 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --dset_name=$DATASET_NAME \
     --decoder=SimpleConv64CommAss \
     --w_kld=1.0 \
-    --w_recon=1.0 \
+    --w_recon=10.0 \
     --w_sup_reg=1.0 \
     --num_workers=0 \
     --batch_size=64 \
