@@ -4,42 +4,11 @@
     "type": "split",
     "children": [
       {
-        "id": "23608ff4065131ff",
+        "id": "e1e5e4894539d65d",
         "type": "leaf",
-        "dimension": 32.107157137145144,
         "state": {
-          "type": "markdown",
-          "state": {
-            "file": "papers/CausalVAE.md",
-            "mode": "source",
-            "source": false
-          }
-        }
-      },
-      {
-        "id": "bfaa4ed46111df1a",
-        "type": "leaf",
-        "dimension": 32.22710915633746,
-        "state": {
-          "type": "markdown",
-          "state": {
-            "file": "thought-clarifying-notes/Osman's comments about Image SCM idea.md",
-            "mode": "source",
-            "source": false
-          }
-        }
-      },
-      {
-        "id": "9cf32b681525b1dc",
-        "type": "leaf",
-        "dimension": 35.66573370651739,
-        "state": {
-          "type": "markdown",
-          "state": {
-            "file": "Image SCM Idea Formalisation.md",
-            "mode": "source",
-            "source": false
-          }
+          "type": "empty",
+          "state": {}
         }
       }
     ],
@@ -80,7 +49,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 224.5
+    "width": 215.5
   },
   "right": {
     "id": "6b18d73fee2a0408",
@@ -96,7 +65,6 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "thought-clarifying-notes/Osman's comments about Image SCM idea.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -114,17 +82,17 @@
     "width": 300,
     "collapsed": true
   },
-  "active": "bfaa4ed46111df1a",
+  "active": "091dff956aba6eff",
   "lastOpenFiles": [
-    "thought-clarifying-notes/Thinking Aloud.md",
+    "papers/Toy Models of Superposition.md",
     "papers/CausalVAE.md",
     "Image SCM Idea Formalisation.md",
+    "thought-clarifying-notes/Osman's comments about Image SCM idea.md",
+    "thought-clarifying-notes/Thinking Aloud.md",
     "thought-clarifying-notes/Talking to Jilles.md",
     "Plan so far.md",
     "todos.md",
     "ideas/Finding the right weightage for Loss func terms.md",
-    "ideas/Minimal Cost Latent Structure Search.md",
-    "Urdu Test.md",
-    "papers/VACA.md"
+    "ideas/Minimal Cost Latent Structure Search.md"
   ]
 }

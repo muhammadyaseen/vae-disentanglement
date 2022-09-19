@@ -93,7 +93,7 @@ def show_images_grid(imgs_, num_images=25):
 """
 End: dsprites notebook functions
 """
-def __show(imgs, **kwargs):
+def show_image_grid_pt(imgs, **kwargs):
     if not isinstance(imgs, list):
         imgs = [imgs]
     fig, axs = plt.subplots(ncols=len(imgs), squeeze=False, **kwargs)
@@ -160,9 +160,9 @@ def __handle_celeba(dset_dir):
 
     return CustomImageFolder(**data_kwargs)
 
-def __handle_pendulum(dset_dir):
+def __handle_pendulum(dset_dir, dset_name):
     
-    root = os.path.join(dset_dir, 'pendulum')
+    root = os.path.join(dset_dir, dset_name)
     labels_file = os.path.join(root, 'pendulum_labels.csv')
     labels_all = np.genfromtxt(labels_file, delimiter=',', names=True)
     data_kwargs = {'root': root,
@@ -170,7 +170,7 @@ def __handle_pendulum(dset_dir):
                 'label_weights': [],
                 'class_values': [],
                 'num_channels': 3,
-                'name': 'pendulum',
+                'name': dset_name,
                 'seed': 123,
                 'transforms': transforms.Compose([
                 transforms.Resize((64, 64)),
@@ -200,8 +200,8 @@ def get_configured_dataset(dset_name):
         dataset = ThreeShapesDataset(root="../datasets/threeshapes/", split="train", transforms=transforms.ToTensor())
     elif dset_name == 'celeba':
         dataset = __handle_celeba("../datasets/")
-    elif dset_name == 'pendulum':
-        dataset = __handle_pendulum("../datasets/")
+    elif dset_name in ['pendulum','pendulum_switch']:
+        dataset = __handle_pendulum("../datasets/", dset_name)
     else:
         raise NotImplementedError
 
@@ -559,7 +559,7 @@ def show_traversal_images(vae_model, anchor_image, limit, interp_step, dim=-1, m
     traversed_images_stacked = torch.stack([t_img.squeeze(0) for _ , t_img in traversed_images], dim=0)
     img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=nrow, value_range=(0.0,1.0), pad_value=1.0)
 
-    __show(img_grid, **kwargs)
+    show_image_grid(img_grid, **kwargs)
 
 
 def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_dim , beta, 
@@ -1036,7 +1036,7 @@ def csvaegnn_show_traversal_images(vae_model, anchor_image, limit, interp_step, 
     traversed_images_stacked = torch.stack([t_img.squeeze(0) for t_img in traversed_images], dim=0)
     img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=nrow, value_range=(0.0,1.0), pad_value=1.0)
 
-    __show(img_grid, **kwargs)
+    show_image_grid(img_grid, **kwargs)
 
 def csvaegnn_do_latent_traversal_scatter(vae_model, ref_img, limit=3, inter=2/3, 
                                         node_to_explore=0, dim_to_explore=0, mode='relative', 
@@ -1166,8 +1166,7 @@ def csvaegnn_get_latent_activations_with_labels_for_scatter(vae_model, dataset_l
         
     return mu_batches, label_batches
 
-
-def intervene_upper_layers(vae_model, x, intervention_level, intervention_nodes, intervention_values):
+def csvaegnn_intervene_upper_layers(vae_model, x, intervention_level, intervention_nodes, intervention_values):
     """
     Function assumes 1-d latent space for node features
 
@@ -1210,3 +1209,53 @@ def intervene_upper_layers(vae_model, x, intervention_level, intervention_nodes,
 
     return samples
     
+def get_prior_mus_given_gt_labels(dataloader, vae_model, l_dim, current_device, batch_size, batches):
+    
+    B = batches if batches is not None else len(dataloader)
+    prior_mu_batches = np.zeros(shape=(batch_size * B, l_dim))
+    gt_batches = np.zeros(shape=(batch_size * B, l_dim))
+    
+    batches_processed = 0
+    
+    with torch.no_grad():
+        for _, label_batch in dataloader:
+            
+            if batches is not None and batches_processed >= batches:
+                break
+            
+            label_batch = label_batch.to(current_device)
+            prior_mu_batch, _ = vae_model.prior_gnn(label_batch)
+
+            # convert to numpy format so that we can easily use in matplotlib
+            prior_mu_batch = prior_mu_batch.squeeze().detach().cpu().numpy()
+            label_batch = label_batch.cpu().numpy()
+            
+            for i in range(batch_size):
+                prior_mu_batches[batches_processed*batch_size + i] = prior_mu_batch[i]
+                gt_batches[batches_processed*batch_size + i] = label_batch[i]
+
+            batches_processed += 1
+    
+    return prior_mu_batches, gt_batches
+
+def marginal_node_effect(vae_model, node_idx, node_value, latent_act_joint_dist, samples=1):
+    """
+    latent_act_joint_dist: Can be the output of `csvaegnn_get_latent_activations_with_labels_for_scatter`
+    
+    """
+    samples = []
+
+    for _ in range(samples):
+        
+        # choose any random image's activation. This can be seen as 
+        # sampling from q(z|X).
+        random_idx = np.random.choice(latent_act_joint_dist.size[0])
+        z_sample = latent_act_joint_dist[random_idx]
+        
+        # Intervene do(z_i = C)
+        z_sample[node_idx] = node_value
+        
+        # Sample from p(X|z_js, do(z_i = C))
+        samples.append(vae_model.decode(z_sample))
+
+    return samples

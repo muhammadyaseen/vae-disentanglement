@@ -353,9 +353,10 @@ def make_dirs(args):
     os.makedirs(args.train_output_dir, exist_ok=True)
     os.makedirs(args.test_output_dir, exist_ok=True)
 
-def save_cmdline_params(args):
+def save_cmdline_params(args, logdir):
     
-    cmdline_params_dir = os.path.join(args.ckpt_dir, args.expr_name)
+    #cmdline_params_dir = os.path.join(args.ckpt_dir, args.expr_name)
+    cmdline_params_dir = logdir
     os.makedirs(cmdline_params_dir, exist_ok=True)
     cmdline_params_file = os.path.join(cmdline_params_dir, "run-params.txt")
     

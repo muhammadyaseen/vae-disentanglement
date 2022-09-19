@@ -144,7 +144,8 @@ def main(_args):
 
     os.makedirs(os.path.join(tb_logger.log_dir, "recon_images"), exist_ok=True)
     os.makedirs(os.path.join(tb_logger.log_dir, "latent_space_plots"), exist_ok=True)
-    
+    save_cmdline_params(cmdline_args, tb_logger.log_dir)
+
     # load the model associated with args.alg
     model_cl = getattr(models, _args.alg)
     model = model_cl(_args)

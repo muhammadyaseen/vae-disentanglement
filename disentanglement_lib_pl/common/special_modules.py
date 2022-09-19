@@ -315,8 +315,8 @@ class SimpleGNNLayer(nn.Module):
         self.in_node_feat_dim = in_node_feat_dim
         self.out_node_feat_dim = out_node_feat_dim
         self.is_final_layer = is_final_layer
-        # TODO: check if T is reqd
-        self.A = adj_mat.T # this is reqd because the stored mat is in from-to form but the impl needs to-from
+        # Make sure that the stored mat is in to-from form
+        self.A = adj_mat
 
         self.num_neighbours = self.A.sum(dim=-1, keepdims=True)
         self.projection = nn.Linear(self.in_node_feat_dim, self.out_node_feat_dim)
@@ -560,13 +560,11 @@ class GroundTruthBasedPriorNetwork(nn.Module):
         
         super().__init__()
 
-        # transpose is reqd because the stored mat is in from-to form but the impl needs to-from.
         # unlike other modules, here we need a numpy mat because we have to use nonzero()
         self.A = adj_mat
         self.num_nodes = num_nodes
         self.num_neighbours = self.A.sum(axis=-1, keepdims=True)
-        print(self.A)
-        print(self.num_neighbours)
+        
         self.dist_param_nets = self._get_dist_param_nets()
         
 

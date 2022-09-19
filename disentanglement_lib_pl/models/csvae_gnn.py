@@ -44,8 +44,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
         self.np_A = dag_utils.adjust_adj_mat_for_prior(self.dept_adjacency_matrix)
         
-        print(self.dept_adjacency_matrix)
-        print(self.np_A)
+        print("Posterior Adj mat: ", self.dept_adjacency_matrix)
+        print("Prior Adj mat: ", self.np_A)
         
         # Model latents for which we do have labels / DAG connections 
         self.num_dept_nodes = len(self.dept_adjacency_matrix)
