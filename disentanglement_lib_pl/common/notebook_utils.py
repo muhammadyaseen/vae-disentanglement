@@ -1238,8 +1238,12 @@ def get_prior_mus_given_gt_labels(dataloader, vae_model, l_dim, current_device, 
     
     return prior_mu_batches, gt_batches
 
-def marginal_node_effect(vae_model, node_idx, node_value, latent_act_joint_dist, samples=1):
+def marginal_node_effect_at_final_level(vae_model, latent_act_joint_dist, node_idx, node_value, samples=1):
     """
+    This func can only intervene on the final layer of GNN.
+    Thus the cascade of cause to effect wont be visible thru this function.
+    In terms of DAG, this func can only meaningfully intervene on the 'leaves'
+
     latent_act_joint_dist: Can be the output of `csvaegnn_get_latent_activations_with_labels_for_scatter`
     
     """

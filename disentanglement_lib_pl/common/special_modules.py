@@ -603,10 +603,10 @@ class GroundTruthBasedPriorNetwork(nn.Module):
         for node_idx in range(self.num_nodes):
             
             # for each node we figure out how many parents does it have.
-            # This helps us determine the intermediate layer value
+            # This helps us determine the no. of units in intermediate layer
             num_parents = int(self.num_neighbours[node_idx])
             #print(num_parents)
-            # this module produces prior gt based \mu for this node given gt values of the parents 
+            # this module produces prior \mu for this node given gt values of the parents 
             modules_list.append(
                     nn.Sequential(
                         nn.Linear(num_parents, num_parents * 2), 

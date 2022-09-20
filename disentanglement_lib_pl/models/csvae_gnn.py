@@ -102,7 +102,9 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # TODO: revisit after introduction of indept nodes
         #self.prior_gnn = self._init_gnn(gnn_function="prior")
         self.prior_gnn = self.init_gt_prior_network(self.num_nodes, self.np_A)
-        
+        self.gt_based_prior = type(self.prior_gnn) == GroundTruthBasedPriorNetwork
+        print("GT based prior: ", self.gt_based_prior)
+
         in_node_feat_dim, out_node_feat_dim = (self.z_dim + self.d_dim) * 2, (self.z_dim + self.d_dim) * 2
         # takes in encoded features and spits out recons
         # we do // 2 because we split the output features into mu and logvar 
@@ -378,7 +380,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
     def prior_to_latents_prediction(self, current_device, gt_labels=None):
         
-        if gt_labels is not None:
+        if self.gt_based_prior:
             prior_mu, prior_logvar = self.prior_gnn(gt_labels)
         
         else:

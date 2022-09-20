@@ -185,6 +185,5 @@ if __name__ == "__main__":
 
     setup_logging(cmdline_args.verbose)
     initialize_seeds(cmdline_args.seed)
-    save_cmdline_params(cmdline_args)
    
     main(cmdline_args)
