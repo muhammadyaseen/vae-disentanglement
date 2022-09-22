@@ -50,9 +50,16 @@ class SimpleConv64CommAss(BaseImageEncoder):
     """
     Encoder as used in 'Challenging Common Assumptions in the Unsupervised Learning of Disentangled Representations'
     """
-    def __init__(self, latent_dim, num_channels, image_size):
+    def __init__(self, latent_dim, num_channels, image_size, for_gnn=False, num_nodes=None, node_feat_dim=None):
         super().__init__(latent_dim, num_channels, image_size)
         assert image_size == 64, 'This model only works with image size 64x64.'
+        
+        # the following three vars only become relevant when this Encoder CNN is used 
+        # to provide initial node features to and Encoder GNN
+         
+        self.for_gnn = for_gnn
+        self.num_nodes = num_nodes
+        self.out_feature_dim = node_feat_dim
 
         self.main = nn.Sequential(
             nn.Conv2d(num_channels, 32, 4, 2), # B, 32, 31 x 31
@@ -72,7 +79,15 @@ class SimpleConv64CommAss(BaseImageEncoder):
         init_layers(self._modules)
 
     def forward(self, x):
-        return self.main(x)
+        
+        fwd_result = self.main(x)
+        
+        if self.for_gnn:
+            batch_size = x.size()[0]
+            fwd_result = fwd_result.reshape(batch_size, self.num_nodes, self.out_feature_dim)
+        
+        return fwd_result
+
 
 class SimpleGaussianConv64CommAss(SimpleConv64CommAss):
     def __init__(self, latent_dim, num_channels, image_size):

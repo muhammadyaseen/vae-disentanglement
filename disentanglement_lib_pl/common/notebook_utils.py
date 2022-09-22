@@ -1193,6 +1193,7 @@ def csvaegnn_intervene_upper_layers(vae_model, x, intervention_level, interventi
                 # if this is the intervention level we have to replace the computed 
                 # value for nodes on which we're intervening to the given intervention_values
                 if g == intervention_level:
+                    # if in final level
                     if g == gnn_levels - 1:
                         mu, logvar = z
                         mu[:, intervention_nodes, 0] = intervention_value

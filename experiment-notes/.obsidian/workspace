@@ -7,8 +7,12 @@
         "id": "e1e5e4894539d65d",
         "type": "leaf",
         "state": {
-          "type": "empty",
-          "state": {}
+          "type": "markdown",
+          "state": {
+            "file": "daily.md",
+            "mode": "source",
+            "source": false
+          }
         }
       }
     ],
@@ -65,6 +69,7 @@
             "state": {
               "type": "backlink",
               "state": {
+                "file": "daily.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -82,7 +87,7 @@
     "width": 300,
     "collapsed": true
   },
-  "active": "091dff956aba6eff",
+  "active": "e1e5e4894539d65d",
   "lastOpenFiles": [
     "papers/Toy Models of Superposition.md",
     "papers/CausalVAE.md",

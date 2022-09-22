@@ -5,8 +5,9 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from architectures.encoders.simple_conv64 import MultiScaleEncoder
-from architectures.decoders.simple_conv64 import SimpleConv64CommAss
+from architectures import encoders, decoders
+ MultiScaleEncoder, SimpleConv64CommAss
+SimpleConv64CommAss
 
 from common.ops import kl_divergence_diag_mu_var_per_node, reparametrize, Flatten3D
 from common import constants as c
@@ -44,8 +45,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
         self.np_A = dag_utils.adjust_adj_mat_for_prior(self.dept_adjacency_matrix)
         
-        print("Posterior Adj mat: ", self.dept_adjacency_matrix)
-        print("Prior Adj mat: ", self.np_A)
+        print("Posterior mat: ", self.dept_adjacency_matrix)
+        print("Prior mat: ", self.np_A)
         
         # Model latents for which we do have labels / DAG connections 
         self.num_dept_nodes = len(self.dept_adjacency_matrix)
@@ -85,13 +86,16 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # encoder and decoder
         # multiscale encoder
         # TODO: currently uses 3 feats per node, but this should be adjustable
-        msenc_feature_dim = self.num_nodes * 3
+        node_feats_to_take = 4
+        msenc_feature_dim = self.num_nodes * node_feats_to_take
         # MSEnc outputs features of shape (batch, V, 3 * (out_feature_dim//num_nodes))
         # in current case it will be (b,V,9) i.e. each node gets a 9-dim feature vector
 
         # msenc_feature_dim here is the total feature dims.. so if we have 2 nodes and 3 feats per node
         # msenc_feature_dim will / should be 6. The out_feature_dim is stored in self.out_feature_dim
-        self.encoder_cnn = MultiScaleEncoder(msenc_feature_dim, self.num_channels, self.num_nodes)
+        #self.encoder_cnn = encoders.simple_conv64.MultiScaleEncoder(msenc_feature_dim, self.num_channels, self.num_nodes)
+        self.encoder_cnn = encoders.simple_conv64.SimpleConv64CommAss(msenc_feature_dim, self.num_channels, self.image_size,
+                                                                        for_gnn=True, num_nodes=self.num_nodes, node_feat_dim=node_feats_to_take)
         
         # uses multi scale features to init node feats
         # Q(Z|X,A) and Q(V|X)
@@ -110,7 +114,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # we do // 2 because we split the output features into mu and logvar 
         # but we only need mu-dim components for recon
         decoder_input_dim = self.num_nodes * (out_node_feat_dim // 2)
-        self.decoder_dcnn = SimpleConv64CommAss(decoder_input_dim, self.num_channels, self.image_size)
+        self.decoder_dcnn = decoders.simple_conv64.SimpleConv64CommAss(decoder_input_dim, self.num_channels, self.image_size)
         
         # Supervised reg
         self.latents_classifier = self._init_classification_network() if self.add_classification_loss else None
