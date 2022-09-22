@@ -1,14 +1,14 @@
 #!/bin/bash
 #SBATCH --account=hai_cs_vaes
 #SBATCH --gres=gpu:1
-#SBATCH --partition=develbooster
+#SBATCH --partition=booster
 #SBATCH --nodes=1
 #SBATCH --output=hai_cs_vaes-gpu-out-and-err.%j
 #SBATCH --error=hai_cs_vaes-gpu-out-and-err.%j
 #SBATCH --job-name=hai_cs_vaes-CS-VAE
 #SBATCH --mail-user=muhammad.yaseen@cispa.de
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
-#SBATCH --time=00:59:00
+#SBATCH --time=02:00:00
 
 NAME="CS_VAE_dsprites_correlated_restructure_test"
 echo "name=$NAME"

@@ -6,9 +6,6 @@ from torch import nn
 import torch.nn.functional as F
 
 from architectures import encoders, decoders
- MultiScaleEncoder, SimpleConv64CommAss
-SimpleConv64CommAss
-
 from common.ops import kl_divergence_diag_mu_var_per_node, reparametrize, Flatten3D
 from common import constants as c
 from common import dag_utils

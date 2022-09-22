@@ -10,13 +10,13 @@
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
 #SBATCH --time=02:00:00
 
-NAME="pendulum_switch"
+NAME="pendulum_nomr_enc"
 echo "name=$NAME"
 
 # This path will work anywhere in JUWELS-Booster
 PROJECT_ROOT=/vae-disentanglement
 export DISENTANGLEMENT_LIB_DATA=$PROJECT_ROOT/datasets/
-DATASET_NAME=pendulum_switch
+DATASET_NAME=pendulum
 LOGS_DIR=$PROJECT_ROOT/train-logs
 
 # The path after .sif refers to the path within containers
@@ -31,7 +31,7 @@ srun \
     --dset_name=$DATASET_NAME \
     --decoder=SimpleConv64CommAss \
     --w_kld=1.0 \
-    --w_recon=10.0 \
+    --w_recon=1.0 \
     --w_sup_reg=1.0 \
     --num_workers=48 \
     --batch_size=64 \
@@ -42,7 +42,7 @@ srun \
     --lr_G=0.0001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --z_dim 1 \
-    --l_dim 6 \
+    --l_dim 4 \
     --use_loss_weights=False \
     --loss_terms aux_classification 
 
