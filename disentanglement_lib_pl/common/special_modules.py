@@ -556,7 +556,7 @@ class SupervisedRegulariser(nn.Module):
 
 class GroundTruthBasedPriorNetwork(nn.Module):
 
-    def __init__(self, num_nodes, adj_mat):
+    def __init__(self, num_nodes, adj_mat, fixed_variance=True):
         
         super().__init__()
 
@@ -564,7 +564,9 @@ class GroundTruthBasedPriorNetwork(nn.Module):
         self.A = adj_mat
         self.num_nodes = num_nodes
         self.num_neighbours = self.A.sum(axis=-1, keepdims=True)
-        
+        self.fixed_variance = fixed_variance
+        self.out_dims = 1 if self.fixed_variance else 2
+
         self.dist_param_nets = self._get_dist_param_nets()
         
 
@@ -573,7 +575,9 @@ class GroundTruthBasedPriorNetwork(nn.Module):
         """"
         gt_labels has shape (batch, l_dim)
         """
-        all_mus = []
+        all_dist_params = []
+        node_mus, node_logvars = [], []
+        node_aligned_shape = (*gt_labels.size(), 1)
         
         for node_idx, prior_module in enumerate(self.dist_param_nets):
             
@@ -582,24 +586,33 @@ class GroundTruthBasedPriorNetwork(nn.Module):
             #print("parents_idx")
             #print(parents_idx)
             parents_values = gt_labels[:, parents_idx]
-            mu_given_pa = prior_module(parents_values)
+            dist_params_given_pa = prior_module(parents_values)
 
-            all_mus.append(mu_given_pa)
+            if self.fixed_variance:
+                all_dist_params.append(dist_params_given_pa)
+            else:
+                node_mu, node_logvar = dist_params_given_pa.chunk(2, dim=1)
+                node_mus.append(node_mu)
+                node_logvars.append(node_logvar)
 
-        # mu_given_pa has shape (batch, 1) so we concat all of them together
-        # Return shape is again (batch, l_dim)
-        # I'm using fixed Std=1 here, hence zeros in 2nd return val
-        # change (B, l_dim) into (B, l_dim, 1) which represents l_dim nodes with 1d feature
-        node_aligned_shape = (*gt_labels.size(), 1)
-        mus = torch.cat(all_mus, dim=1).reshape(node_aligned_shape)
-        logvars = torch.zeros(size=node_aligned_shape).to(mus.device)
+        if self.fixed_variance:
+            # mu_given_pa has shape (batch, 1) ( (batch, 2) is variance is not fixed) so we concat all of them together
+            # Return shape is again (batch, l_dim)
+            # I'm using fixed Std=1 here, hence zeros in 2nd return val
+            # change (B, l_dim) into (B, l_dim, 1) which represents l_dim nodes with 1d feature
+            
+            mus = torch.cat(all_dist_params, dim=1).reshape(node_aligned_shape)
+            logvars = torch.zeros(size=node_aligned_shape).to(mus.device)
+        else:
+            mus = torch.cat(node_mus, dim=1).reshape(node_aligned_shape)
+            logvars = torch.cat(node_logvars, dim=1).reshape(node_aligned_shape)
         
         return mus, logvars
     
     def _get_dist_param_nets(self):
 
         modules_list = []
-
+        
         for node_idx in range(self.num_nodes):
             
             # for each node we figure out how many parents does it have.
@@ -611,7 +624,7 @@ class GroundTruthBasedPriorNetwork(nn.Module):
                     nn.Sequential(
                         nn.Linear(num_parents, num_parents * 2), 
                         nn.Tanh(),
-                        nn.Linear(num_parents * 2, 1)
+                        nn.Linear(num_parents * 2, self.out_dims)
                     )
             )
         

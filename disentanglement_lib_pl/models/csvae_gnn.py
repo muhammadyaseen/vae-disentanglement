@@ -171,7 +171,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
     
     def init_gt_prior_network(self, num_nodes, A):
     
-        return GroundTruthBasedPriorNetwork(num_nodes, A)
+        return GroundTruthBasedPriorNetwork(num_nodes, A, fixed_variance=False)
 
     def _init_bf_gnn(self):
         
