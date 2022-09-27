@@ -67,6 +67,7 @@ def get_args(sys_args):
     parser.add_argument('--w_recon', default=1.0, type=float, help='reconstruction loss weight')
     parser.add_argument('--w_kld', default=1.0, type=float, help='main KLD loss weight (e.g. in BetaVAE)')
     parser.add_argument('--w_sup_reg', default=0.0, type=float, help='Supervised reg weight')
+    parser.add_argument('--w_cov_loss', default=0.0, type=float, help='Covariance Loss weight')
     parser.add_argument('--l_zero_reg', default=False, type=str2bool, help='Whether L0-regularization is used or not')
 
     # Loss weights and parameters for [CapacityVAE]

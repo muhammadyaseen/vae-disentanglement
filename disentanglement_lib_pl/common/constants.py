@@ -26,13 +26,14 @@ KLD_LOSS = 'kld_loss'
 TOTAL_VAE_EPOCH = 'total_vae_epoch'
 LEARNING_RATE = 'learning_rate'
 AUX_CLASSIFICATION = 'aux_classification'
+COVARIANCE_LOSS = 'covariance_loss'
 
 # Algorithms
 ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE', 'LadderVAE', 
         'ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization','CSVAE_Toy', 'GNNBasedConceptStructuredVAE',
         'LatentToImage')
 
-LOSS_TERMS = (FACTORVAE, DIPVAE_I, DIPVAE_II, BetaTCVAE, INFOVAE, AUX_CLASSIFICATION)
+LOSS_TERMS = (FACTORVAE, DIPVAE_I, DIPVAE_II, BetaTCVAE, INFOVAE, AUX_CLASSIFICATION, COVARIANCE_LOSS)
 
 # Datasets
 DATASETS = ('dsprites_cond', 'polynomial',

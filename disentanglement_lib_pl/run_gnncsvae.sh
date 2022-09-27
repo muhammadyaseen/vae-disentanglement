@@ -1,13 +1,13 @@
 #!/bin/bash
 
-NAME="pendulum_switch"
+NAME="pendulum_covar_test"
 echo "name=$NAME"
 
 PROJECT_ROOT=../
 echo $PROJECT_ROOT
 
 export DISENTANGLEMENT_LIB_DATA=$PROJECT_ROOT/datasets/
-DATASET_NAME=pendulum_switch
+DATASET_NAME=pendulum
 LOGS_DIR=$PROJECT_ROOT/train-logs
 
 python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
@@ -30,8 +30,9 @@ python $PROJECT_ROOT/disentanglement_lib_pl/experiment_runner.py \
     --lr_G=0.0001 \
     --adjacency_matrix=$PROJECT_ROOT/adjacency_matrices/$DATASET_NAME.pkl \
     --z_dim 1 \
-    --l_dim 6 \
+    --l_dim 4 \
     --use_loss_weights=False \
-    --loss_terms aux_classification \
-    --num_indept_nodes=0 
+    --loss_terms aux_classification covariance_loss \
+    --num_indept_nodes=0 \
+
 

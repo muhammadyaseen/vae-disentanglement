@@ -10,7 +10,7 @@ from common.ops import kl_divergence_diag_mu_var_per_node, reparametrize, Flatte
 from common import constants as c
 from common import dag_utils
 from common import utils
-from common.special_modules import SimpleGNNLayer, GroundTruthBasedPriorNetwork, SupervisedRegulariser, BifurcatedGNNLayer
+from common.special_modules import SimpleGNNLayer, GroundTruthBasedLearnablePrior, SupervisedRegulariser, BifurcatedGNNLayer
 
 class GNNBasedConceptStructuredVAE(nn.Module):
     """
@@ -38,6 +38,8 @@ class GNNBasedConceptStructuredVAE(nn.Module):
             raise ValueError("Unsupported format for adjacency_matrix")
 
         self.add_classification_loss = c.AUX_CLASSIFICATION in network_args.loss_terms
+        self.add_cov_loss = c.COVARIANCE_LOSS in network_args.loss_terms
+
         self.dept_adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
         self.adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
         self.np_A = dag_utils.adjust_adj_mat_for_prior(self.dept_adjacency_matrix)
@@ -68,6 +70,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.w_recon = network_args.w_recon
         self.w_kld = network_args.w_kld
         self.w_sup_reg = network_args.w_sup_reg
+        self.w_cov_loss = 1.0
         self.kl_warmup_epochs = network_args.kl_warmup_epochs
         self.use_loss_weights = network_args.use_loss_weights
 
@@ -103,8 +106,9 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # TODO: revisit after introduction of indept nodes
         #self.prior_gnn = self._init_gnn(gnn_function="prior")
         self.prior_gnn = self.init_gt_prior_network(self.num_nodes, self.np_A, fixed_variance=False)
-        self.gt_based_prior = type(self.prior_gnn) == GroundTruthBasedPriorNetwork
-        print("GT based prior: ", self.gt_based_prior)
+        self.prior_type = "gt_based_fixed" # choices: ["from_noise", "gt_based_learnable", "gt_based_fixed"]
+        #self.gt_based_prior = type(self.prior_gnn) == GroundTruthBasedLearnablePrior
+        print("prior: ", self.prior_type)
 
         in_node_feat_dim, out_node_feat_dim = (self.z_dim + self.d_dim) * 2, (self.z_dim + self.d_dim) * 2
         # takes in encoded features and spits out recons
@@ -170,7 +174,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
     
     def init_gt_prior_network(self, num_nodes, A, fixed_variance):
     
-        return GroundTruthBasedPriorNetwork(num_nodes, A, fixed_variance=fixed_variance)
+        return GroundTruthBasedLearnablePrior(num_nodes, A, fixed_variance=fixed_variance)
 
     def _init_bf_gnn(self):
         
@@ -273,6 +277,28 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         return  kld_loss * self.w_kld, loss_per_node
 
+    def covariance_loss(self, true_latents, node_activations):
+        """
+        true_latents: (B, V)
+        node_activations: (B, V, 1)
+        """
+        
+        # TODO: should it be computed over \mus or z's ??
+        # if we use gt label as \mu for prior, then it makes sense to use mu here, right?
+
+        learned_mus = node_activations.squeeze(2)
+        batch_mean = learned_mus.T.mean(1, keepdims=True)      
+        learned_mus_centered = learned_mus.T - batch_mean
+        learned_cov = torch.matmul(learned_mus_centered, learned_mus_centered.T) / self.batch_size
+        
+        gt_mus = true_latents.T.mean(1, keepdims=True)
+        gt_mus_centered = true_latents.T - gt_mus
+        gt_cov = torch.matmul(gt_mus_centered, gt_mus_centered.T) / self.batch_size
+
+        cov_loss = (learned_cov - gt_cov).pow(2).sum()
+        
+        return cov_loss
+
     def loss_function(self, **kwargs):
         
         output_losses = dict()
@@ -319,14 +345,18 @@ class GNNBasedConceptStructuredVAE(nn.Module):
             output_losses[c.KLD_LOSS] = torch.Tensor([0.0]).to(device=x_recon.device)
         
         # 3. Auxiliary classification loss
+        true_latents = kwargs['true_latents']
+        
         if self.add_classification_loss:
             
-            predicted_latents = kwargs['latents_predicted']
-            true_latents = kwargs['true_latents']
-            
+            predicted_latents = kwargs['latents_predicted']    
             output_losses[c.AUX_CLASSIFICATION], clf_loss_per_layer = self._classification_loss(predicted_latents, true_latents)
             output_losses[c.TOTAL_LOSS] += output_losses[c.AUX_CLASSIFICATION]
             output_losses.update(clf_loss_per_layer)
+
+        if self.add_cov_loss:
+            output_losses[c.COVARIANCE_LOSS] = self.covariance_loss(true_latents, posterior_mu) * self.w_cov_loss
+            output_losses[c.TOTAL_LOSS] += output_losses[c.COVARIANCE_LOSS]
 
         # detach all losses except for the full loss
         
@@ -380,12 +410,16 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
     def prior_to_latents_prediction(self, current_device, gt_labels=None):
         
-        if self.gt_based_prior:
+        if self.prior_type == "gt_based_learnable":
             prior_mu, prior_logvar = self.prior_gnn(gt_labels)
         
-        else:
+        elif self.prior_type == "from_noise":
             exogen_vars_sample = self._get_exogen_samples(current_device)
             prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
+        elif self.prior_type == "gt_based_fixed":
+            prior_mu, prior_logvar = self.gt_based_fixed_prior(gt_labels)
+        else:
+            ValueError("Unknown Prior Type")
 
         return prior_mu, prior_logvar
 
@@ -415,5 +449,13 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         return w_recon, w_kld, w_sup_reg
 
+    def gt_based_fixed_prior(self, gt_labels):
 
+        # gt_labels are of size (B, V) and we need (B,V,1) --
+        # assuming 1-dim node feats
+
+        mus = gt_labels.unsqueeze(2)
+        logvar = torch.zeros(size=mus.size()) # fixed at var = 1 for now
+
+        return mus, logvar
 

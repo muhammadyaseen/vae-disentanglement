@@ -80,6 +80,9 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         if self.model.add_classification_loss:
             self._log_classification_losses(train_step_outputs)
         
+        if self.model.add_cov_loss:
+            self._log_batch_covariance_losses(train_step_outputs)
+
         if self.model.controlled_capacity_increase:
             self.logger.experiment.add_scalar("Controlled_Capacity/Current_Capacity", self.model.current_capacity, self.global_step)
             self.logger.experiment.add_scalar("Controlled_Capacity/Max_Capacity", self.model.max_capacity, self.global_step)
@@ -200,6 +203,11 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             node_name = self.model.node_labels[node_idx]
             clf_loss_node = torch.stack([tso[f'clf_{node_name}'] for tso in train_step_outputs]).mean()
             self.logger.experiment.add_scalar(f"SupReg/clf_{node_name}", clf_loss_node, self.current_epoch)
+
+    def _log_batch_covariance_losses(self, train_step_outputs):
+        print("adding cov plots")
+        cov_loss = torch.stack([tso['covariance_loss'] for tso in train_step_outputs]).mean()
+        self.logger.experiment.add_scalar(f"SupReg/Covariance_Loss", cov_loss, self.current_epoch)
 
     def _save_latent_space_plot(self, num_batches = 200):
 

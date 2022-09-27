@@ -554,7 +554,7 @@ class SupervisedRegulariser(nn.Module):
             raise NotImplemented()
 
 
-class GroundTruthBasedPriorNetwork(nn.Module):
+class GroundTruthBasedLearnablePrior(nn.Module):
 
     def __init__(self, num_nodes, adj_mat, fixed_variance=True):
         
