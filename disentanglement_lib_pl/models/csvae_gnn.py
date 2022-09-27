@@ -104,9 +104,18 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # converts exogenous vars to prior latents 
         # P(Z|epsilon, A)
         # TODO: revisit after introduction of indept nodes
-        #self.prior_gnn = self._init_gnn(gnn_function="prior")
-        self.prior_gnn = self.init_gt_prior_network(self.num_nodes, self.np_A, fixed_variance=False)
+        
         self.prior_type = "gt_based_fixed" # choices: ["from_noise", "gt_based_learnable", "gt_based_fixed"]
+
+        if self.prior_type == "from_noise":
+            self.prior_gnn = self._init_gnn(gnn_function="prior")
+        elif self.prior_type == "gt_based_learnable":
+            self.prior_gnn = self.init_gt_prior_network(self.num_nodes, self.np_A, fixed_variance=False)
+        elif self.prior_type == "gt_based_fixed":
+            self.prior_gnn = None
+        else:
+            ValueError("Unknown Prior type")
+        
         #self.gt_based_prior = type(self.prior_gnn) == GroundTruthBasedLearnablePrior
         print("prior: ", self.prior_type)
 
@@ -417,7 +426,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
             exogen_vars_sample = self._get_exogen_samples(current_device)
             prior_mu, prior_logvar = self.prior_gnn(exogen_vars_sample)
         elif self.prior_type == "gt_based_fixed":
-            prior_mu, prior_logvar = self.gt_based_fixed_prior(gt_labels)
+            prior_mu, prior_logvar = self.gt_based_fixed_prior(gt_labels, current_device)
         else:
             ValueError("Unknown Prior Type")
 
@@ -449,13 +458,13 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         
         return w_recon, w_kld, w_sup_reg
 
-    def gt_based_fixed_prior(self, gt_labels):
+    def gt_based_fixed_prior(self, gt_labels, current_device):
 
         # gt_labels are of size (B, V) and we need (B,V,1) --
         # assuming 1-dim node feats
 
-        mus = gt_labels.unsqueeze(2)
-        logvar = torch.zeros(size=mus.size()) # fixed at var = 1 for now
+        mus = gt_labels.unsqueeze(2).to(current_device)
+        logvar = torch.zeros(size=mus.size(), device=current_device) # fixed at var = 1 for now
 
         return mus, logvar
 
