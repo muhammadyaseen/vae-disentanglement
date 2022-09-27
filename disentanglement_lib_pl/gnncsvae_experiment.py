@@ -222,6 +222,13 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             num_batches
         )
         
+        prior_mus, _ = notebook_utils.get_prior_mus_given_gt_labels(
+            self.model,
+            self.sample_loader,
+            current_device,
+            num_batches
+        )
+
         # for each node and hue combination, plot and save
         for node_idx in range(self.model.num_dept_nodes):
             for hue_idx, hue_factor in enumerate(hue_factors):
@@ -241,7 +248,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
 
         # pairwise activation plot of each node 
         # this can become incomprehensible if there are too many nodes
-        image_file_name = f"pairplot.epoch.{padded_epoch}.jpg"
+        image_file_name = f"posterior_plot.epoch.{padded_epoch}.jpg"
         pairplot_images_path = os.path.join(
                     self.logger.log_dir, 
                     "latent_space_plots", 
@@ -249,3 +256,12 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
                 )
         
         utils.pairwise_node_activation_plots(mus, padded_epoch, pairplot_images_path)
+
+        image_file_name = f"prior_plot.epoch.{padded_epoch}.jpg"
+        pairplot_images_path = os.path.join(
+                    self.logger.log_dir, 
+                    "latent_space_plots", 
+                    image_file_name
+                )
+        
+        utils.pairwise_node_activation_plots(prior_mus, padded_epoch, pairplot_images_path)

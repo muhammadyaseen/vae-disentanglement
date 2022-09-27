@@ -559,7 +559,7 @@ def show_traversal_images(vae_model, anchor_image, limit, interp_step, dim=-1, m
     traversed_images_stacked = torch.stack([t_img.squeeze(0) for _ , t_img in traversed_images], dim=0)
     img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=nrow, value_range=(0.0,1.0), pad_value=1.0)
 
-    show_image_grid(img_grid, **kwargs)
+    show_image_grid_pt(img_grid, **kwargs)
 
 
 def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_dim , beta, 
@@ -1036,7 +1036,7 @@ def csvaegnn_show_traversal_images(vae_model, anchor_image, limit, interp_step, 
     traversed_images_stacked = torch.stack([t_img.squeeze(0) for t_img in traversed_images], dim=0)
     img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=nrow, value_range=(0.0,1.0), pad_value=1.0)
 
-    show_image_grid(img_grid, **kwargs)
+    show_image_grid_pt(img_grid, **kwargs)
 
 def csvaegnn_do_latent_traversal_scatter(vae_model, ref_img, limit=3, inter=2/3, 
                                         node_to_explore=0, dim_to_explore=0, mode='relative', 
@@ -1183,26 +1183,28 @@ def csvaegnn_intervene_upper_layers(vae_model, x, intervention_level, interventi
 
         for intervention_value in intervention_values:
             
-            z = mse.clone()
+            params = mse.clone()
             
             for g, gnn_layer in enumerate(vae_model.encoder_gnn):
             
                 # compute activations at this GNN level
-                z = gnn_layer(z)
+                params = gnn_layer(params)
 
                 # if this is the intervention level we have to replace the computed 
                 # value for nodes on which we're intervening to the given intervention_values
                 if g == intervention_level:
                     # if in final level
                     if g == gnn_levels - 1:
-                        mu, logvar = z
+                        mu, logvar = params
+                        #z_sample = reparametrize(*params)
+                        #z_sample[:, intervention_nodes, 0] = intervention_value
                         mu[:, intervention_nodes, 0] = intervention_value
-                        z = mu, logvar
+                        params = mu, logvar
                     else:
-                        z[:, intervention_nodes, 0] = intervention_value
+                        params[:, intervention_nodes, 0] = intervention_value
 
             # intervention has propagated, now we can recon
-            z_sample = reparametrize(*z)
+            z_sample = reparametrize(*params)
             z_flattened = vae_model.flatten_node_features(z_sample)
             sample = vae_model.decode(z_flattened).data
 
@@ -1210,8 +1212,11 @@ def csvaegnn_intervene_upper_layers(vae_model, x, intervention_level, interventi
 
     return samples
     
-def get_prior_mus_given_gt_labels(dataloader, vae_model, l_dim, current_device, batch_size, batches):
+def get_prior_mus_given_gt_labels(vae_model, dataloader, current_device, batches):
     
+    l_dim = vae_model.l_dim
+    batch_size = vae_model.batch_size
+
     B = batches if batches is not None else len(dataloader)
     prior_mu_batches = np.zeros(shape=(batch_size * B, l_dim))
     gt_batches = np.zeros(shape=(batch_size * B, l_dim))
@@ -1239,7 +1244,7 @@ def get_prior_mus_given_gt_labels(dataloader, vae_model, l_dim, current_device, 
     
     return prior_mu_batches, gt_batches
 
-def marginal_node_effect_at_final_level(vae_model, latent_act_joint_dist, node_idx, node_value, samples=1):
+def marginal_node_effect_at_final_level(vae_model, latent_act_joint_dist, node_idx, node_value, current_device, samples=1):
     """
     This func can only intervene on the final layer of GNN.
     Thus the cascade of cause to effect wont be visible thru this function.
@@ -1260,7 +1265,46 @@ def marginal_node_effect_at_final_level(vae_model, latent_act_joint_dist, node_i
         # Intervene do(z_i = C)
         z_sample[node_idx] = node_value
         
+        # reconstruct
+        # Right now we have (V, feat_dim). We have to add the batch dimension
+        # so it is of shape (1, V, feat_dim) and then can be passed thru model
+        z_sample = z_sample.reshape(1, z_sample.shape[0]) # [np.newaxis,:,:]
+        z_sample = torch.from_numpy(z_sample).type(torch.FloatTensor).to(current_device)
+
         # Sample from p(X|z_js, do(z_i = C))
         samples.append(vae_model.decode(z_sample))
+
+    return samples
+
+def csvaegnn_intervene_final_layer(vae_model, x, intervention_nodes, intervention_values):
+    """
+    Function assumes 1-d latent space for node features
+
+    """
+    
+    samples = []
+    
+    with torch.no_grad():
+        
+        mu, logvar, z = vae_model.encode(x)
+        z_sample = reparametrize(mu, logvar)
+
+        amputated_mat = vae_model.dept_adjacency_matrix
+        amputated_mat[intervention_nodes] = torch.zeros(amputated_mat.size()[0])
+        amputated_mat[intervention_nodes, intervention_nodes] = 1.0
+        print(amputated_mat)
+
+        for intervention_value in intervention_values:
+            
+            z_sample = z.clone()
+            z_sample[:, intervention_nodes, 0] = intervention_value
+
+            # apply amputated matrix to transfer effects
+            z_sample = torch.matmul(amputated_mat, z_sample)
+            # intervention has propagated, now we can recon
+            z_flattened = vae_model.flatten_node_features(z_sample)
+            sample = vae_model.decode(z_flattened).data
+
+            samples.append(sample)
 
     return samples

@@ -102,7 +102,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # P(Z|epsilon, A)
         # TODO: revisit after introduction of indept nodes
         #self.prior_gnn = self._init_gnn(gnn_function="prior")
-        self.prior_gnn = self.init_gt_prior_network(self.num_nodes, self.np_A)
+        self.prior_gnn = self.init_gt_prior_network(self.num_nodes, self.np_A, fixed_variance=False)
         self.gt_based_prior = type(self.prior_gnn) == GroundTruthBasedPriorNetwork
         print("GT based prior: ", self.gt_based_prior)
 
@@ -145,7 +145,6 @@ class GNNBasedConceptStructuredVAE(nn.Module):
 
         # Enforcing prior structure - sample from prior GNN and use it to predict latents
         prior_mu, prior_logvar = self.prior_to_latents_prediction(x_true.device, gt_labels=kwargs['labels'])
-
         fwd_pass_results.update({
             "x_recon": x_recon,
             "prior_mu": prior_mu,
@@ -169,9 +168,9 @@ class GNNBasedConceptStructuredVAE(nn.Module):
             
         return nn.Sequential(*gnn_layers)
     
-    def init_gt_prior_network(self, num_nodes, A):
+    def init_gt_prior_network(self, num_nodes, A, fixed_variance):
     
-        return GroundTruthBasedPriorNetwork(num_nodes, A, fixed_variance=False)
+        return GroundTruthBasedPriorNetwork(num_nodes, A, fixed_variance=fixed_variance)
 
     def _init_bf_gnn(self):
         

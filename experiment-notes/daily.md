@@ -1,5 +1,1 @@
-- read posterior collapse and latent var paper
-- read factored world models paper
-- skim krik's CI paper
-- draft motivation letter to krik
-- draft email
+todo

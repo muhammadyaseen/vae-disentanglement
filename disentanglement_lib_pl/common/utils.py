@@ -501,7 +501,7 @@ def pairwise_node_activation_plots(mu_batches, epoch=None, save_path=None):
     mu_batches is of shape (b, V, feat_dim)
     """
     # suppress the feat_dim dimension, (assuming it has only 1-dim)
-    activations = mu_batches.squeeze(2)
+    activations = mu_batches.squeeze(2) if mu_batches.ndim == 3 else mu_batches 
     # col names by number of nodes
     columns=[f"node{i}" for i in range(mu_batches.shape[1])]
     activations_df = pd.DataFrame(activations, columns=columns)
