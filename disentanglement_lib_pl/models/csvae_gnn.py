@@ -70,7 +70,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         self.w_recon = network_args.w_recon
         self.w_kld = network_args.w_kld
         self.w_sup_reg = network_args.w_sup_reg
-        self.w_cov_loss = 1.0
+        self.w_cov_loss = network_args.w_cov_loss
         self.kl_warmup_epochs = network_args.kl_warmup_epochs
         self.use_loss_weights = network_args.use_loss_weights
 
@@ -105,7 +105,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         # P(Z|epsilon, A)
         # TODO: revisit after introduction of indept nodes
         
-        self.prior_type = "gt_based_fixed" # choices: ["from_noise", "gt_based_learnable", "gt_based_fixed"]
+        self.prior_type = network_args.prior_type # choices: ["from_noise", "gt_based_learnable", "gt_based_fixed"]
 
         if self.prior_type == "from_noise":
             self.prior_gnn = self._init_gnn(gnn_function="prior")
@@ -325,7 +325,7 @@ class GNNBasedConceptStructuredVAE(nn.Module):
         if self.use_loss_weights:
             self.w_recon, self.w_kld, self.w_sup_reg = self._get_loss_term_weights(global_step, current_epoch, max_epochs)
         
-        output_losses['output_aux'] = (self.w_recon, self.w_kld, self.w_sup_reg)
+        output_losses['output_aux'] = (self.w_recon, self.w_kld, self.w_sup_reg, self.w_cov_loss)
        
         # initialize the loss of this batch with zero.
         output_losses[c.TOTAL_LOSS] = 0

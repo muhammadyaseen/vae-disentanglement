@@ -69,7 +69,8 @@ def get_args(sys_args):
     parser.add_argument('--w_sup_reg', default=0.0, type=float, help='Supervised reg weight')
     parser.add_argument('--w_cov_loss', default=0.0, type=float, help='Covariance Loss weight')
     parser.add_argument('--l_zero_reg', default=False, type=str2bool, help='Whether L0-regularization is used or not')
-
+    parser.add_argument("--prior_type", default="from_noise", type=str, choices=["from_noise", "gt_based_learnable", "gt_based_fixed"])
+    
     # Loss weights and parameters for [CapacityVAE]
     parser.add_argument('--max_capacity', default=25.0, type=float, help='maximum value of control parameter in CapacityVAE')
     parser.add_argument('--iterations_c', default=100000, type=int, help='how many iterations to reach max_capacity')

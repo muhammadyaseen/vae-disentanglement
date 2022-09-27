@@ -95,6 +95,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         self.logger.experiment.add_scalar("LossTermWeights/w_recon", train_step_outputs[0]['output_aux'][0], self.current_epoch)
         self.logger.experiment.add_scalar("LossTermWeights/w_kld", train_step_outputs[0]['output_aux'][1], self.current_epoch)
         self.logger.experiment.add_scalar("LossTermWeights/w_sup_reg", train_step_outputs[0]['output_aux'][2], self.current_epoch)
+        self.logger.experiment.add_scalar("LossTermWeights/w_cov_loss", train_step_outputs[0]['output_aux'][3], self.current_epoch)
 
     def _log_kld_loss_per_node(self, train_step_outputs, step_type='epoch'):
         
