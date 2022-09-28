@@ -16,3 +16,13 @@ Implementation with fixed gt based prior.
 
 
 doing covariance over batch will create gradient relationships b/w different $X_i$'s .. dont know how that will play out in grad opt
+
+i want the nodes to store specific information.
+for this i am (1) supving them with actual values in KL and (2) SupReg with actual values.
+
+right now the agg function is just sum.
+i need layers to propagate node msgs.. i need to mult with $A$ at least.
+
+As SCM can be written as a composition of functions
+
+

@@ -7,6 +7,7 @@ from .cs_vae import ConceptStructuredVAE
 from .cs_vae_residual import CSVAE_ResidualDistParameterization, CSVAE_Toy
 from .csvae_gnn import GNNBasedConceptStructuredVAE
 from .latent_to_image import LatentToImage
+from .csvae_latentnn import LatentNN_CSVAE
 
 #from .cvae import CVAE
 #from .ifcvae import IFCVAE

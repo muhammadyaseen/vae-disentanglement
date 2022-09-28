@@ -1,9 +1,11 @@
+from email.mime import image
 import numpy as np
 import torch
 from torch import nn
 from torch.nn import init
 import torch.nn.functional as F
 from common import dag_utils
+from common.ops import reparametrize
 
 LIMIT_A, LIMIT_B, EPSILON = -.1, 1.1, 1e-6
 
@@ -553,7 +555,6 @@ class SupervisedRegulariser(nn.Module):
         else:
             raise NotImplemented()
 
-
 class GroundTruthBasedLearnablePrior(nn.Module):
 
     def __init__(self, num_nodes, adj_mat, fixed_variance=True):
@@ -629,3 +630,32 @@ class GroundTruthBasedLearnablePrior(nn.Module):
             )
         
         return nn.ModuleList(modules_list)
+
+class SimpleLatentNN(nn.Module):
+    
+    def __init__(self, num_parents_input, x_feat_dim, interm_dim, out_dim):
+        
+        super().__init__()
+
+        # TODO: what is the right complexity for this network?
+        self.main = nn.Sequential(
+            nn.Linear(num_parents_input + x_feat_dim, interm_dim),
+            nn.Tanh(),
+            nn.Linear(interm_dim, interm_dim),
+            nn.Tanh(),
+            nn.Linear(interm_dim, out_dim * 2),
+        )
+
+        self._init_params()
+    
+    def _init_params(self):
+        pass
+        
+    
+    def forward(self, image_and_parents_feats):
+        
+        out = self.main(image_and_parents_feats)
+        mu, logvar = out.chunk(2, dim=1)
+        z = reparametrize(mu, logvar)
+
+        return mu, logvar, z

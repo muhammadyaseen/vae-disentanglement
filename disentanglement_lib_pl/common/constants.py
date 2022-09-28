@@ -31,7 +31,7 @@ COVARIANCE_LOSS = 'covariance_loss'
 # Algorithms
 ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE', 'LadderVAE', 
         'ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization','CSVAE_Toy', 'GNNBasedConceptStructuredVAE',
-        'LatentToImage')
+        'LatentToImage', 'LatentNN_CSVAE')
 
 LOSS_TERMS = (FACTORVAE, DIPVAE_I, DIPVAE_II, BetaTCVAE, INFOVAE, AUX_CLASSIFICATION, COVARIANCE_LOSS)
 

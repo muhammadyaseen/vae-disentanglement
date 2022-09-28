@@ -26,6 +26,7 @@ EXPERIMENT_CLASS = {
     'CSVAE_ResidualDistParameterization': ConceptStructuredVAEExperiment,
     'CSVAE_Toy': ConceptStructuredVAEExperiment,
     'GNNBasedConceptStructuredVAE': GNNCSVAEExperiment,
+    'LatentNN_CSVAE': GNNCSVAEExperiment,
     'LatentToImage': BaseLatentToImageExperiment
 }
 
@@ -40,7 +41,7 @@ def get_scalar_metrics_for_alg(cmdline_args):
     
     base_metrics = ['loss','recon', 'kld_loss']
     if cmdline_args.alg in ['ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization', 'CSVAE_Toy', 
-                            'GNNBasedConceptStructuredVAE', 'LatentToImage']:
+                            'GNNBasedConceptStructuredVAE', 'LatentToImage', 'LatentNN_CSVAE']:
         return base_metrics
     
     elif cmdline_args.alg == 'LadderVAE':
@@ -74,7 +75,7 @@ def get_experiment_config_for_alg(cmdline_args):
     )
 
     if cmdline_args.alg in ['ConceptStructuredVAE', 'CSVAE_ResidualDistParameterization', 'CSVAE_Toy', 
-                            'GNNBasedConceptStructuredVAE', 'LatentToImage']:
+                            'GNNBasedConceptStructuredVAE', 'LatentToImage', 'LatentNN_CSVAE']:
         base_experiment_config.update({
 
         })
@@ -100,7 +101,7 @@ def get_trainer_params(cmdline_args, logger):
             default_root_dir=logger.save_dir,
             min_epochs=1,
             logger=logger,
-            limit_train_batches=1.0,
+            limit_train_batches=0.05,
             limit_val_batches=0.05,
             num_sanity_val_steps=2,
             callbacks = None,
