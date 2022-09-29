@@ -362,7 +362,7 @@ class LatentNN_CSVAE(nn.Module):
             if num_neighbours[node_idx] - 1 != 0:
                 # if we have parents for this node we need to pass those as inputs
                 parent_indices = (self.dept_adjacency_matrix.numpy() - np.eye(self.num_nodes))[node_idx].nonzero()[0]
-                print("node ", node_idx, " parent_indices ", parent_indices)
+                #print("node ", node_idx, " parent_indices ", parent_indices)
                 parents_feats = torch.cat([zs[parent_idx] for parent_idx in parent_indices], dim=1) 
                 image_and_parents_feats = torch.cat([node_init_feats[node_idx], parents_feats], dim=1)
                 mu, logvar, z = self.latent_nns[node_idx](image_and_parents_feats)

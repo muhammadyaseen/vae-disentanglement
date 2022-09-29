@@ -1,7 +1,9 @@
 import os
+from typing import Union
 import torch
 
 from base_vae_experiment import BaseVAEExperiment
+from disentanglement_lib_pl.models.csvae_latentnn import LatentNN_CSVAE
 from models.csvae_gnn import GNNBasedConceptStructuredVAE
 from common import utils
 from common import constants as c
@@ -9,7 +11,7 @@ from common import constants as c
 class GNNCSVAEExperiment(BaseVAEExperiment):
 
     def __init__(self,
-                 vae_model: GNNBasedConceptStructuredVAE,
+                 vae_model: Union[GNNBasedConceptStructuredVAE, LatentNN_CSVAE],
                  params: dict,
                  dataset_params: dict) -> None:
         
@@ -211,9 +213,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         self.logger.experiment.add_scalar(f"SupReg/Covariance_Loss", cov_loss, self.current_epoch)
 
     def _save_latent_space_plot(self, num_batches = 200):
-
-        #assert self.model.z_dim == 2, f"_save_2D_latent_space_plot() expects 2D latent space and you have {self.model.z_dim}d"
-        
+       
         # TODO: make this function more general s.t. it works for all datasets
 
         # get latent activations for the given number of batches
@@ -257,7 +257,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
                     image_file_name
                 )
     
-        utils.pairwise_node_activation_plots(mus, padded_epoch, pairplot_images_path)
+        utils.pairwise_node_activation_plots(mus, padded_epoch, pairplot_images_path, logger=self.logger, title="Posterior ")
         
         if self.model.prior_type == "gt_based_learnable":
             prior_mus, _ = notebook_utils.get_prior_mus_given_gt_labels(
@@ -273,4 +273,4 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
                         image_file_name
                     )
             
-            utils.pairwise_node_activation_plots(prior_mus, padded_epoch, pairplot_images_path)
+            utils.pairwise_node_activation_plots(prior_mus, padded_epoch, pairplot_images_path, logger=self.logger, title="Prior ")

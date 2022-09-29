@@ -496,9 +496,10 @@ def plot_1d_latent_space(latent_act_batches, label_batches, hue_factors,
 
     plt.close(fig)
 
-def pairwise_node_activation_plots(mu_batches, epoch=None, save_path=None):
+def pairwise_node_activation_plots(mu_batches, epoch=None, save_path=None, logger=None, title=""):
     """
-    mu_batches is of shape (b, V, feat_dim)
+    mu_batches: is of shape (b, V, feat_dim)
+    logger: is Tensorboard logger
     """
     # suppress the feat_dim dimension, (assuming it has only 1-dim)
     activations = mu_batches.squeeze(2) if mu_batches.ndim == 3 else mu_batches 
@@ -507,9 +508,19 @@ def pairwise_node_activation_plots(mu_batches, epoch=None, save_path=None):
     activations_df = pd.DataFrame(activations, columns=columns)
     
     sns_pair_plot = sns.pairplot(activations_df, markers=".", height=3.0)
-    sns_pair_plot.fig.suptitle(f"Pairwise node activation plots. Epoch={epoch}")
+    sns_pair_plot.fig.suptitle(title + f"Pairwise node activation plots. Epoch={epoch}")
     sns_pair_plot.fig.subplots_adjust(top=0.9)
-    
+
+    if logger is not None:
+        
+        # send this image to tensorboard
+
+        from torchvision import utils as vutils
+        
+        pt_plot = convert_plot_to_pytorch_tensor(sns_pair_plot.fig)    
+        pt_image = vutils.make_grid([pt_plot])
+        logger.experiment.add_image(title, pt_image, int(epoch))
+
     if save_path is not None:
         sns_pair_plot.savefig(save_path)
 
@@ -526,3 +537,28 @@ def get_loss_type_for_dataset(dataset_name):
     }    
 
     return mapping[dataset_name] 
+
+def convert_plot_to_pytorch_tensor(fig, dpi=96):
+    """
+    We use this to convert whatever we plotted using Seaborn / MatplotLib to 
+    a PyTorch tensor so that it can be sent to Tensorboard directly.
+    """
+    
+    import io
+    import cv2
+    from torchvision import transforms
+    
+    numpy_array_to_pytorch_tensor = transforms.ToTensor()
+    image_buffer = io.BytesIO()
+
+    fig.savefig(image_buffer, format="png", dpi=dpi)
+    image_buffer.seek(0)
+    plot_as_np_array = np.frombuffer(image_buffer.getvalue(), dtype=np.uint8)
+    image_buffer.close()
+    img = cv2.imdecode(plot_as_np_array, 1)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+    # np array is HWC, we need BCHW
+    pt_image = numpy_array_to_pytorch_tensor(img)
+    
+    return pt_image
