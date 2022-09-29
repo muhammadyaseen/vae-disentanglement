@@ -114,7 +114,7 @@ class LatentNN_CSVAE(nn.Module):
         self.latents_classifier = self._init_classification_network() if self.add_classification_loss else None
         self.flatten_node_features = Flatten3D()
         
-        print("GNNBasedConceptStructuredVAE Model Initialized")
+        print("LatentNN_CSVAE Model Initialized")
 
     def forward(self, x_true, **kwargs):
 
@@ -382,6 +382,55 @@ class LatentNN_CSVAE(nn.Module):
         
         #print(zs.shape, mus.shape, logvars.shape)
 
+        # all should now have shape (B, V, 1)
+        return mus, logvars, zs
+
+    def encoder_gnn_intervention(self, image_features, intervened_node, intervention_value):
+        """
+        image_features: has shape (B, dim_init_node_feats)
+        For successful chunk `dim_init_node_feats` should be a multiple of num_nodes
+
+        Use this version when doing hard-intervenions on nodes.
+        By convention we assume that B=1 i.e. we only have 1 image in batch 
+        when intervening.
+        """
+        # chunk image features into num_node parts -- 1 for each node
+        # so after chunk we should get V chunks of shape (B, latent_dim / V)
+        node_init_feats = image_features.chunk(self.num_nodes, dim=1)
+        num_neighbours = self.dept_adjacency_matrix.sum(dim=-1, keepdims=True)
+        zs, mus, logvars = [], [], []
+
+        for node_idx in range(self.num_nodes):
+            
+            # (A - I) because we have self connections that we don't want to count as parents
+            if num_neighbours[node_idx] - 1 != 0:
+
+                # if we have parents for this node we need to pass those as inputs
+                parent_indices = (self.dept_adjacency_matrix.numpy() - np.eye(self.num_nodes))[node_idx].nonzero()[0]
+
+                parents_feats = torch.cat([zs[parent_idx] for parent_idx in parent_indices], dim=1) 
+                image_and_parents_feats = torch.cat([node_init_feats[node_idx], parents_feats], dim=1)
+                mu, logvar, z = self.latent_nns[node_idx](image_and_parents_feats)
+            else:
+                # if the node is a top-level node we'll only have image features
+                mu, logvar, z = self.latent_nns[node_idx](node_init_feats[node_idx])
+
+            #print(z)
+            #print(z.shape)
+            if node_idx == intervened_node:
+                # z here has shape (B, 1)
+                z[:, 0] = intervention_value            
+
+            zs.append(z)
+            mus.append(mu)
+            logvars.append(logvar)
+
+        # concat all z's -- this will be input of our decoder cnn
+        # we had (B,1), after concat we get (B,V), after unsqueeze we get (B,V,1) for all
+        zs = torch.cat(zs, dim=1).unsqueeze(2)
+        mus = torch.cat(mus, dim=1).unsqueeze(2)
+        logvars = torch.cat(logvars, dim=1).unsqueeze(2)
+        
         # all should now have shape (B, V, 1)
         return mus, logvars, zs
 

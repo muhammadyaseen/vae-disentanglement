@@ -3,7 +3,7 @@ from typing import Union
 import torch
 
 from base_vae_experiment import BaseVAEExperiment
-from disentanglement_lib_pl.models.csvae_latentnn import LatentNN_CSVAE
+from models.csvae_latentnn import LatentNN_CSVAE
 from models.csvae_gnn import GNNBasedConceptStructuredVAE
 from common import utils
 from common import constants as c

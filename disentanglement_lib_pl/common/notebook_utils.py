@@ -1308,3 +1308,20 @@ def csvaegnn_intervene_final_layer(vae_model, x, intervention_nodes, interventio
             samples.append(sample)
 
     return samples
+
+def latentnn_intervene(vae_model, x,  intervened_node, intervention_values):
+    
+    with torch.no_grad():
+        
+        image_features = vae_model.encoder_cnn(x)
+        samples = []
+        
+        for iv in intervention_values:
+            
+            mus, logvars, zs = vae_model.encoder_gnn_intervention(image_features, intervened_node, iv)
+            posterior_z = vae_model.flatten_node_features(zs)
+            x_recon = vae_model.decode(posterior_z).data
+
+            samples.append(x_recon)
+
+        return samples
