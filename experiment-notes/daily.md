@@ -23,6 +23,14 @@ for this i am (1) supving them with actual values in KL and (2) SupReg with actu
 right now the agg function is just sum.
 i need layers to propagate node msgs.. i need to mult with $A$ at least.
 
-As SCM can be written as a composition of functions
+Penalize global structure of $q(u)$ using information from $p(z)$.
+- already tried penalizing Covariance per batch
+- can also try penalizing jacobian
 
+$u = f_\theta(z)$
 
+$q(u) = p(z) \times \vert \text{det} J_{ u \rightarrow z} \vert$
+
+structure of Jacobian should reflect structure of $A$ mat and covariance relations in the ground truth. If it doesn't then it is storing information across the nodes or not storing it correctly...
+
+But how can we use this? we have labels .. how to use this ?

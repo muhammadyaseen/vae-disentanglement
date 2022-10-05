@@ -37,9 +37,6 @@ Intuitively, when optimising a pixel-wise decoder log likelihood, information ab
 <span class="remark">Think how correlated features would be affected by this. Should they be encoded 'at the same time'.. in a way they should share equal contibution to the lkd / recon, no?</span>
 
 
-Need to get a bit more technical about what exactly do i want to see here in the experiments and the goal
-When I go to Jilles what do I want to show him ?
-
 Can my architecture preserve the DAG relationships? --- and where exactly are these enforced?
 Right now it seems that the network just encodes both factors in 1dim.. as a combination... it has no concept of 'relatedness via causation'. It just understands relatedness via co-occurence. I need to verify and test this.
 

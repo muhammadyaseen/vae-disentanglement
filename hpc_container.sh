@@ -85,3 +85,8 @@ scp <etc> c01muya@gpu03:/home/c01muya/vae-disentanglement/train-logs/jscmodel_bv
 tensorboard dev upload --logdir ./vae-disentanglement/train-logs/GNN_CS_VAE_dsprites_correlated_structure_test_cont \
     --name "GNN_CSVAE_dsprites_correlated" \
     --description "Results after training GNN based CSVAE on dsprites_correlated over ~60 epochs w/o any Annealing or Weighting"
+
+
+scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_cs_vaes/vae-disentanglement/train-logs/pendulum_sw_latentnn/latentnn_kld5_psw/checkpoints/epoch=167-step=38304.ckpt ./latentnn_167eps_kld5_pendulum_sw.ckpt
+
+ #10.17.0.0/16, 134.96.225.0/24, 134.96.235.0/24, 134.96.238.32/27, 134.96.238.64/26, 134.96.238.128/25, 195.37.156.0/22
