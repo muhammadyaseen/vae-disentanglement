@@ -45,7 +45,7 @@ DATASETS = ('dsprites_cond', 'polynomial',
 KNOWN_DATASETS = (
     'celeba', 'dsprites_full', 'onedim','threeshapes','threeshapesnoisy', 
     'continum', 'dsprites_colored', 'dsprites_cond', 'polynomial', 
-    'toydata', 'flow', 'pendulum', 'pendulum_switch'
+    'toydata', 'flow', 'pendulum', 'pendulum_switch', 'waterflow'
 )
 # Datasets for which we have loaders in common.known_datasets and that ARE DisentLibDatasets
 KNOWN_DISENTLIB_DATASETS = ('dsprites_correlated',)

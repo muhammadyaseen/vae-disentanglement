@@ -494,11 +494,11 @@ class SupervisedRegulariser(nn.Module):
         node_features has shape (batch, V, feature_dim)
         """
 
-        # We need to break it into V different vectors
+        # We need to break node_features into V different vectors
         # i.e. a list L which has elements of shape (batch, feature_dim) and len(L) = V
         node_features_separated = node_features.chunk(self.num_nodes, dim=1)
 
-        # now we have a list where node_features_separate[i] gives features associated 
+        # now we have a list where node_features_separated[i] gives features associated 
         # with i-th node. But the current output shape would be (batch, 1, feature_dim)
         # so we have to squeeze out the singleton dim
 
@@ -535,9 +535,6 @@ class SupervisedRegulariser(nn.Module):
 
         return total_loss * self.w_sup_reg, loss_per_node
 
-    def get_loss(self, node_idx):
-        raise NotImplemented()
-    
     def _get_sup_reg_models(self):
 
         if self.labels_type == "regression":

@@ -532,6 +532,7 @@ def get_loss_type_for_dataset(dataset_name):
         "pendulum": "mse",
         "pendulum_switch": "mse",
         "celeba": "mse",
+        "waterflow": "mse",
         "dsprites_full": "cross_ent",
         "dsprites_correlated": "cross_ent",
     }    

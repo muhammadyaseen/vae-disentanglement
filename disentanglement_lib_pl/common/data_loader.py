@@ -184,7 +184,7 @@ class DisentanglementLibDataset(Dataset):
 
 def _get_transforms_for_dataset(dataset_name, image_size):
 
-    if dataset_name in ["celeba", "flow", "pendulum", "pendulum_switch"]:
+    if dataset_name in ["celeba", "waterflow", "pendulum", "pendulum_switch"]:
         return transforms.Compose([
         transforms.Resize((image_size, image_size)),
         transforms.ToTensor()])
@@ -349,12 +349,12 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
                 'split': split}
         dset = ToyDataset
     
-    elif dataset_name in ["flow", "pendulum", "pendulum_switch"]:
+    elif dataset_name in ["waterflow", "pendulum", "pendulum_switch"]:
         
         root = os.path.join(dset_dir, dataset_name)
         
         # Saved Pendulum labels are ('image_index', 'theta', 'phi', 'shade','mid')
-        labels_file = os.path.join(root, 'pendulum_labels.csv')
+        labels_file = os.path.join(root, dataset_name + '_labels.csv')
         labels_all = np.genfromtxt(labels_file, delimiter=',', names=True)
         
         data_kwargs = {'root': root,

@@ -101,7 +101,7 @@ def get_trainer_params(cmdline_args, logger):
             default_root_dir=logger.save_dir,
             min_epochs=1,
             logger=logger,
-            limit_train_batches=1.0,
+            limit_train_batches=0.10,
             limit_val_batches=0.05,
             num_sanity_val_steps=2,
             callbacks = None,
