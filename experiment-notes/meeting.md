@@ -38,12 +38,6 @@ structure of Jacobian should reflect structure of $A$ mat and covariance relatio
 
 But how can we use this? we have labels .. how to use this ?
 
-
-### Titles
-- Latent Concepts Structured Variational Auto-Encoders
-- Learning Semantic Latent Feature Hierarchies via VAEs
-- Learning Interpretable Latent Feature Hierarchies via VAEs
-
 My method might have DIP-VAE as a special case ?
 
 - [ ] What does it mean to be "jointly Gaussian"?
@@ -52,5 +46,7 @@ My method might have DIP-VAE as a special case ?
 - [ ] Is my var. posterior jointly Gaussian?
 - [ ] If so what form do its params take?
 - [ ] Can the covar mat from it be used / inverted to see cond. indeps. ?
+- [ ] gt batch covar matching vs Adj mat structure matching
+- [ ] add some noise in gen process
 
 

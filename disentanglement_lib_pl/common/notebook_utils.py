@@ -1325,3 +1325,42 @@ def latentnn_intervene(vae_model, x,  intervened_node, intervention_values):
             samples.append(x_recon)
 
         return samples
+
+def latentnn_show_intervention_atlas_from_anchor(intervened_node, intervention_values, anchor_image, vae_model):
+    
+    traversed_images = latentnn_intervene(vae_model, anchor_image, intervened_node, intervention_values)
+    traversed_images_stacked = torch.stack([t_img.squeeze(0) for t_img in traversed_images], dim=0)
+    img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=12, value_range=(0.0,1.0), pad_value=1.0)
+    show_image_grid_pt(img_grid, figsize=(10,10))
+
+
+def latentnn_show_intervention_comparison(intervened_node, intervention_values, num_samples, 
+                                          dataloader, vae_model, current_device):
+
+    for node_value in intervention_values:   
+
+        images, labels = next(dataloader.__iter__())
+        bs = images.size()[0]
+        intervened_images, orig_images = [], []
+        
+        # for every fixed value C, we apply it as intervention to num_samples images
+        for _ in range(num_samples):
+
+            # select a random image from batch
+            x = images[np.random.choice(bs)].unsqueeze(0).to(current_device)
+            orig_images.append(x)
+
+            x_intervened = latentnn_intervene(vae_model, x, intervened_node, intervention_values=[node_value])[0]
+            intervened_images.append(x_intervened)
+
+        # stack of original images - top row
+        # stack of traversed images at each gnn layer level in order
+        # each row represents a fixed intervention value across different images
+        stacked_images = []
+        stacked_images.append(torch.stack([o_img.squeeze(0) for o_img in orig_images], dim=0))
+        stacked_images.append(torch.stack([t_img.squeeze(0) for t_img in intervened_images], dim=0))
+        comparison_visual = torch.cat(stacked_images, dim=2)
+        img_grid = vutils.make_grid(comparison_visual, normalize=True, nrow=num_samples, value_range=(0.0,1.0), pad_value=1.0)
+
+        show_image_grid_pt(img_grid, figsize=(10,10))
+

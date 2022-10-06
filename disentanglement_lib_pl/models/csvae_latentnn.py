@@ -393,7 +393,11 @@ class LatentNN_CSVAE(nn.Module):
         Use this version when doing hard-intervenions on nodes.
         By convention we assume that B=1 i.e. we only have 1 image in batch 
         when intervening.
+
+        The `intervened_node` is set to a fixed value (intervention_value) and if it is a parent of some nodes 
+         then the children are also delivered the effect of this. So the change cascades / travels thru the SCM
         """
+        
         # chunk image features into num_node parts -- 1 for each node
         # so after chunk we should get V chunks of shape (B, latent_dim / V)
         node_init_feats = image_features.chunk(self.num_nodes, dim=1)
