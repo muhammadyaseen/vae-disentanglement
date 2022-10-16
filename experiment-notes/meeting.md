@@ -45,8 +45,9 @@ My method might have DIP-VAE as a special case ?
 - https://people.eecs.berkeley.edu/~ananth/223Spr07/jointlygaussian.pdf
 - [ ] Is my var. posterior jointly Gaussian?
 - [ ] If so what form do its params take?
-- [ ] Can the covar mat from it be used / inverted to see cond. indeps. ?
+- [ ] Can the covar mat from be used / inverted to see cond. indeps. ?
 - [ ] gt batch covar matching vs Adj mat structure matching
 - [ ] add some noise in gen process
+
 
 

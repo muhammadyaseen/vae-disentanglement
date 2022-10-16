@@ -1,0 +1,133 @@
+{
+  "main": {
+    "id": "c80c6ec9edaddb4e",
+    "type": "split",
+    "children": [
+      {
+        "id": "7e20151f2caa6093",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1d2d34e9e8d2ea23",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "thesis-writing-notes/How to write thesis.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "id": "b42f2d2ca77b204e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "6752eb7502c4c483",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "thesis-writing-notes/Structure and Content.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "d45eec7116358791",
+    "type": "split",
+    "children": [
+      {
+        "id": "43a5399acf9386c8",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "091dff956aba6eff",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "e9a1f5a808402419",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 215.5,
+    "collapsed": true
+  },
+  "right": {
+    "id": "6b18d73fee2a0408",
+    "type": "split",
+    "children": [
+      {
+        "id": "950a49ca88729668",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1f46f4bbba509565",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "thesis-writing-notes/How to write thesis.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "ribbon": {
+    "mostRecentAction": ""
+  },
+  "active": "1d2d34e9e8d2ea23",
+  "lastOpenFiles": [
+    "thesis-writing-notes/Structure and Content.md",
+    "thesis-writing-notes/How to write thesis.md",
+    "meeting.md",
+    "images/howtothesis.jpg",
+    "Image SCM Idea Formalisation.md",
+    "ideas/Diversion Around the GLOBE.md",
+    "ideas/Finding the right weightage for Loss func terms.md",
+    "ideas/GNN Idea Exploration.md",
+    "Plan so far.md",
+    "daily.md"
+  ]
+}
