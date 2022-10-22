@@ -1,3 +1,7 @@
+Title: VAEs with structured latent concepts
+
+The last paragraph of the Introduction should inform the reader  about the flow of the thesis and its structure e.g. which chapter contains what.
+
 Every chapter begins with a short paragraph that describes the flow and content of the chapter (somewhat like an executive summary). Reader should have an overview of the chapter and know what to expect after reading this first paragraph.
 
 ## Acknowledgements
@@ -32,6 +36,7 @@ I have made this list so that I don't forget any 'required' acknowledgements.
 14. Covariance and Jacobian determinant (I want to mention these concepts here because later we penalize covar / det in the objective. Should I include the motivation for their penalty as well here or just the definition? I think the motivation for penalty should go in the Theory part. Here I can just define the general concept?)
 15. Role of Disentangled prior $p(z)$ and Disentangled Variational learned Posterior $q(z)$  in encouraging decomposition of nodes in VAE.
 16. Graph Neural Network (used to represent prior / posterior in 1 variant of our alg.)
+17. DAG learning from labels ? Causal graph identification from labels? Motivation to relegate this to external specialized methods.
 
 I'm not including any definition / introduction to Neural Nets or Gradient Descent as I assume that the reader is familiar with them already.
 
@@ -65,6 +70,7 @@ Our arch / latent network is like a NN with a very high drop out probability.
 
 I should also desribe the data generative / latent model somewhere. Where would it go? In theory or prelim or algo?
 
+Connection to DIP-VAE?
 ## The Problem
 
 What do we want to preserve? We want to preserve the semantically meaningful dependence relationships in the data.
@@ -103,7 +109,7 @@ In a way, Ladder / GNN / NS based approaches are all different instantiations of
 	6. Hidden Talents of VAE etc?
 
 - Connection to classical "Parts Model" - This was one of the motivation for ImageSCM idea
-- HSIC regularization for independence (A better alternative to KL-div?)
+- Conditional HSIC regularization for independence (A better alternative to KL-div?) + connection to Krik's paper
 - Semantic Segmentation weighted loss for recon (Current recon loss doesn't respect 'closeness' in image space which might contribute to not respecting closeness in latent space)
 - Trade-off between Recon and KL-div and commensurability of these two parts
 - (Related to above) Connection to MDL two-part codes
