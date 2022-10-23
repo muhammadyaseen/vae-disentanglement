@@ -27,7 +27,7 @@ I have made this list so that I don't forget any 'required' acknowledgements.
 5. Theoretical benefits of those properties in terms of sample coplexity, interpretability etc.
 6. Intro and motivation of Variational Inference in general
 7. Introduction and motivation of (NN based) VAE
-8. VAE as an RL algorithm
+8. VAE as an RL algorithm / What are DLVMs?
 9. VAE / ELBO objective in its simplest independent prior form + Motivation / Need for Lower Bound
 10. Role of KL divergence b/w $q(z \vert x)$ and $p(z)$ and Reconstruction $\log p(x \vert z)$ parts in the objective
 11. Role of Prior $p(z)$ in VAEs for encouraging various properties (this is crucial, as we exploit this in our method)
@@ -71,17 +71,19 @@ Our arch / latent network is like a NN with a very high drop out probability.
 I should also desribe the data generative / latent model somewhere. Where would it go? In theory or prelim or algo?
 
 Connection to DIP-VAE?
-## The Problem
 
-What do we want to preserve? We want to preserve the semantically meaningful dependence relationships in the data.
-We want to learn latent variational distribution which respects the known (in)dependence structure in the data.
-It can be said that we want to preserve the independence mechanisms? SCM formalism gives us a way to talk about these mechanisms a bit more concretely.
+### Theory: The Problem
+
+- What do we want to preserve? We want to preserve the semantically meaningful dependence relationships in the data. We want to learn latent variational distribution which respects the known (in)dependence structure in the data.
+- It can also be said that we want to preserve the independence mechanisms? SCM formalism gives us a way to talk about these mechanisms a bit more concretely.
 
 Given: D, U, `adj_algo`, hyper params
 Output: Representation, Learned Variational posterior with some properties
 How:
 
 ## Algorithm
+
+In this chapter we describe the proposed architecture and objective function terms that solve the problem we set up in the previous chapter. We essentially have three instantiations, one of which seems to work much better than the others.
 
 1. A short paragraph introducing the flow and content of the chapter.
 2. Schematic of which parts of architectures correspond to which terms in equations
@@ -122,5 +124,5 @@ In a way, Ladder / GNN / NS based approaches are all different instantiations of
 
 ## Other Required Stuff
 
-- **Any work** performed on the HAICORE@FZJ partition should be **appropriately cited* as "This work was supported by the Helmholtz Association's Initiative and Networking Fund on the HAICORE@FZJ partition."
+- **Any work** performed on the HAICORE@FZJ partition should be **appropriately cited** as "This work was supported by the Helmholtz Association's Initiative and Networking Fund on the HAICORE@FZJ partition."
 - TODO: Make a list of such required attributions as I go along. For ex, see if PyTorch, TensorFlow, Matplotlib, `disentanglement_lib` or any other software / hardware infrastructure requires some specific attribution or citation.

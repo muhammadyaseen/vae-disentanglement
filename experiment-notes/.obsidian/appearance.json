@@ -1,9 +1,9 @@
 {
   "theme": "obsidian",
-  "cssTheme": "",
+  "cssTheme": "Obsidian Nord",
   "baseFontSize": 18,
   "enabledCssSnippets": [
     "yaseen-notes-snippets"
   ],
-  "accentColor": ""
+  "accentColor": "#009952"
 }

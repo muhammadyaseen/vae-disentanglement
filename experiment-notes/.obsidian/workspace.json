@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "thesis-writing-notes/Structure and Content.md",
+                "file": "ideas/Diversion Around the GLOBE.md",
                 "mode": "source",
                 "source": false
               }
@@ -89,7 +89,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "thesis-writing-notes/Structure and Content.md",
+                "file": "ideas/Diversion Around the GLOBE.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -112,15 +112,15 @@
   },
   "active": "6752eb7502c4c483",
   "lastOpenFiles": [
-    "thesis-writing-notes/How to write thesis.md",
+    "ideas/Orthogonal Subspaces Idea.md",
+    "ideas/Minimal Cost Latent Structure Search.md",
+    "Image SCM Idea Formalisation.md",
     "thesis-writing-notes/Structure and Content.md",
+    "thesis-writing-notes/How to write thesis.md",
     "meeting.md",
     "images/howtothesis.jpg",
-    "Image SCM Idea Formalisation.md",
     "ideas/Diversion Around the GLOBE.md",
     "ideas/Finding the right weightage for Loss func terms.md",
-    "ideas/GNN Idea Exploration.md",
-    "Plan so far.md",
-    "daily.md"
+    "ideas/GNN Idea Exploration.md"
   ]
 }
