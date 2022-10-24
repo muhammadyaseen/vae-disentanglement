@@ -37,6 +37,7 @@ I have made this list so that I don't forget any 'required' acknowledgements.
 15. Role of Disentangled prior $p(z)$ and Disentangled Variational learned Posterior $q(z)$  in encouraging decomposition of nodes in VAE.
 16. Graph Neural Network (used to represent prior / posterior in 1 variant of our alg.)
 17. DAG learning from labels ? Causal graph identification from labels? Motivation to relegate this to external specialized methods.
+18. Structural Causal Models?
 
 I'm not including any definition / introduction to Neural Nets or Gradient Descent as I assume that the reader is familiar with them already.
 
@@ -115,6 +116,7 @@ In a way, Ladder / GNN / NS based approaches are all different instantiations of
 - Semantic Segmentation weighted loss for recon (Current recon loss doesn't respect 'closeness' in image space which might contribute to not respecting closeness in latent space)
 - Trade-off between Recon and KL-div and commensurability of these two parts
 - (Related to above) Connection to MDL two-part codes
+- Relation to I-map or D-map of the network structure and the (in)dependencies we want to have.
 
 **Improvements and Extension**: 
 1. Incorporating or adapting any of the tricks useful for Training large VAEs e.g. those mentioned in NVAE. Hidden Talents of VAEs

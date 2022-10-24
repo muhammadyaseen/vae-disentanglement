@@ -1,7 +1,7 @@
 {
   "theme": "obsidian",
   "cssTheme": "Obsidian Nord",
-  "baseFontSize": 18,
+  "baseFontSize": 21,
   "enabledCssSnippets": [
     "yaseen-notes-snippets"
   ],
