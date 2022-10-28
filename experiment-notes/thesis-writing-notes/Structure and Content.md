@@ -19,13 +19,28 @@ I have made this list so that I don't forget any 'required' acknowledgements.
 ## What to inclue in Prelims / Background?
 
  This chapter will define the notation to be used throughout the document and will provide definitions of relevant concepts required for understanding the thesis (pre-supposing _some_ prior knowledge). In a way, this chapter is an attempt to make the thesis self-contained.
- 
+
+### A running list of required notation
+
+| Symbol | Comment / Concept |
+|--------|------------|
+| $\mathcal{U}$ | Set of all labels |
+| $\textbf{u}_i$ | Vector of Labels associated with $i$-th datapoint |
+| $u_i^j$ | Individual $j$-th label or $j$-th dimension in the vector $\textbf{u}_i$ |
+| $u_i^{-j}$ | All dimensions of $\textbf{u}_i$ except $j$-th dimension in the vector $\textbf{u}_i$ |
+| $\mathcal{D}$ | Denotes the dataset with labels |
+| $\textbf{x}_i$ | $i$-th image in the dataset|
+| $\textbf{z}_i$ | latent code associated with $i$-th image in the dataset|
+| $z_i^j$ | Individual $j$-th label or $j$-th dimension in the vector $\textbf{z}_i$ |
+| $z_i^{-j}$ | All dimensions of $\textbf{z}_i$ except $j$-th dimension in the vector $\textbf{z}_i$ |
+| $A$ | adjacency matrix |
+
 1. A short paragraph introducing the flow and content of the chapter.
 2. Notation. (see table following this section for a tentative list)
 3. What is a Representation and Representation Learning (RL) ?
 4. Some desirable properties of representations e.g disentanglement, decomposition, modularity etc + Reference to Causal RL (as they relate to concepts that we plan to demostrate later through our method)
 5. Theoretical benefits of those properties in terms of sample coplexity, interpretability etc.
-6. Intro and motivation of Variational Inference in general
+6. Intro and motivation of Variational Inference in general (structured VI?)
 7. Introduction and motivation of (NN based) VAE
 8. VAE as an RL algorithm / What are DLVMs?
 9. VAE / ELBO objective in its simplest independent prior form + Motivation / Need for Lower Bound
@@ -45,23 +60,11 @@ I think that points 10, 11, 13 and 15 could go into Theory chapter. These points
 
 Should I include why we don't use other density learning algs e.g. Norm Flows, Diffusion, AEs, GANs? I think this can go in discussion where I can connect these algos to different parts of VAEs and mention to what extent they could be used and what limitations they have wrt representation learning in our setting ?
 
-## A running list of required notation
-
-| Symbol | Comment / Concept |
-|--------|------------|
-| $\mathcal{U}$ | Set of all labels |
-| $\textbf{u}_i$ | Vector of Labels associated with $i$-th datapoint |
-| $u_i^j$ | Individual $j$-th label or $j$-th dimension in the vector $\textbf{u}_i$ |
-| $\mathcal{D}$ | Denotes the dataset with labels |
-| $\textbf{x}_i$ | $i$-th image in the dataset|
-| $\textbf{z}_i$ | latent code associated with $i$-th image in the dataset|
-| $z_i^j$ | Individual $j$-th label or $j$-th dimension in the vector $\textbf{z}_i$ |
-| $A$ | adjacency matrix |
 
 ## Theory
 
 1. A short paragraph introducing the flow and content of the chapter.
-2. This will inclue formalization of the problem and assumptions and setting etc but won't include solution part. It should be a "what do we want to do" and not "how we do it", that comes in the next (Algorithm) chapter.
+2. This will include formalization of the problem and assumptions and setting etc but won't include solution part. It should be a "what do we want to do" and not "how we do it", that comes in the next (Algorithm) chapter.
 3. Should I include Image SCM in this - this is the formalism we ended up using, didn't we? The current architecture (and other approaches e.g. ladder, gnn) can be seen as an instantiation of this idea.
 4. Should I include LadderVAE / Network structure / GNN based approach? 
 
@@ -87,15 +90,17 @@ How:
 In this chapter we describe the proposed architecture and objective function terms that solve the problem we set up in the previous chapter. We essentially have three instantiations, one of which seems to work much better than the others.
 
 1. A short paragraph introducing the flow and content of the chapter.
-2. Schematic of which parts of architectures correspond to which terms in equations
-3. Encoder instantiation (arch details in appendix)
-4. Using labels set  $\mathcal{U}$ to get adj matrix $A$ or use given $A$.
-5. Construct latent layer architecture $f_A(.)$ given matrix
-6. Setup prior and posterior given matrix and labels
-7. Decoder instantiation (arch details in appendix)
-8. Setup ELBO given above 
-9. Setup (covar, det) penalization terms given $A$ matrix and labels $\mathcal{U}$
-10. Combine above to get the final objective
+2. Posit the form of prior
+3. Posit the form of posterior
+4. Schematic of which parts of architectures correspond to which terms in equations
+5. Encoder instantiation (arch details in appendix)
+6. Using labels set $\mathcal{U}$ to get adj matrix $A$ or use given $A$.
+7. Construct latent layer architecture $f_A(.)$ given matrix
+8. Setup prior and posterior given matrix and labels
+9. Decoder instantiation (arch details in appendix)
+10. Setup ELBO given above 
+11. Setup (covar, det) penalization terms given $A$ matrix and labels $\mathcal{U}$
+12. Combine above to get the final objective
 
 Feels like some parts should go in Theory.
 
@@ -128,3 +133,4 @@ In a way, Ladder / GNN / NS based approaches are all different instantiations of
 
 - **Any work** performed on the HAICORE@FZJ partition should be **appropriately cited** as "This work was supported by the Helmholtz Association's Initiative and Networking Fund on the HAICORE@FZJ partition."
 - TODO: Make a list of such required attributions as I go along. For ex, see if PyTorch, TensorFlow, Matplotlib, `disentanglement_lib` or any other software / hardware infrastructure requires some specific attribution or citation.
+
