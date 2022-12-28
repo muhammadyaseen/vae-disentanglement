@@ -106,6 +106,19 @@ Feels like some parts should go in Theory.
 
 In a way, Ladder / GNN / NS based approaches are all different instantiations of our idea.
 
+## Evaluation
+
+1. Mechanism preservation experiments on Pendulum
+2. Mechanism preservation experiments on Pendulum-Switch
+3. Mechanism preservation experiments on Water-Flow
+4. Mechanism preservation experiments on CelebA ?
+5. Role of Capacity shown on any one of the datasets
+6. Compare with Causal VAE / BetaVAE
+7. Curious: 2d sprites on SLC-VAE and $\beta$-VAE
+8. Latent space evolution and plots
+9. Ablation: Supervised Regularizer
+10. Ablation: Covariance Reg
+
 ## Discussion
 
 - Connections to:

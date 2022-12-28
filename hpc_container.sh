@@ -5,7 +5,7 @@ TOKEN_SECRET=glpat-8Hr9g1zt9RaxkUWoP9yZ
 srun -p gpu --gres=gpu:A100:1 --container-image=projects.cispa.saarland:5005#c01muya:vae-disentanglement --container-mounts=./temp:/ctemp --pty bash
 
 ssh muhammad1@juwels-booster.fz-juelich.de
-jutil env activate -p hai_cs_vaes
+jutil env activate -p hai_slc_vaes
 
 # Container related stuff
 
@@ -27,24 +27,24 @@ apptainer pull <container_name>.sif docker://docker.io/myaseende/vae-disentangle
 apptainer pull vae-disent-v1.1-tensorboard.sif docker://docker.io/myaseende/vae-disentanglement:v1.1-tensorboard
 # e.g apptainer pull file-out.sif docker://alpine:latest
 
-srun -N1 --partition=develbooster --account=hai_cs_vaes --gres=gpu:1 --pty apptainer shell --nv $SCRATCH/container/vae-disent.oci
-srun -N1 --partition=develbooster --account=hai_cs_vaes --gres=gpu:1 $SCRATCH/container/vae-disent.oci --pty bash
+srun -N1 --partition=develbooster --account=hai_slc_vaes --gres=gpu:1 --pty apptainer shell --nv $SCRATCH/container/vae-disent.oci
+srun -N1 --partition=develbooster --account=hai_slc_vaes --gres=gpu:1 $SCRATCH/container/vae-disent.oci --pty bash
 
 # For interactive jobs, first we allocate nodes/resources and then we can run a container
-salloc --partition=develbooster --gres=gpu:1 --account=hai_cs_vaes --time=00:30:00
-srun -N1 --partition=develbooster --account=hai_cs_vaes --pty apptainer shell --nv $SCRATCH/container/vae-disent.oci
+salloc --partition=develbooster --gres=gpu:1 --account=hai_slc_vaes --time=00:30:00
+srun -N1 --partition=develbooster --account=hai_slc_vaes --pty apptainer shell --nv $SCRATCH/container/vae-disent.oci
 
 # https://apptainer.org/docs/user/main/cli/apptainer_shell.html
 # To get a shell inside the container
-srun -N1 --partition=develbooster --account=hai_cs_vaes --pty \
+srun -N1 --partition=develbooster --account=hai_s_vaes --pty \
     apptainer shell --nv ../container-file/vae-disent-v1.1-tensorboard.sif 
 
-srun -N1 --partition=develbooster --account=hai_cs_vaes --pty  \
+srun -N1 --partition=develbooster --account=hai_slc_vaes --pty  \
     apptainer shell --nv --bind ./vae-disentanglement:/vae-disentanglement \
     ./container-file/vae-disent-v1.1-tensorboard.sif
 
 # when running from within vae_disentanglement dir
-srun --nodes=1 --gres=gpu:2 --partition=develbooster --account=hai_cs_vaes \
+srun --nodes=1 --gres=gpu:2 --partition=develbooster --account=hai_slc_vaes \
     apptainer exec --nv --bind ./:/vae-disentanglement \
     ../container-file/vae-disent-v1.1-tensorboard.sif bash /vae-disentanglement/disentanglement_lib_pl/run_bvae_jsc.sh
 
@@ -75,8 +75,8 @@ apptainer exec --nv --bind $PROJECT/vae-disentanglement:/vae-disentanglement \
 
 # Moving files via scp
 # First move to laptop
-scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_cs_vaes/vae-disentanglement/train-logs/w_lr4_dsprites_GNNCSVAE_2d_supreg_mix//version_0/checkpoints/model.ckpt ./<etc>
-scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_cs_vaes/vae-disentanglement/train-logs/dim_debug_GNNCSVAE/version_1/checkpoints/epoch=42-step=495360.ckpt ./
+scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_slc_vaes/vae-disentanglement/train-logs/w_lr4_dsprites_GNNCSVAE_2d_supreg_mix//version_0/checkpoints/model.ckpt ./<etc>
+scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_slc_vaes/vae-disentanglement/train-logs/dim_debug_GNNCSVAE/version_1/checkpoints/epoch=42-step=495360.ckpt ./
 # Then to Cispa
 scp <etc> c01muya@gpu03:/home/c01muya/vae-disentanglement/train-logs/jscmodel_bvae_w1corr02_dsprites
 
@@ -87,6 +87,6 @@ tensorboard dev upload --logdir ./vae-disentanglement/train-logs/GNN_CS_VAE_dspr
     --description "Results after training GNN based CSVAE on dsprites_correlated over ~60 epochs w/o any Annealing or Weighting"
 
 
-scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_cs_vaes/vae-disentanglement/train-logs/pendulum_sw_latentnn/latentnn_kld5_psw/checkpoints/epoch=167-step=38304.ckpt ./latentnn_167eps_kld5_pendulum_sw.ckpt
+scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_slc_vaes/vae-disentanglement/train-logs/pendulum_sw_latentnn/latentnn_kld5_psw/checkpoints/epoch=167-step=38304.ckpt ./latentnn_167eps_kld5_pendulum_sw.ckpt
 
  #10.17.0.0/16, 134.96.225.0/24, 134.96.235.0/24, 134.96.238.32/27, 134.96.238.64/26, 134.96.238.128/25, 195.37.156.0/22

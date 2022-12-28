@@ -1,5 +1,23 @@
 # How to write thesis meeting notes
 
+### Current Progress
+- [x] Title
+- [ ] Abstract
+- [ ] Introduction
+- [x] Related Work
+- [x] Preliminaries
+- [x] Theory
+- [x] Solution
+- [ ] Experiments
+- [ ] Discussion
+- [ ] Conclusion
+- [ ] Appendices
+
+### The 555 rule
+5 sentences make 1 para
+5 paras make 1 section
+5 sections make 1 chap.
+
 Usual length is 35-60 pages
  
 ### Ingredients of thesis
@@ -28,7 +46,7 @@ Think of it as a map of the world / map of our problem domain.
 - Know ur place in the world. 
 - Know what has been done.. what's out there in the world.
 
-trick: think of upsidedown christman tree
+trick: think of upsidedown christmas tree
 start with general stuff
 building block of trees are paras e.g. first para can be about representations in NNs
 becomes more specific as we go down
