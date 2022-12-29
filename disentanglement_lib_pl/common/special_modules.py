@@ -630,13 +630,18 @@ class GroundTruthBasedLearnablePrior(nn.Module):
 
 class SimpleLatentNN(nn.Module):
     
-    def __init__(self, num_parents_input, x_feat_dim, interm_dim, out_dim):
-        
+    def __init__(self, num_parents_input, img_feat_dim, interm_dim, out_dim=1):
+        """
+        num_parents_input: How many parents does this DAG node have?
+        img_feat_dim: Image features dim. We need this because we pass 
+                    parents and image features as input to model q(z_j | pa^j, X)
+        out_dim: output latent dimension, usually set to 1
+        """
         super().__init__()
 
         # TODO: what is the right complexity for this network?
         self.main = nn.Sequential(
-            nn.Linear(num_parents_input + x_feat_dim, interm_dim),
+            nn.Linear(num_parents_input + img_feat_dim, interm_dim),
             nn.Tanh(),
             nn.Linear(interm_dim, interm_dim),
             nn.Tanh(),

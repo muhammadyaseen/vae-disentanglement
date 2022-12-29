@@ -15,7 +15,7 @@ from common.special_modules import SimpleLatentNN, SupervisedRegulariser
 class LatentNN_CSVAE(nn.Module):
     """
     Concept Structured VAEs where Prior and Posterior dists have been
-    implemented using GNNs
+    implemented using the proposed LatentNN
     """
 
     def __init__(self, network_args, **kwargs):
@@ -242,14 +242,16 @@ class LatentNN_CSVAE(nn.Module):
 
     def covariance_loss(self, true_latents, node_activations):
         """
-        true_latents: (B, V)
-        node_activations: (B, V, 1)
+        true_latents: Ground truth values of latent vars. Shape (B, V)
+        node_activations: These can be either posterior mus i.e. mean of q(z; \mu, \sigma) or posterior samples z ~ q(z; \mu, \sigma). 
+                            Right now, I'm directly penalizing \mu, can also try penalizing activations which also indirectly 
+                            penalized \mu via reparamterization. Shape (B, V, 1)
         """
         
         # TODO: should it be computed over \mus or z's ??
         # if we use gt label as \mu for prior, then it makes sense to use mu here, right?
 
-        learned_mus = node_activations.squeeze(2)
+        learned_mus = node_activations.squeeze(2) # remove the final dim from (B, V, 1)
         batch_mean = learned_mus.T.mean(1, keepdims=True)      
         learned_mus_centered = learned_mus.T - batch_mean
         learned_cov = torch.matmul(learned_mus_centered, learned_mus_centered.T) / self.batch_size
@@ -285,7 +287,7 @@ class LatentNN_CSVAE(nn.Module):
         output_losses[c.TOTAL_LOSS] = 0
         
         #===== Calculating ELBO components
-        # 1. REconstruction loss
+        # 1. Reconstruction loss
         
         if self.loss_type == 'cross_ent':
             output_losses[c.RECON] = (F.binary_cross_entropy(x_recon, x_true, reduction='sum') / self.batch_size) * self.w_recon
@@ -317,6 +319,7 @@ class LatentNN_CSVAE(nn.Module):
             output_losses[c.TOTAL_LOSS] += output_losses[c.AUX_CLASSIFICATION]
             output_losses.update(clf_loss_per_layer)
 
+        # 4. Covariance Loss. Penalty over q(Z) being different from p(Z)
         if self.add_cov_loss:
             output_losses[c.COVARIANCE_LOSS] = self.covariance_loss(true_latents, posterior_mu) * self.w_cov_loss
             output_losses[c.TOTAL_LOSS] += output_losses[c.COVARIANCE_LOSS]
@@ -343,11 +346,12 @@ class LatentNN_CSVAE(nn.Module):
         return posterior_mu, posterior_logvar, posterior_z
 
     # NOTE: This isn't really a GNN -- we keep this name to not break code that 
-    # relies on the member name being encoder_gnn e.g. traversal and intervention code
+    # relies on the member name being encoder_gnn e.g. traversal and intervention code.
+    # TODO: refactor and remove this non-sense dependency on name
     def encoder_gnn(self, image_features):
         """
-        image_features: has shape (B, dim_init_node_feats)
-        For successful chunk `dim_init_node_feats` should be a multiple of num_nodes
+        image_features: Has shape (B, dim_init_node_feats).
+                        For successful chunk `dim_init_node_feats` should be a multiple of num_nodes
         """
         # chunk image features into num_node parts -- 1 for each node
         # so after chunk we should get V chunks of shape (B, latent_dim / V)

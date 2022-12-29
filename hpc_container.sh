@@ -36,7 +36,7 @@ srun -N1 --partition=develbooster --account=hai_slc_vaes --pty apptainer shell -
 
 # https://apptainer.org/docs/user/main/cli/apptainer_shell.html
 # To get a shell inside the container
-srun -N1 --partition=develbooster --account=hai_s_vaes --pty \
+srun -N1 --partition=develbooster --account=hai_slc_vaes --pty \
     apptainer shell --nv ../container-file/vae-disent-v1.1-tensorboard.sif 
 
 srun -N1 --partition=develbooster --account=hai_slc_vaes --pty  \

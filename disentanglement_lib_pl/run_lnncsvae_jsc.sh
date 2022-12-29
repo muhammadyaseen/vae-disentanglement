@@ -1,22 +1,22 @@
 #!/bin/bash
-#SBATCH --account=hai_cs_vaes
+#SBATCH --account=hai_slc_vaes
 #SBATCH --gres=gpu:1
 #SBATCH --partition=booster
 #SBATCH --nodes=1
 #SBATCH --output=%j-job-out-and-err.txt
 #SBATCH --error=%j-job-out-and-err.txt
-#SBATCH --job-name=hai_cs_vaes-CS-VAE
+#SBATCH --job-name=hai_slc_vaes-SLC-VAE
 #SBATCH --mail-user=muhammad.yaseen@cispa.de
 #SBATCH --mail-type=FAIL,END,TIME_LIMIT
 #SBATCH --time=02:00:00
 
-NAME="pendulum_latentnn"
+NAME="waterflow_latentnn"
 echo "name=$NAME"
 
 # This path will work anywhere in JUWELS-Booster
 PROJECT_ROOT=/vae-disentanglement
 export DISENTANGLEMENT_LIB_DATA=$PROJECT_ROOT/datasets/
-DATASET_NAME=pendulum
+DATASET_NAME=waterflow
 LOGS_DIR=$PROJECT_ROOT/train-logs
 
 # The path after .sif refers to the path within containers
@@ -30,9 +30,10 @@ srun \
     --dset_dir=$DISENTANGLEMENT_LIB_DATA  \
     --dset_name=$DATASET_NAME \
     --decoder=SimpleConv64CommAss \
-    --w_kld=25.0 \
+    --w_kld=1.0 \
     --w_recon=1.0 \
     --w_sup_reg=1.0 \
+    --w_cov_loss=0.0 \
     --num_workers=48 \
     --batch_size=64 \
     --max_epoch=200 \

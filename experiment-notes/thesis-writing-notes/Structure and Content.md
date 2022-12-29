@@ -111,7 +111,7 @@ In a way, Ladder / GNN / NS based approaches are all different instantiations of
 1. Mechanism preservation experiments on Pendulum
 2. Mechanism preservation experiments on Pendulum-Switch
 3. Mechanism preservation experiments on Water-Flow
-4. Mechanism preservation experiments on CelebA ?
+4. Mechanism preservation experiments on CelebA. I'm kinda curious about what we can get out of CelebA
 5. Role of Capacity shown on any one of the datasets
 6. Compare with Causal VAE / BetaVAE
 7. Curious: 2d sprites on SLC-VAE and $\beta$-VAE
@@ -120,6 +120,9 @@ In a way, Ladder / GNN / NS based approaches are all different instantiations of
 10. Ablation: Covariance Reg
 
 ## Discussion
+- connect my early experiments on three shapes dataset.
+- continuous and smooth changes in latent space may not correspond to continuous and smooth changes in the data space e.g. light chaning from green to red.
+- In many current synthetic datasets, backgrounds are mostly static (2dsprite, waterflow, pendulum). This way model can get a huge reduction is error just my correctly memorizing the background. This plays no role in actually learning about the latent factors.
 
 - Connections to:
 	1. Broken ELBO, 
