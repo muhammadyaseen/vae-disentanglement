@@ -16,6 +16,16 @@ I have made this list so that I don't forget any 'required' acknowledgements.
 6. HAI CORE (infrastructure for experiments)
 7. Other usual stuff (Advisor / EDA members / others)
 
+## Abstract
+
+In this thesis we address the problem of learning the distribution of latent variables from observed images. Our focus is to preserve the structural constraints present in the original latent distribution. This is beneficial in cases where the structure represents a physical or real-world dependency. Entanglement of such structure in generative modeling would lead to non-representative samples from the learned generative distribution.
+
+To this end, we first present a formal model of generative images from latent variables using Structured Causal Model (SCM) theory. Then we introduce Variational Auto-Encoder to approximate the distributions involved in this generative process. Furthermore, to addresses the capacity and gradient flow limitations of existing Graph Neural Network and Hierarchical modeling approaches e.g. LadderVAE, we propose a novel approach to modeling the latent network in VAEs that does not suffer from such limitation. Next, we instantiate our VAE model with appropriate regularization terms.
+
+We evaluate the performance of our algorithm on two standard benchmark data sets and introduce a third new data set with more complex generative mechanisms. Our experiments show that the algorithm successfully learns the latent distributions that preserve the structure while maintaining excellent reconstruction performance. We demonstrate this by performing intervention experiments which show that changing the parent node affects the child node and therefor preserves the causal relationships present in the original data generating process.
+
+## Introduction
+
 ## What to inclue in Prelims / Background?
 
  This chapter will define the notation to be used throughout the document and will provide definitions of relevant concepts required for understanding the thesis (pre-supposing _some_ prior knowledge). In a way, this chapter is an attempt to make the thesis self-contained.
