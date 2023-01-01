@@ -118,6 +118,7 @@ In a way, Ladder / GNN / NS based approaches are all different instantiations of
 8. Latent space evolution and plots
 9. Ablation: Supervised Regularizer
 10. Ablation: Covariance Reg
+11. Hypothesis: The two islands that we sometimes see in latent space correspond to indpendent combinations of the two latents. e.g one islands encodes (1,0) and the other (0,1) or in words (red switch, off light) and (green switch, on light).
 
 ## Discussion
 - connect my early experiments on three shapes dataset.
@@ -138,6 +139,9 @@ In a way, Ladder / GNN / NS based approaches are all different instantiations of
 - Trade-off between Recon and KL-div and commensurability of these two parts
 - (Related to above) Connection to MDL two-part codes
 - Relation to I-map or D-map of the network structure and the (in)dependencies we want to have.
+
+Variation in any dimension of $x$ could potentially be because of a latent variable. Pic of bycicles that has same colors technically then lacks the red latent var. So in a sense what variations we can capture definitely depends on the dataset we have.
+
 
 **Improvements and Extension**: 
 1. Incorporating or adapting any of the tricks useful for Training large VAEs e.g. those mentioned in NVAE. Hidden Talents of VAEs

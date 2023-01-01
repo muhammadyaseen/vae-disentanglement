@@ -83,7 +83,10 @@ class LatentNN_CSVAE(nn.Module):
         # DAG - 0th element is list of first level nodels, last element is list of leaves / terminal nodes
         self.dag_layer_nodes = dag_utils.get_dag_layers(self.adjacency_list)        
         
-        # encoder and decoder
+        # encoder and decoder related params
+
+        # Dim of initial node features. Init node features are basically image (X) features extracted 
+        # by the Encoder. These are passed on to every latent node. 
         self.init_node_feat_dim = 10
         # this is the size of final output layer of EncoderCNN
         msenc_feature_dim = self.num_nodes * self.init_node_feat_dim
@@ -97,11 +100,10 @@ class LatentNN_CSVAE(nn.Module):
         # converts exogenous vars to prior latents 
         # P(Z|epsilon, A)
         # TODO: revisit after introduction of indept nodes
-        self.prior_type = "gt_based_fixed"
+        self.prior_type = utils.get_prior_type_for_dataset(self.dataset)
+        print("Prior type: ", self.prior_type)
         self.prior_gnn = None
         
-        #self.gt_based_prior = type(self.prior_gnn) == GroundTruthBasedLearnablePrior
-        print("prior: ", self.prior_type)
 
         in_node_feat_dim, out_node_feat_dim = (self.z_dim + self.d_dim) * 2, (self.z_dim + self.d_dim) * 2
         # takes in encoded features and spits out recons
@@ -289,10 +291,10 @@ class LatentNN_CSVAE(nn.Module):
         #===== Calculating ELBO components
         # 1. Reconstruction loss
         
-        if self.loss_type == 'cross_ent':
+        if self.loss_type == c.BIN_CROSS_ENT_LOSS:
             output_losses[c.RECON] = (F.binary_cross_entropy(x_recon, x_true, reduction='sum') / self.batch_size) * self.w_recon
         
-        if self.loss_type == 'mse':
+        if self.loss_type == c.MSE_LOSS:
             output_losses[c.RECON] = (F.mse_loss(x_recon, x_true, reduction='sum') / self.batch_size) * self.w_recon
                
         output_losses[c.TOTAL_LOSS] += output_losses[c.RECON]
@@ -353,7 +355,7 @@ class LatentNN_CSVAE(nn.Module):
         image_features: Has shape (B, dim_init_node_feats).
                         For successful chunk `dim_init_node_feats` should be a multiple of num_nodes
         """
-        # chunk image features into num_node parts -- 1 for each node
+        # chunk image features into `num_node` parts i.e 1 for each node
         # so after chunk we should get V chunks of shape (B, latent_dim / V)
         #print("image_features.size ", image_features.size())
         node_init_feats = image_features.chunk(self.num_nodes, dim=1)
@@ -444,7 +446,7 @@ class LatentNN_CSVAE(nn.Module):
 
     def decode(self, z, **kwargs):
 
-        if self.loss_type == 'cross_ent':
+        if self.loss_type == c.BIN_CROSS_ENT_LOSS:
             return torch.sigmoid(self.decoder_dcnn(z))
         else:
             return self.decoder_dcnn(z)
@@ -473,7 +475,14 @@ class LatentNN_CSVAE(nn.Module):
 
     def prior_to_latents_prediction(self, current_device, gt_labels=None):
         
-        prior_mu, prior_logvar = self.gt_based_fixed_prior(gt_labels, current_device)
+        if self.prior_type == c.GT_BASED_PRIOR:
+            prior_mu, prior_logvar = self.gt_based_fixed_prior(gt_labels, current_device)
+        elif self.prior_type == c.IND_GAUSSIAN_PRIOR:
+            # Prior is N(0,I)
+            prior_mu = torch.zeros(size=(self.l_dim, self.batch_size), device=current_device)
+            prior_logvar = torch.zeros(size=(self.l_dim, self.batch_size), device=current_device)
+        else:
+            raise ValueError(f"Unsupported prior type: {self.prior_type}.")  
         
         return prior_mu, prior_logvar
 
@@ -486,3 +495,4 @@ class LatentNN_CSVAE(nn.Module):
         logvar = torch.zeros(size=mus.size(), device=current_device) # fixed at var = 1 for now
 
         return mus, logvar
+

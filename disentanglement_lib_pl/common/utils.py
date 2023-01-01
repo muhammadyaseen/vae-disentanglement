@@ -529,12 +529,25 @@ def pairwise_node_activation_plots(mu_batches, epoch=None, save_path=None, logge
 def get_loss_type_for_dataset(dataset_name):
 
     mapping = {
-        "pendulum": "mse",
-        "pendulum_switch": "mse",
-        "celeba": "mse",
-        "waterflow": "mse",
-        "dsprites_full": "cross_ent",
-        "dsprites_correlated": "cross_ent",
+        "pendulum": c.MSE_LOSS,
+        "pendulum_switch": c.MSE_LOSS,
+        "celeba": c.MSE_LOSS,
+        "waterflow": c.MSE_LOSS,
+        "dsprites_full": c.BIN_CROSS_ENT_LOSS,
+        "dsprites_correlated": c.BIN_CROSS_ENT_LOSS,
+    }    
+
+    return mapping[dataset_name] 
+
+def get_prior_type_for_dataset(dataset_name):
+
+    mapping = {
+        "pendulum": c.GT_BASED_PRIOR,
+        "pendulum_switch": c.GT_BASED_PRIOR,
+        "celeba": c.GT_BASED_PRIOR,
+        "waterflow": c.GT_BASED_PRIOR,
+        "dsprites_full": c.IND_GAUSSIAN_PRIOR,
+        "dsprites_correlated": c.IND_GAUSSIAN_PRIOR,
     }    
 
     return mapping[dataset_name] 

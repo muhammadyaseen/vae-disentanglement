@@ -27,6 +27,10 @@ TOTAL_VAE_EPOCH = 'total_vae_epoch'
 LEARNING_RATE = 'learning_rate'
 AUX_CLASSIFICATION = 'aux_classification'
 COVARIANCE_LOSS = 'covariance_loss'
+MSE_LOSS = 'mse'
+BIN_CROSS_ENT_LOSS = 'cross_ent'
+GT_BASED_PRIOR = 'gt_based_fixed_prior'
+IND_GAUSSIAN_PRIOR = 'independent_fixed_prior'
 
 # Algorithms
 ALGS = ('AE', 'VAE', 'BetaVAE', 'CVAE', 'IFCVAE', 'FC_VAE', 'LadderVAE', 
