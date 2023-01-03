@@ -90,3 +90,13 @@ tensorboard dev upload --logdir ./vae-disentanglement/train-logs/GNN_CS_VAE_dspr
 scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_slc_vaes/vae-disentanglement/train-logs/pendulum_sw_latentnn/latentnn_kld5_psw/checkpoints/epoch=167-step=38304.ckpt ./latentnn_167eps_kld5_pendulum_sw.ckpt
 
  #10.17.0.0/16, 134.96.225.0/24, 134.96.235.0/24, 134.96.238.32/27, 134.96.238.64/26, 134.96.238.128/25, 195.37.156.0/22
+
+scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_slc_vaes/vae-disentanglement/train-logs/dsprites_latentnn_w_kld1/version_2_continue_from_180eps/checkpoints/epoch=244-step=253820.ckpt ./dsprites_latentnn_w_kld1_244eps.ckpt
+
+
+# To rerun stuff add the following args
+#  --continue_training=True \
+#  --ckpt_path=$LOGS_DIR/$NAME/version_?/checkpoints/<file>.ckpt
+# The training will start from prev saved epoch state and continue till `max_epochs`
+# A new checkpoint will be saved, so make sure to backup old one if you still need it
+
