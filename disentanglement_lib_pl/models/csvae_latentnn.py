@@ -42,10 +42,10 @@ class LatentNN_CSVAE(nn.Module):
 
         self.dept_adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
         self.adjacency_matrix = dag_utils.get_adj_mat_from_adj_list(self.adjacency_list)
-        self.np_A = dag_utils.adjust_adj_mat_for_prior(self.dept_adjacency_matrix)
+        #self.np_A = dag_utils.adjust_adj_mat_for_prior(self.dept_adjacency_matrix)
         
-        print("Posterior mat: ", self.dept_adjacency_matrix)
-        print("Prior mat: ", self.np_A)
+        print("Posterior mat: ", self.adjacency_matrix)
+        #print("Prior mat: ", self.np_A)
         
         # Model latents for which we do have labels / DAG connections 
         self.num_dept_nodes = len(self.dept_adjacency_matrix)
@@ -158,7 +158,8 @@ class LatentNN_CSVAE(nn.Module):
         """
         iterm_dim: dim for internal hidden layer
         """
-        num_neighbours = self.dept_adjacency_matrix.sum(dim=-1, keepdims=True)
+        num_neighbours = self.adjacency_matrix.sum(dim=-1, keepdims=True)
+        print(f"Num neighbours: {num_neighbours}")
         
         return nn.ModuleList([
             # we do -1 here because in the adj mat we have self connections
@@ -359,7 +360,7 @@ class LatentNN_CSVAE(nn.Module):
         # so after chunk we should get V chunks of shape (B, latent_dim / V)
         #print("image_features.size ", image_features.size())
         node_init_feats = image_features.chunk(self.num_nodes, dim=1)
-        num_neighbours = self.dept_adjacency_matrix.sum(dim=-1, keepdims=True)
+        num_neighbours = self.adjacency_matrix.sum(dim=-1, keepdims=True)
         zs, mus, logvars = [], [], []
 
         for node_idx in range(self.num_nodes):
@@ -367,7 +368,7 @@ class LatentNN_CSVAE(nn.Module):
             # (A - I) because we have self connections that we don't want to count as parents
             if num_neighbours[node_idx] - 1 != 0:
                 # if we have parents for this node we need to pass those as inputs
-                parent_indices = (self.dept_adjacency_matrix.numpy() - np.eye(self.num_nodes))[node_idx].nonzero()[0]
+                parent_indices = (self.adjacency_matrix.numpy() - np.eye(self.num_nodes))[node_idx].nonzero()[0]
                 #print("node ", node_idx, " parent_indices ", parent_indices)
                 parents_feats = torch.cat([zs[parent_idx] for parent_idx in parent_indices], dim=1) 
                 image_and_parents_feats = torch.cat([node_init_feats[node_idx], parents_feats], dim=1)
@@ -407,7 +408,7 @@ class LatentNN_CSVAE(nn.Module):
         # chunk image features into num_node parts -- 1 for each node
         # so after chunk we should get V chunks of shape (B, latent_dim / V)
         node_init_feats = image_features.chunk(self.num_nodes, dim=1)
-        num_neighbours = self.dept_adjacency_matrix.sum(dim=-1, keepdims=True)
+        num_neighbours = self.adjacency_matrix.sum(dim=-1, keepdims=True)
         zs, mus, logvars = [], [], []
 
         for node_idx in range(self.num_nodes):
@@ -416,7 +417,7 @@ class LatentNN_CSVAE(nn.Module):
             if num_neighbours[node_idx] - 1 != 0:
 
                 # if we have parents for this node we need to pass those as inputs
-                parent_indices = (self.dept_adjacency_matrix.numpy() - np.eye(self.num_nodes))[node_idx].nonzero()[0]
+                parent_indices = (self.adjacency_matrix.numpy() - np.eye(self.num_nodes))[node_idx].nonzero()[0]
 
                 parents_feats = torch.cat([zs[parent_idx] for parent_idx in parent_indices], dim=1) 
                 image_and_parents_feats = torch.cat([node_init_feats[node_idx], parents_feats], dim=1)

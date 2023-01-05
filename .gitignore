@@ -16,3 +16,6 @@ scripts/
 models/
 experiment-notes/.obsidian/
 !disentanglement_lib_pl/models
+dsprites_latentnn_w_kld1/
+dsprites_latentnn_w_kld5/
+*.tar.gz
