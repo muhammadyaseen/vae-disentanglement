@@ -37,7 +37,7 @@ def get_dataset_specific_params(cmdline_args):
     elif cmdline_args.dset_name == 'celeba':
         return dict(
             include_labels=get_label_index_from_label_names(
-                    cmdline_args.label_names,
+                    cmdline_args.include_labels,
                     cmdline_args.dset_name, 
                     cmdline_args.dset_dir
             )

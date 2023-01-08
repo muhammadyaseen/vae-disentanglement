@@ -50,7 +50,7 @@ def get_args(sys_args):
     # latent encoding
     parser.add_argument('--z_dim', default=None, type=int, nargs='+', help='size of the encoded z space')
     parser.add_argument('--include_labels', default=None, type=str, nargs='*',
-                        help='Labels (indices or names) to include in latent encoding.')
+                        help='Labels names to include in latent encoding.')
     parser.add_argument('--l_dim', default=0, type=int, help='size of the encoded w space (for each label)')
 
     # optimizer
@@ -122,7 +122,9 @@ def get_args(sys_args):
 
     # Dataset specific params
     parser.add_argument('--correlation_strength', default=0.0, type=float, help='Correlation strength in dsprites_correlated dataset')
-
+    #parser.add_argument('--label_names', help='Only these columns will be read / used for latent network', nargs='*',
+    #                    default=list())
+    
     # Logging and visualization
     parser.add_argument('--expr_name', default='VAE_Experiment', type=str, help='a descriptive name for this experiment, will be used as logging dir name.')
     parser.add_argument('--train_output_dir', default='train_outputs', type=str, help='output directory')
