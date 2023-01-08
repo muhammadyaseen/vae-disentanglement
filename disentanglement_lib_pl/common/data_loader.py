@@ -221,7 +221,7 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
     if dataset_name == 'celeba':
         
         root = os.path.join(dset_dir, 'celeba')
-        labels_file = os.path.join(root, 'list_attr_celeba.csv')
+        labels_file = os.path.join(root, 'list_attr_celeba_sanitized.csv')
 
         # celebA images are properly numbered, so the order should remain intact in loading
         labels = None
@@ -237,7 +237,9 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
 
         if labels is not None:
             # celebA labels are all binary with values -1 and +1
-            labels[labels == -1] = 0
+            labels[labels == -1] = 0.
+            labels[labels == 1] = 1.
+
             from pathlib import Path
             num_l = labels.shape[0]
             num_i = len(list(Path(root).glob('**/*.jpg')))
@@ -253,7 +255,9 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
             label_weights = np.array(label_weights)
 
             # all labels in celebA are binary
-            class_values = [[0, 1]] * num_labels
+            class_values = [[0., 1.]] * num_labels
+
+            #labels = labels.astype(np.float)
 
         data_kwargs = {'root': root,
                        'labels': labels,
