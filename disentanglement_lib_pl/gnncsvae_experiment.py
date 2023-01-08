@@ -208,6 +208,7 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
             self.logger.experiment.add_scalar(f"SupReg/clf_{node_name}", clf_loss_node, self.current_epoch)
 
     def _log_batch_covariance_losses(self, train_step_outputs):
+        
         print("adding cov plots")
         cov_loss = torch.stack([tso['covariance_loss'] for tso in train_step_outputs]).mean()
         self.logger.experiment.add_scalar(f"SupReg/Covariance_Loss", cov_loss, self.current_epoch)
@@ -216,6 +217,9 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
        
         # TODO: make this function more general s.t. it works for all datasets
 
+        if self.params['dataset'] not in ["pendulum", "flow"]:
+            return
+        
         # get latent activations for the given number of batches
         current_device = next(self.model.parameters()).device
         num_batches = len(self.sample_loader) if self.params['dataset'] in ["pendulum", "flow"] else num_batches
