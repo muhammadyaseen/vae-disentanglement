@@ -576,3 +576,25 @@ def convert_plot_to_pytorch_tensor(fig, dpi=96):
     pt_image = numpy_array_to_pytorch_tensor(img)
     
     return pt_image
+
+def get_label_index_from_label_names(label_names, dataset, dataset_dir):
+
+    import pandas as pd
+
+    if dataset == 'celeba':
+        
+        celeba_df = pd.read_csv(
+            os.path.join(dataset_dir, 'celeba', 'list_attr_celeba_sanitized.csv', nrows=2)
+        )
+        
+        list_of_celeba_cols = celeba_df.columns.to_list()
+        index_of_chosen_labels = [list_of_celeba_cols.index(label_name) for label_name in label_names]
+
+        for i in index_of_chosen_labels:
+            print(f"Column: {label_names[i]}, Index: {i}")
+        
+        return index_of_chosen_labels
+
+    else:
+        raise ValueError(f"Unsupported dataset: {dataset}")
+

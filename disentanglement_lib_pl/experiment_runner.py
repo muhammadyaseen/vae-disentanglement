@@ -2,7 +2,7 @@ import sys
 import torch
 import os
 
-from common.utils import setup_logging, initialize_seeds, save_cmdline_params
+from common.utils import setup_logging, initialize_seeds, save_cmdline_params, get_label_index_from_label_names
 from common.arguments import get_args
 
 import models
@@ -34,6 +34,14 @@ def get_dataset_specific_params(cmdline_args):
 
     if cmdline_args.dset_name == 'dsprites_correlated': 
         return dict(correlation_strength=cmdline_args.correlation_strength)
+    elif cmdline_args.dset_name == 'celeba':
+        return dict(
+            include_labels=get_label_index_from_label_names(
+                    cmdline_args.label_names,
+                    cmdline_args.dset_name, 
+                    cmdline_args.dset_dir
+            )
+        )
     else:
         return {}
 
@@ -145,7 +153,7 @@ def main(_args):
 
     os.makedirs(os.path.join(tb_logger.log_dir, "recon_images"), exist_ok=True)
     os.makedirs(os.path.join(tb_logger.log_dir, "latent_space_plots"), exist_ok=True)
-    save_cmdline_params(cmdline_args, tb_logger.log_dir)
+    save_cmdline_params(_args, tb_logger.log_dir)
 
     # load the model associated with args.alg
     model_cl = getattr(models, _args.alg)

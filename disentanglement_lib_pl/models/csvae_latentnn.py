@@ -480,8 +480,8 @@ class LatentNN_CSVAE(nn.Module):
             prior_mu, prior_logvar = self.gt_based_fixed_prior(gt_labels, current_device)
         elif self.prior_type == c.IND_GAUSSIAN_PRIOR:
             # Prior is N(0,I)
-            prior_mu = torch.zeros(size=(self.batch_size, self.num_nodes, self.z_dim), device=current_device)
-            prior_logvar = torch.zeros(size=(self.batch_size, self.num_nodes, self.z_dim), device=current_device)
+            prior_mu = torch.zeros(size=(self.batch_size, self.num_dept_nodes, self.z_dim), device=current_device)
+            prior_logvar = torch.zeros(size=(self.batch_size, self.num_dept_nodes, self.z_dim), device=current_device)
         else:
             raise ValueError(f"Unsupported prior type: {self.prior_type}.")  
         
