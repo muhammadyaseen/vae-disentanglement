@@ -584,17 +584,18 @@ def get_label_index_from_label_names(label_names, dataset, dataset_dir):
     if dataset == 'celeba':
         
         celeba_df = pd.read_csv(
-            os.path.join(dataset_dir, 'celeba', 'list_attr_celeba_sanitized.csv', nrows=2)
+            os.path.join(dataset_dir, 'celeba', 'list_attr_celeba_sanitized.csv'), nrows=2
         )
         
         list_of_celeba_cols = celeba_df.columns.to_list()
         index_of_chosen_labels = [list_of_celeba_cols.index(label_name) for label_name in label_names]
 
         for i in index_of_chosen_labels:
-            print(f"Column: {label_names[i]}, Index: {i}")
+            print(f"Column: {list_of_celeba_cols[i]}, Index: {i}")
         
         return index_of_chosen_labels
 
     else:
-        raise ValueError(f"Unsupported dataset: {dataset}")
+        print(f"Unsupported dataset for label indexing: {dataset}")
+        return None
 
