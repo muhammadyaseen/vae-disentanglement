@@ -91,7 +91,8 @@ scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_slc_vaes/vae-disentang
 
  #10.17.0.0/16, 134.96.225.0/24, 134.96.235.0/24, 134.96.238.32/27, 134.96.238.64/26, 134.96.238.128/25, 195.37.156.0/22
 
-scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_slc_vaes/vae-disentanglement/train-logs/dsprites_latentnn_w_kld5/version_5_continue_from_245eps/checkpoints/epoch=308-step=320124.ckpt ./dsprites_latentnn_w_kld5_308eps.ckpt
+scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_slc_vaes/vae-disentanglement/train-logs/dsprites_latentnn_w_kld4_z10/version_3_continue_from_272eps/checkpoints/*.ckpt ./
+scp muhammad1@juwels-booster.fz-juelich.de:/p/project/hai_slc_vaes/vae-disentanglement/train-logs/celeba_latentnn_w_kld1_z30/version_8_from_204eps/checkpoints/*.ckpt ./
 
 
 # To rerun stuff add the following args

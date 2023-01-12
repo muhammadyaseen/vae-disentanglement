@@ -103,6 +103,8 @@ def show_image_grid_pt(imgs, **kwargs):
         axs[0, i].imshow(np.asarray(img))
         axs[0, i].set(xticklabels=[], yticklabels=[], xticks=[], yticks=[])
 
+    return fig
+
 def __handle_celeba(dset_dir):
 
     # TODO: this is quick and dirty fix. need to better handle it
@@ -559,7 +561,7 @@ def show_traversal_images(vae_model, anchor_image, limit, interp_step, dim=-1, m
     traversed_images_stacked = torch.stack([t_img.squeeze(0) for _ , t_img in traversed_images], dim=0)
     img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=nrow, value_range=(0.0,1.0), pad_value=1.0)
 
-    show_image_grid_pt(img_grid, **kwargs)
+    return show_image_grid_pt(img_grid, **kwargs)
 
 
 def load_model_and_data_and_get_activations(dset_name, dset_path, batch_size, z_dim , beta, 
@@ -1036,7 +1038,7 @@ def csvaegnn_show_traversal_images(vae_model, anchor_image, limit, interp_step, 
     traversed_images_stacked = torch.stack([t_img.squeeze(0) for t_img in traversed_images], dim=0)
     img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=nrow, value_range=(0.0,1.0), pad_value=1.0)
 
-    show_image_grid_pt(img_grid, **kwargs)
+    return show_image_grid_pt(img_grid, **kwargs)
 
 def csvaegnn_do_latent_traversal_scatter(vae_model, ref_img, limit=3, inter=2/3, 
                                         node_to_explore=0, dim_to_explore=0, mode='relative', 
@@ -1326,17 +1328,20 @@ def latentnn_intervene(vae_model, x,  intervened_node, intervention_values):
 
         return samples
 
-def latentnn_show_intervention_atlas_from_anchor(intervened_node, intervention_values, anchor_image, vae_model):
+def latentnn_show_intervention_atlas_from_anchor(intervened_node, intervention_values, anchor_image, vae_model, 
+                                                nrow=12, figsize=(10,10)):
     
     traversed_images = latentnn_intervene(vae_model, anchor_image, intervened_node, intervention_values)
     traversed_images_stacked = torch.stack([t_img.squeeze(0) for t_img in traversed_images], dim=0)
-    img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=12, value_range=(0.0,1.0), pad_value=1.0)
-    show_image_grid_pt(img_grid, figsize=(10,10))
+    img_grid = vutils.make_grid(traversed_images_stacked, normalize=True, nrow=nrow, value_range=(0.0,1.0), pad_value=1.0)
+    return show_image_grid_pt(img_grid, figsize=figsize)
 
 
 def latentnn_show_intervention_comparison(intervened_node, intervention_values, num_samples, 
-                                          dataloader, vae_model, current_device):
+                                          dataloader, vae_model, current_device, 
+                                          pad_value=1.0, figsize=(10,10)):
 
+    figures = []
     for node_value in intervention_values:   
 
         images, labels = next(dataloader.__iter__())
@@ -1348,19 +1353,28 @@ def latentnn_show_intervention_comparison(intervened_node, intervention_values, 
 
             # select a random image from batch
             x = images[np.random.choice(bs)].unsqueeze(0).to(current_device)
+            
+            # padd height so we can see a border below the images
+            n, c, h, w = x.shape
+            padding_tensor = torch.zeros(size=(n,c,2,w), device=current_device) if pad_value == 0. else torch.ones(size=(n,c,2,w), device=current_device) 
+            x = torch.cat([x, padding_tensor], dim=2)
+            
             orig_images.append(x)
 
             x_intervened = latentnn_intervene(vae_model, x, intervened_node, intervention_values=[node_value])[0]
+            x_intervened = torch.cat([x_intervened, padding_tensor], dim=2)
             intervened_images.append(x_intervened)
 
-        # stack of original images - top row
-        # stack of traversed images at each gnn layer level in order
         # each row represents a fixed intervention value across different images
         stacked_images = []
+        # stack of original images - top row
         stacked_images.append(torch.stack([o_img.squeeze(0) for o_img in orig_images], dim=0))
+        # stack of traversed images - bottom row
         stacked_images.append(torch.stack([t_img.squeeze(0) for t_img in intervened_images], dim=0))
         comparison_visual = torch.cat(stacked_images, dim=2)
-        img_grid = vutils.make_grid(comparison_visual, normalize=True, nrow=num_samples, value_range=(0.0,1.0), pad_value=1.0)
+        img_grid = vutils.make_grid(comparison_visual, normalize=True, nrow=num_samples, value_range=(0.0,1.0), pad_value=pad_value)
 
-        show_image_grid_pt(img_grid, figsize=(10,10))
+        figures.append(show_image_grid_pt(img_grid, figsize=figsize))
+
+    return figures
 

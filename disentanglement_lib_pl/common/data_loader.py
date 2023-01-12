@@ -46,14 +46,14 @@ class LabelHandler(object):
 
 
 class CustomImageFolder(ImageFolder):
-    def __init__(self, root, transforms, labels, label_weights, name, class_values, num_channels, seed, dtype=torch.long):
+    def __init__(self, root, transforms, labels, label_weights, name, class_values, num_channels, seed, dtype=torch.float):
         super(CustomImageFolder, self).__init__(root, transforms)
         self.indices = range(len(self))
         self._num_channels = num_channels
         self._name = name
         self.seed = seed
 
-        # torch.long for clf labels e.g. CelebA and torch.flaot for regression labels e.g Flow/Pendulum
+        # torch.long for clf labels e.g. CelebA and torch.float for regression labels e.g Flow/Pendulum
         self.dtype = dtype
 
         self.label_handler = LabelHandler(labels, label_weights, class_values)
