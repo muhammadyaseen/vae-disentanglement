@@ -165,7 +165,7 @@ def __handle_celeba(dset_dir):
 def __handle_pendulum(dset_dir, dset_name):
     
     root = os.path.join(dset_dir, dset_name)
-    labels_file = os.path.join(root, 'pendulum_labels.csv')
+    labels_file = os.path.join(root, f'{dset_name}_labels.csv')
     labels_all = np.genfromtxt(labels_file, delimiter=',', names=True)
     data_kwargs = {'root': root,
                 'labels': labels_all,
@@ -1117,7 +1117,7 @@ def csvaegnn_do_latent_traversal_multiple(vae_model, ref_img,
         z = posterior_z.clone()
 
         if z.size(2) > 1:
-            print("This func was written with 1d latents in min. Behaviour for >1d latents not guaranteed")
+            print("This func was written with 1d latents in mind. Behaviour for >1d latents not guaranteed")
         
         #interpolation = torch.arange(-3., 3.1, inter).to(current_device)
 

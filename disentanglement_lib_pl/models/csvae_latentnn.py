@@ -428,7 +428,8 @@ class LatentNN_CSVAE(nn.Module):
 
             #print(z)
             #print(z.shape)
-            if node_idx == intervened_node:
+            #if node_idx == intervened_node:
+            if node_idx in intervened_node:
                 # z here has shape (B, 1)
                 z[:, 0] = intervention_value            
 

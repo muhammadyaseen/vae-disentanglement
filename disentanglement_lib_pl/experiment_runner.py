@@ -32,18 +32,22 @@ EXPERIMENT_CLASS = {
 
 def get_dataset_specific_params(cmdline_args):
 
-    if cmdline_args.dset_name == 'dsprites_correlated': 
-        return dict(correlation_strength=cmdline_args.correlation_strength)
-    elif cmdline_args.dset_name == 'celeba':
-        return dict(
-            include_labels=get_label_index_from_label_names(
+    dataset_params = {}
+
+    dataset_params.update({
+            "include_label": get_label_index_from_label_names(
                     cmdline_args.include_labels,
                     cmdline_args.dset_name, 
                     cmdline_args.dset_dir
             )
-        )
-    else:
-        return {}
+    })
+
+    if cmdline_args.dset_name == 'dsprites_correlated': 
+        dataset_params.update({
+            "correlation_strength": cmdline_args.correlation_strength
+        })
+
+    return dataset_params
 
 def get_scalar_metrics_for_alg(cmdline_args):
     
