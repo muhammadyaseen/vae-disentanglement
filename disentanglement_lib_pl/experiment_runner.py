@@ -35,7 +35,7 @@ def get_dataset_specific_params(cmdline_args):
     dataset_params = {}
 
     dataset_params.update({
-            "include_label": get_label_index_from_label_names(
+            "include_labels": get_label_index_from_label_names(
                     cmdline_args.include_labels,
                     cmdline_args.dset_name, 
                     cmdline_args.dset_dir

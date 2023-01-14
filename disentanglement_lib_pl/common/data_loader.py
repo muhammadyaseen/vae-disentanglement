@@ -238,7 +238,7 @@ def _get_dataloader_with_labels(dataset_name, dset_dir, batch_size, seed, num_wo
         if labels is not None:
             # celebA labels are all binary with values -1 and +1
             labels[labels == -1] = 0.
-            labels[labels == 1] = 1.
+            #labels[labels == 1] = 1.
 
             from pathlib import Path
             num_l = labels.shape[0]
