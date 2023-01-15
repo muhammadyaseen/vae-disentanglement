@@ -52,16 +52,6 @@ class GNNCSVAEExperiment(BaseVAEExperiment):
         
         super(GNNCSVAEExperiment, self).training_step_end(train_step_output)
 
-        # plot this to debug the dimensions tracking behaviour
-        
-        # Visualize Components of mean and sigma vector for every layer
-        #self._log_mu_per_node([train_step_output], step_type='global')
-        #self._log_logvar_per_node([train_step_output], step_type='global')
-        
-        # Add KLD Loss for every layer
-        #self._log_kld_loss_per_node([train_step_output], step_type='global')
-
-
     def training_epoch_end(self, train_step_outputs):
 
         super(GNNCSVAEExperiment, self).training_epoch_end(train_step_outputs)

@@ -35,11 +35,11 @@ class BVAEExperiment(BaseVAEExperiment):
             'current_epoch': self.current_epoch
         })
 
-        train_step_outputs = self.model.loss_function(loss_type='cross_ent', **fwd_pass_results)
+        train_step_outputs = self.model.loss_function(**fwd_pass_results)
 
         train_step_outputs.update({
-            'mu': fwd_pass_results['mu'],
-            'logvar': fwd_pass_results['logvar']
+            'posterior_mu': fwd_pass_results['posterior_mu'],
+            'posterior_logvar': fwd_pass_results['posterior_logvar']
         })
 
         return train_step_outputs
@@ -52,8 +52,9 @@ class BVAEExperiment(BaseVAEExperiment):
         self.model.eval()
         
         # Visualize Components of mean and sigma vector for every layer
-        self._log_mu_per_layer(train_step_outputs)
-        self._log_logvar_per_layer(train_step_outputs)
+        self._log_mu_per_node(train_step_outputs)
+        self._log_std_per_node(train_step_outputs)
+        self._log_kld_loss_per_node(train_step_outputs)
 
         if isinstance(self.model, VAE) and self.model.controlled_capacity_increase:
             self.logger.experiment.add_scalar("C", self.model.c_current, self.global_step)
@@ -66,11 +67,11 @@ class BVAEExperiment(BaseVAEExperiment):
         torch.set_grad_enabled(True)
         self.model.train()
 
-    def _log_mu_per_layer(self, train_step_outputs):
+    def _log_mu_per_node(self, train_step_outputs):
         """
         only logging mu for now
         """
-        mus = torch.cat([tso['mu'] for tso in train_step_outputs], dim=0)
+        mus = torch.cat([tso['posterior_mu'] for tso in train_step_outputs], dim=0)
         
         # log histogram
         for k in range(mus.shape[1]):
@@ -78,20 +79,30 @@ class BVAEExperiment(BaseVAEExperiment):
         
         # log as scalar
         mus = mus.mean(0).tolist()
-        mu_dict = {f"mu_q/component_{i}": component_val for i, component_val in enumerate(mus)}            
+        mu_dict = {f"Mu_q/component_{i}": component_val for i, component_val in enumerate(mus)}            
         for k , v in mu_dict.items():
             self.logger.experiment.add_scalar(k, v, self.current_epoch)
 
-    def _log_logvar_per_layer(self, train_step_outputs):
+    def _log_std_per_node(self, train_step_outputs):
 
-        logvars = torch.cat([tso['logvar'] for tso in train_step_outputs], dim=0)
+        stds = torch.exp(torch.cat([tso['posterior_logvar'] for tso in train_step_outputs], dim=0) / 2.0)
         
         # log histogram
-        for k in range(logvars.shape[1]):
-            self.logger.experiment.add_histogram(f"LogVar/Dim_{k}", logvars[:, k], self.current_epoch)
+        for k in range(stds.shape[1]):
+            self.logger.experiment.add_histogram(f"Std/Node_{k}", stds[:, k], self.current_epoch)
 
         # log as scalar
-        logvars = logvars.mean(0).tolist()        
-        mu_dict = {f"logvar_q/component_{i}": component_val for i, component_val in enumerate(logvars)}            
-        for k , v in mu_dict.items():
+        stds = stds.mean(0).tolist()        
+        std_dict = {f"Std_q/component_{i}": component_val for i, component_val in enumerate(stds)}            
+        for k , v in std_dict.items():
             self.logger.experiment.add_scalar(k, v, self.current_epoch)
+    
+    def _log_kld_loss_per_node(self, train_step_outputs):
+
+        all_loss_keys = train_step_outputs[0].keys()
+
+        per_node_kld_keys = [key for key in all_loss_keys if 'KLD_z_' in key]
+        
+        for kld_loss_key in per_node_kld_keys:
+            kld_loss = torch.stack([tso[kld_loss_key] for tso in train_step_outputs]).mean()
+            self.logger.experiment.add_scalar(f"KLD_Per_Node/{kld_loss_key}", kld_loss, self.current_epoc)
