@@ -39,7 +39,7 @@ class VAE(nn.Module):
         # Beta-vae and Annealed Beta-VAE args
         self.w_kld = network_args.w_kld
         self.controlled_capacity_increase = network_args.controlled_capacity_increase
-        self.max_capacity = torch.tensor(network_args.max_c, dtype=torch.float)
+        self.max_capacity = torch.tensor(network_args.max_capacity, dtype=torch.float)
         self.iterations_c = torch.tensor(network_args.iterations_c, dtype=torch.float)
         self.current_c = torch.tensor(0.0)
         self.kl_warmup_epochs = network_args.kl_warmup_epochs
@@ -93,7 +93,7 @@ class VAE(nn.Module):
             # TODO: change `self.iter` to instead use `pl.LightningModule.{global_step | current_epoch}`
             # Dunno if doing that is ok for multi-gpu etc
             global_iter = kwargs['global_step']
-            capacity = torch.min(self.max_c, self.max_c * torch.tensor(global_iter) / self.iterations_c)
+            capacity = torch.min(self.max_capacity, self.max_capacity * torch.tensor(global_iter) / self.iterations_c)
             self.current_c = capacity.detach()
             kld_loss = (kl_divergence_mu0_var1(mu, logvar) - capacity).abs()
         
@@ -102,7 +102,7 @@ class VAE(nn.Module):
     def loss_function(self, **kwargs):
         
         x_recon, x_true = kwargs['x_recon'], kwargs['x_true']
-        mu, logvar = kwargs['mu'], kwargs['logvar']
+        mu, logvar = kwargs['posterior_mu'], kwargs['posterior_logvar']
         global_step = kwargs['global_step']
         bs = self.batch_size
         current_epoch = kwargs['current_epoch']
@@ -112,10 +112,10 @@ class VAE(nn.Module):
         # initialize the loss of this batch with zero.
         output_losses[c.TOTAL_LOSS] = 0
 
-        if loss_type == c.BIN_CROSS_ENT_LOSS:
+        if self.loss_type == c.BIN_CROSS_ENT_LOSS:
             output_losses[c.RECON] = (F.binary_cross_entropy(x_recon, x_true, reduction='sum') / bs) * self.w_recon
         
-        if loss_type == c.MSE_LOSS:
+        if self.loss_type == c.MSE_LOSS:
             output_losses[c.RECON] = (F.mse_loss(x_recon, x_true, reduction='sum') / bs) * self.w_recon
 
         output_losses[c.TOTAL_LOSS] += output_losses[c.RECON]
@@ -166,7 +166,11 @@ class VAE(nn.Module):
         return self.encoder(x)
 
     def decode(self, z, **kwargs):
-        return torch.sigmoid(self.decoder(z))
+        
+        if self.loss_type == c.BIN_CROSS_ENT_LOSS:
+            return torch.sigmoid(self.decoder(z))
+        else:
+                return self.decoder(z)
 
     def forward(self, x_true, **kwargs):
         

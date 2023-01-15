@@ -105,4 +105,4 @@ class BVAEExperiment(BaseVAEExperiment):
         
         for kld_loss_key in per_node_kld_keys:
             kld_loss = torch.stack([tso[kld_loss_key] for tso in train_step_outputs]).mean()
-            self.logger.experiment.add_scalar(f"KLD_Per_Node/{kld_loss_key}", kld_loss, self.current_epoc)
+            self.logger.experiment.add_scalar(f"KLD_Per_Node/{kld_loss_key}", kld_loss, self.current_epoch)

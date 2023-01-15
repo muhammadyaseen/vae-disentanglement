@@ -20,7 +20,12 @@ def kl_divergence_mu0_var1(mu, logvar):
 
 def kl_divergence_mu0_var1_per_node(mu, logvar):  
     
-    return kl_divergence_diag_mu_var_per_node(mu, logvar, torch.Tensor([0.]), torch.Tensor([0.]))
+    return kl_divergence_diag_mu_var_per_node(
+                mu.unsqueeze(2), 
+                logvar.unsqueeze(2), 
+                torch.Tensor([0.]).to(mu.device), 
+                torch.Tensor([0.]).to(mu.device)
+            )
 
 
 def kl_divergence_mu_var1(mu, logvar, target_mu):
